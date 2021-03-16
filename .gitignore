@@ -1,0 +1,5 @@
+# IntelliJ IDE Settings
+/.idea
+
+# Node.js
+/node_modules
