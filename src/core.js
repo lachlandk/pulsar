@@ -1,4 +1,4 @@
-const base = (function() {
+const core = (function() {
 	const propertySetters = {
 		setAxesProperty: function(property, expectedType, ...values) {
 			if (values.length === 1 && typeof values[0] === expectedType) {
