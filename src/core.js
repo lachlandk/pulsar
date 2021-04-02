@@ -1,6 +1,6 @@
 const core = (function() {
 	const propertySetters = {
-		setAxesProperty: function(property, expectedType, ...values) {
+		setAxesProperty(property, expectedType, ...values) {
 			if (values.length === 1 && typeof values[0] === expectedType) {
 				return {
 					x: values[0],
@@ -15,17 +15,17 @@ const core = (function() {
 				throw `Error setting axes ${property}: Unexpected value ${JSON.stringify(values)}.`;
 			}
 		},
-		setSingleProperty: function(property, expectedType, value) {
+		setSingleProperty(property, expectedType, value) {
 			if (typeof value === expectedType) {
 				return value;
 			} else {
 				throw `Error setting ${property}: Unexpected value ${JSON.stringify(value)}.`;
 			}
 		},
-		setArrayProperty: function(expectedType, length, value) {
+		setArrayProperty(expectedType, length, value) {
 
 		},
-		setChoiceProperty: function(expectedType, choices, value) {
+		setChoiceProperty(expectedType, choices, value) {
 
 		}
 	};
@@ -53,7 +53,7 @@ const core = (function() {
 			if (element) {
 				this.container = element;
 			} else {
-				throw `Error in ResponsiveCanvas constructor: Element with ID "${container}" could not be found.`;
+				throw `Error in ResponsiveCanvas constructor: Element with ID ${JSON.stringify(container)} could not be found.`;
 			}
 			this.container = document.getElementById(container);
 		} else if (container instanceof Element) {
@@ -78,11 +78,11 @@ const core = (function() {
 		});
 		this.observer.observe(this.container);
 		this.backgroundCanvas.style.position = "absolute";
-		this.backgroundCanvas.style.left = 0;
-		this.backgroundCanvas.style.top = 0;
+		this.backgroundCanvas.style.left = "0";
+		this.backgroundCanvas.style.top = "0";
 		this.foregroundCanvas.style.position = "absolute";
-		this.foregroundCanvas.style.left = 0;
-		this.foregroundCanvas.style.top = 0;
+		this.foregroundCanvas.style.left = "0";
+		this.foregroundCanvas.style.top = "0";
 		this.container.appendChild(this.backgroundCanvas);
 		this.container.appendChild(this.foregroundCanvas);
 
@@ -147,19 +147,21 @@ const core = (function() {
 		this.backgroundCanvas.style.background = "green";
 
 		for (const option in defaultProperties.ResponsivePlot2D) {
-			const key = defaultProperties.ResponsivePlot2D[option];
-			const multipleValues = Array.isArray(key.value) ? true : false;
-			if (Object.keys(options).includes(option)) {
-				if (multipleValues) {
-					this[option] = propertySetters[key.setter](option, key.type, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
+			if (defaultProperties.ResponsivePlot2D.hasOwnProperty(option)) {
+				const key = defaultProperties.ResponsivePlot2D[option];
+				const multipleValues = Array.isArray(key.value);
+				if (Object.keys(options).includes(option)) {
+					if (multipleValues) {
+						this[option] = propertySetters[key.setter](option, key.type, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
+					} else {
+						this[option] = propertySetters[key.setter](option, key.type, options[option]);
+					}
 				} else {
-					this[option] = propertySetters[key.setter](option, key.type, options[option])
-				}
-			} else {
-				if (multipleValues) {
-					this[option] = propertySetters[key.setter](option, key.type, ...key.value);
-				} else {
-					this[option] = propertySetters[key.setter](option, key.type, key.value);
+					if (multipleValues) {
+						this[option] = propertySetters[key.setter](option, key.type, ...key.value);
+					} else {
+						this[option] = propertySetters[key.setter](option, key.type, key.value);
+					}
 				}
 			}
 		}
@@ -199,7 +201,7 @@ const core = (function() {
 					}
 				}
 				context.stroke();
-			}
+			};
 			context.lineCap = "square";
 			context.strokeStyle = "rgb(0, 0, 0)";
 			drawGridSet("minor", 1);
