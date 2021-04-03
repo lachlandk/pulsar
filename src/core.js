@@ -47,50 +47,51 @@ const core = (function() {
 		}
 	};
 
-	const ResponsiveCanvas = function(container) {
-		if (typeof container === "string") {
-			const element = document.getElementById(container);
-			if (element) {
-				this.container = element;
+	class ResponsiveCanvas {
+		constructor(container) {
+			if (typeof container === "string") {
+				const element = document.getElementById(container);
+				if (element) {
+					this.container = element;
+				} else {
+					throw `Error in ResponsiveCanvas constructor: Element with ID ${JSON.stringify(container)} could not be found.`;
+				}
+				this.container = document.getElementById(container);
+			} else if (container instanceof Element) {
+				this.container = container;
 			} else {
-				throw `Error in ResponsiveCanvas constructor: Element with ID ${JSON.stringify(container)} could not be found.`;
+				throw "Error in ResponsiveCanvas constructor: Container parameter could not be recognised as an Element or an ID string.";
 			}
-			this.container = document.getElementById(container);
-		} else if (container instanceof Element) {
-			this.container = container;
-		} else{
-			throw "Error in ResponsiveCanvas constructor: Container parameter could not be recognised as an Element or an ID string.";
+			this.container.style.position = "relative";
+			this.backgroundCanvas = document.createElement("canvas");
+			this.foregroundCanvas = document.createElement("canvas");
+			this.background = this.backgroundCanvas.getContext("2d");
+			this.foreground = this.foregroundCanvas.getContext("2d");
+			this.width = this.container.clientWidth;
+			this.height = this.container.clientHeight;
+			this.observer = new ResizeObserver(entries => {
+				for (const entry of entries) {
+					this.width = entry.contentBoxSize.inlineSize;
+					this.height = entry.contentBoxSize.blockSize;
+					this.updateCanvasDimensions();
+				}
+			});
+			this.observer.observe(this.container);
+			this.backgroundCanvas.style.position = "absolute";
+			this.backgroundCanvas.style.left = "0";
+			this.backgroundCanvas.style.top = "0";
+			this.foregroundCanvas.style.position = "absolute";
+			this.foregroundCanvas.style.left = "0";
+			this.foregroundCanvas.style.top = "0";
+			this.container.appendChild(this.backgroundCanvas);
+			this.container.appendChild(this.foregroundCanvas);
+			this.origin = { // TODO: add to options
+				x: 0,
+				y: 0
+			};
 		}
-		this.container.style.position = "relative";
 
-		this.backgroundCanvas = document.createElement("canvas");
-		this.foregroundCanvas = document.createElement("canvas");
-		this.background = this.backgroundCanvas.getContext("2d");
-		this.foreground = this.foregroundCanvas.getContext("2d");
-		this.width = this.container.clientWidth;
-		this.height = this.container.clientHeight;
-		this.observer = new ResizeObserver(entries => {
-			for (const entry of entries) {
-				this.width = entry.contentBoxSize.inlineSize;
-				this.height = entry.contentBoxSize.blockSize;
-				this.updateCanvasDimensions();
-			}
-		});
-		this.observer.observe(this.container);
-		this.backgroundCanvas.style.position = "absolute";
-		this.backgroundCanvas.style.left = "0";
-		this.backgroundCanvas.style.top = "0";
-		this.foregroundCanvas.style.position = "absolute";
-		this.foregroundCanvas.style.left = "0";
-		this.foregroundCanvas.style.top = "0";
-		this.container.appendChild(this.backgroundCanvas);
-		this.container.appendChild(this.foregroundCanvas);
-
-		this.origin = { // TODO: add to options
-			x: 0,
-			y: 0
-		};
-		this.updateCanvasDimensions = function() {
+		updateCanvasDimensions() {
 			this.backgroundCanvas.width = Math.round(this.width);
 			this.backgroundCanvas.height = Math.round(this.height);
 			this.background.translate(this.origin.x, this.origin.y);
@@ -99,208 +100,204 @@ const core = (function() {
 			this.foregroundCanvas.height = Math.round(this.height);
 			this.foreground.translate(this.origin.x, this.origin.y);
 			this.updateForeground();
-		};
+		}
 
-		this.setBackground = function(drawingFunction) {
+		setBackground(drawingFunction) {
 			this.backgroundFunction = drawingFunction;
-		};
+		}
 
-		this.setForeground = function(drawingFunction) {
+		setForeground(drawingFunction) {
 			this.foregroundFunction = drawingFunction;
-		};
+		}
 
-		this.updateBackground = function() {
-			this.background.translate(-this.origin.x, -this.origin.y);
-			this.background.clearRect(0, 0, this.width, this.height);
-			this.background.translate(this.origin.x, this.origin.y);
+		updateBackground() {
+			this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 			if (this.backgroundFunction) {
 				this.backgroundFunction(this.background);
 			}
-		};
+		}
 
-		this.updateForeground = function() {
-			this.foreground.translate(-this.origin.x, -this.origin.y);
-			this.foreground.clearRect(0, 0, this.width, this.height);
-			this.foreground.translate(this.origin.x, this.origin.y);
+		updateForeground() {
+			this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 			if (this.foregroundFunction) {
 				this.foregroundFunction(this.foreground);
 			}
-		};
-	};
-	ResponsiveCanvas.prototype.setOrigin = function(...point) {
-		this.background.translate(-this.origin.x, -this.origin.y);
-		this.foreground.translate(-this.origin.x, -this.origin.y);
-		if (point.length === 1 && (point[0] === "centre" || point[0] === "center")) {
-			this.origin = propertySetters.setAxesProperty("origin", "number", Math.round(this.width / 2), Math.round(this.height / 2));
-		} else {
-			this.origin = propertySetters.setAxesProperty("origin", "number", ...point);
 		}
-		this.background.translate(this.origin.x, this.origin.y);
-		this.updateBackground();
-		this.foreground.translate(this.origin.x, this.origin.y);
-		this.updateForeground();
-	};
 
-	const ResponsivePlot2D = function(container, options={}) {
-		ResponsiveCanvas.call(this, container);
+		setOrigin(...point) {
+			this.background.translate(-this.origin.x, -this.origin.y);
+			this.foreground.translate(-this.origin.x, -this.origin.y);
+			if (point.length === 1 && (point[0] === "centre" || point[0] === "center")) {
+				this.origin = propertySetters.setAxesProperty("origin", "number", Math.round(this.width / 2), Math.round(this.height / 2));
+			} else {
+				this.origin = propertySetters.setAxesProperty("origin", "number", ...point);
+			}
+			this.background.translate(this.origin.x, this.origin.y);
+			this.updateBackground();
+			this.foreground.translate(this.origin.x, this.origin.y);
+			this.updateForeground();
+		}
+	}
 
-		this.backgroundCanvas.style.background = "green";
+	class ResponsivePlot2D extends ResponsiveCanvas {
+		constructor(container, options={}) {
+			super(container);
 
-		for (const option in defaultProperties.ResponsivePlot2D) {
-			if (defaultProperties.ResponsivePlot2D.hasOwnProperty(option)) {
-				const key = defaultProperties.ResponsivePlot2D[option];
-				const multipleValues = Array.isArray(key.value);
-				if (Object.keys(options).includes(option)) {
-					if (multipleValues) {
-						this[option] = propertySetters[key.setter](option, key.type, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
+			this.backgroundCanvas.style.background = "green";
+			for (const option in defaultProperties.ResponsivePlot2D) {
+				if (defaultProperties.ResponsivePlot2D.hasOwnProperty(option)) {
+					const key = defaultProperties.ResponsivePlot2D[option];
+					const multipleValues = Array.isArray(key.value);
+					if (Object.keys(options).includes(option)) {
+						if (multipleValues) {
+							this[option] = propertySetters[key.setter](option, key.type, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
+						} else {
+							this[option] = propertySetters[key.setter](option, key.type, options[option]);
+						}
 					} else {
-						this[option] = propertySetters[key.setter](option, key.type, options[option]);
-					}
-				} else {
-					if (multipleValues) {
-						this[option] = propertySetters[key.setter](option, key.type, ...key.value);
-					} else {
-						this[option] = propertySetters[key.setter](option, key.type, key.value);
+						if (multipleValues) {
+							this[option] = propertySetters[key.setter](option, key.type, ...key.value);
+						} else {
+							this[option] = propertySetters[key.setter](option, key.type, key.value);
+						}
 					}
 				}
 			}
+			this.setBackground(function(context) {
+				// TODO: implement ticks
+				const drawGridSet = (which, width) => {
+					context.lineWidth = width;
+					const offset = width % 2 === 0 ? 0 : 0.5;
+					context.beginPath();
+					if (this[`${which}Gridlines`].x) {
+						let currentX = 0;
+						while (currentX > -this.origin.x) {
+							context.moveTo(currentX + offset, -this.origin.y);
+							context.lineTo(currentX + offset, this.height - this.origin.y);
+							currentX -= Math.round(this.gridScale.x * this[`${which}GridSize`].x);
+						}
+						currentX = this.gridScale.x * this[`${which}GridSize`].x;
+						while (currentX < this.width - this.origin.x) {
+							context.moveTo(currentX + offset, -this.origin.y);
+							context.lineTo(currentX + offset, this.height - this.origin.y);
+							currentX += Math.round(this.gridScale.x * this[`${which}GridSize`].x);
+						}
+					}
+					if (this[`${which}Gridlines`].y) {
+						let currentY = 0;
+						while (currentY > -this.origin.y) {
+							context.moveTo(-this.origin.x, currentY + offset);
+							context.lineTo(this.width - this.origin.x, currentY + offset);
+							currentY -= Math.round(this.gridScale.y * this[`${which}GridSize`].y);
+						}
+						currentY = this.gridScale.y * this[`${which}GridSize`].y;
+						while (currentY < this.height - this.origin.y) {
+							context.moveTo(-this.origin.x, currentY + offset);
+							context.lineTo(this.width - this.origin.x, currentY + offset);
+							currentY += Math.round(this.gridScale.y * this[`${which}GridSize`].y);
+						}
+					}
+					context.stroke();
+				};
+				context.lineCap = "square";
+				context.strokeStyle = "rgb(0, 0, 0)";
+				drawGridSet("minor", 1);
+				drawGridSet("major", 2);
+				context.lineWidth = 3;
+				context.beginPath();
+				context.moveTo(0.5, -this.origin.y);
+				context.lineTo(0.5, this.height - this.origin.y);
+				context.moveTo(-this.origin.x, 0.5);
+				context.lineTo(this.width - this.origin.x, 0.5);
+				context.stroke();
+			});
+			this.xLims = [0, this.width / this.gridScale.x];
+			this.yLims = [0, this.height / this.gridScale.y];
 		}
 
-		this.setBackground(function(context) {
-			// TODO: implement ticks
-			const drawGridSet = (which, width) => {
-				context.lineWidth = width;
-				const offset = width % 2 === 0 ? 0 : 0.5;
-				context.beginPath();
-				if (this[`${which}Gridlines`].x) {
-					let currentX = 0;
-					while (currentX > -this.origin.x) {
-						context.moveTo(currentX + offset, -this.origin.y);
-						context.lineTo(currentX + offset, this.height - this.origin.y);
-						currentX -= Math.round(this.gridScale.x * this[`${which}GridSize`].x);
-					}
-					currentX = this.gridScale.x * this[`${which}GridSize`].x;
-					while (currentX < this.width - this.origin.x) {
-						context.moveTo(currentX + offset, -this.origin.y);
-						context.lineTo(currentX + offset, this.height - this.origin.y);
-						currentX += Math.round(this.gridScale.x * this[`${which}GridSize`].x);
-					}
-				}
-				if (this[`${which}Gridlines`].y) {
-					let currentY = 0;
-					while (currentY > -this.origin.y) {
-						context.moveTo(-this.origin.x, currentY + offset);
-						context.lineTo(this.width - this.origin.x, currentY + offset);
-						currentY -= Math.round(this.gridScale.y * this[`${which}GridSize`].y);
-					}
-					currentY = this.gridScale.y * this[`${which}GridSize`].y;
-					while (currentY < this.height - this.origin.y) {
-						context.moveTo(-this.origin.x, currentY + offset);
-						context.lineTo(this.width - this.origin.x, currentY + offset);
-						currentY += Math.round(this.gridScale.y * this[`${which}GridSize`].y);
-					}
-				}
-				context.stroke();
-			};
-			context.lineCap = "square";
-			context.strokeStyle = "rgb(0, 0, 0)";
-			drawGridSet("minor", 1);
-			drawGridSet("major", 2);
-			context.lineWidth = 3;
-			context.beginPath();
-			context.moveTo(0.5, -this.origin.y);
-			context.lineTo(0.5, this.height - this.origin.y);
-			context.moveTo(-this.origin.x, 0.5);
-			context.lineTo(this.width - this.origin.x, 0.5);
-			context.stroke();
-		});
-
-		this.xLims = [0, this.width / this.gridScale.x];
-		this.yLims = [0, this.height / this.gridScale.y];
-		this.setOrigin = function(...point) {
-			ResponsiveCanvas.prototype.setOrigin.call(this, ...point);
+		setOrigin(...point) {
+			super.setOrigin(...point);
 			this.xLims = [-this.origin.x / this.gridScale.x, (this.width - this.origin.x) / this.gridScale.x];
 			this.yLims = [-this.origin.y / this.gridScale.y, (this.height - this.origin.y) / this.gridScale.y];
-		};
+		}
 
-		this.setMajorTicks = function(...values) {
+		setMajorTicks(...values) {
 			this.majorTicks = propertySetters.setAxesProperty("majorTicks", "boolean", ...values);
 			this.updateBackground();
-		};
+		}
 
-		this.setMinorTicks = function(...values) {
+		setMinorTicks(...values) {
 			this.minorTicks = propertySetters.setAxesProperty("minorTicks", "boolean", ...values);
 			this.updateBackground();
-		};
+		}
 
-		this.setMajorTickSize = function(...values) {
+		setMajorTickSize(...values) {
 			this.majorTickSize = propertySetters.setAxesProperty("majorTickSize", "number", ...values);
 			this.updateBackground();
-		};
+		}
 
-		this.setMinorTickSize = function(...values) {
+		setMinorTickSize(...values) {
 			this.minorTickSize = propertySetters.setAxesProperty("minorTickSize", "number", ...values);
 			this.updateBackground();
-		};
+		}
 
-		this.setMajorGridlines = function(...values) {
+		setMajorGridlines(...values) {
 			this.majorGridlines = propertySetters.setAxesProperty("majorGridlines", "boolean", ...values);
 			this.updateBackground();
-		};
+		}
 
-		this.setMinorGridlines = function(...values) {
+		setMinorGridlines(...values) {
 			this.minorGridlines = propertySetters.setAxesProperty("minorGridlines", "boolean", ...values);
 			this.updateBackground();
-		};
+		}
 
-		this.setMajorGridSize = function(...values) {
+		setMajorGridSize(...values) {
 			this.majorGridSize = propertySetters.setAxesProperty("majorGridSize", "number", ...values);
 			this.updateBackground();
-		};
+		}
 
-		this.setMinorGridSize = function(...values) {
+		setMinorGridSize(...values) {
 			this.minorGridSize = propertySetters.setAxesProperty("minorGridSize", "number", ...values);
 			this.updateBackground();
-		};
+		}
 
-		this.setGridScale = function(value) {
+		setGridScale(value) {
 			this.gridScale = propertySetters.setAxesProperty("gridScale", "number", ...value);
-			this.updateBackground();
-			this.updateForeground();
-		};
+			this.updateBackground();this.updateForeground();
+		}
 
-		this.setTraceColour = function(value) {
+		setTraceColour(value) {
 			// TODO: implement
-		};
+		}
 
-		this.setTraceStyle = function(value) {
+		setTraceStyle(value) {
 			// TODO: implement
-		};
+		}
 
-		this.setTraceWidth = function(value) {
+		setTraceWidth(value) {
 			// TODO: implement
-		};
+		}
 
-		this.setMarkerStyle = function(value) {
+		setMarkerStyle(value) {
 			// TODO: implement
-		};
+		}
 
-		this.setMarkerSize = function(value) {
+		setMarkerSize(value) {
 			// TODO: implement
-		};
+		}
 
-		this.setMarkerColour = function(value) {
+		setMarkerColour(value) {
 			// TODO: implement
-		};
+		}
 
-		this.setXLims = function(range) {
+		setXLims(range) {
 			// TODO: implement
-		};
+		}
 
-		this.setYLims = function(range) {
+		setYLims(range) {
 			// TODO: implement
-		};
-	};
+		}
+	}
 
 	return {
 		ResponsiveCanvas: ResponsiveCanvas,
