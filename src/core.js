@@ -47,21 +47,31 @@ const core = (function() {
 		}
 	};
 
+	const activeCanvases = {};
+
 	class ResponsiveCanvas {
 		constructor(container) {
 			if (typeof container === "string") {
 				const element = document.getElementById(container);
 				if (element) {
 					this.container = element;
+					this.id = container;
 				} else {
 					throw `Error in ResponsiveCanvas constructor: Element with ID ${JSON.stringify(container)} could not be found.`;
 				}
 				this.container = document.getElementById(container);
 			} else if (container instanceof Element) {
 				this.container = container;
+				if (container.id) {
+					this.id = container.id;
+				} else {
+					this.id = `${this.constructor.name}-${Object.keys(activeCanvases).length + 1}`;
+					container.id = this.id;
+				}
 			} else {
 				throw "Error in ResponsiveCanvas constructor: Container parameter could not be recognised as an Element or an ID string.";
 			}
+			activeCanvases[this.id] = this;
 			this.container.style.position = "relative";
 			this.backgroundCanvas = document.createElement("canvas");
 			this.foregroundCanvas = document.createElement("canvas");
@@ -71,8 +81,8 @@ const core = (function() {
 			this.height = this.container.clientHeight;
 			this.observer = new ResizeObserver(entries => {
 				for (const entry of entries) {
-					this.width = entry.contentBoxSize.inlineSize;
-					this.height = entry.contentBoxSize.blockSize;
+					this.width = entry.target.clientWidth;
+					this.height = entry.target.clientHeight;
 					this.updateCanvasDimensions();
 				}
 			});
@@ -89,25 +99,28 @@ const core = (function() {
 				x: 0,
 				y: 0
 			};
+			this.setID(this.id);
 		}
 
 		updateCanvasDimensions() {
-			this.backgroundCanvas.width = Math.round(this.width);
-			this.backgroundCanvas.height = Math.round(this.height);
+			this.backgroundCanvas.width = this.width;
+			this.backgroundCanvas.height = this.height;
 			this.background.translate(this.origin.x, this.origin.y);
 			this.updateBackground();
-			this.foregroundCanvas.width = Math.round(this.width);
-			this.foregroundCanvas.height = Math.round(this.height);
+			this.foregroundCanvas.width = this.width;
+			this.foregroundCanvas.height = this.height;
 			this.foreground.translate(this.origin.x, this.origin.y);
 			this.updateForeground();
 		}
 
 		setBackground(drawingFunction) {
 			this.backgroundFunction = drawingFunction;
+			this.updateBackground();
 		}
 
 		setForeground(drawingFunction) {
 			this.foregroundFunction = drawingFunction;
+			this.updateForeground();
 		}
 
 		updateBackground() {
@@ -125,19 +138,28 @@ const core = (function() {
 		}
 
 		setOrigin(...point) {
-			this.background.translate(-this.origin.x, -this.origin.y);
-			this.foreground.translate(-this.origin.x, -this.origin.y);
 			if (point.length === 1 && (point[0] === "centre" || point[0] === "center")) {
 				this.origin = propertySetters.setAxesProperty("origin", "number", Math.round(this.width / 2), Math.round(this.height / 2));
 			} else {
 				this.origin = propertySetters.setAxesProperty("origin", "number", ...point);
 			}
-			this.background.translate(this.origin.x, this.origin.y);
 			this.updateBackground();
-			this.foreground.translate(this.origin.x, this.origin.y);
 			this.updateForeground();
 		}
-	}
+
+		setID(id) {
+			if (typeof id === "string") {
+				delete activeCanvases[this.id];
+				activeCanvases[id] = this;
+				this.id = id;
+				this.backgroundCanvas.parentElement.id = this.id;
+				this.backgroundCanvas.id = `${this.id}-background-canvas`;
+				this.foregroundCanvas.id = `${this.id}-foreground-canvas`;
+			} else {
+				throw `Error setting ID of ResponsiveCanvas: Unexpected argument ${JSON.stringify(id)}`;
+			}
+		}
+ 	}
 
 	class ResponsivePlot2D extends ResponsiveCanvas {
 		constructor(container, options={}) {
@@ -163,7 +185,7 @@ const core = (function() {
 					}
 				}
 			}
-			this.setBackground(function(context) {
+			this.setBackground(context => {
 				// TODO: implement ticks
 				const drawGridSet = (which, width) => {
 					context.lineWidth = width;
@@ -213,12 +235,102 @@ const core = (function() {
 			});
 			this.xLims = [0, this.width / this.gridScale.x];
 			this.yLims = [0, this.height / this.gridScale.y];
+			this.legend = {};
 		}
 
 		setOrigin(...point) {
 			super.setOrigin(...point);
 			this.xLims = [-this.origin.x / this.gridScale.x, (this.width - this.origin.x) / this.gridScale.x];
 			this.yLims = [-this.origin.y / this.gridScale.y, (this.height - this.origin.y) / this.gridScale.y];
+		}
+
+		updatePlottingData() {
+			this.setForeground(context => {
+				for (const datasetID in this.legend) {
+					if (this.legend.hasOwnProperty(datasetID)) {
+						const dataset = this.legend[datasetID];
+						const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / (10 * this.gridScale.x));
+						// TODO: set stroke, markers
+						context.strokeStyle = "red";
+						context.lineWidth = 3;
+						context.beginPath();
+						let lastPoint;
+						for (const currentPoint of dataGenerator) {
+							if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
+								currentPoint[1] = currentPoint[1] > 0 ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
+							}
+							if (lastPoint && Math.abs(lastPoint[1] - currentPoint[1]) < this.height / this.gridScale.y) {
+								// TODO: this deals with large discontinuities but not small ones so this will have to be changed in the future
+								context.lineTo(currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
+							} else {
+								context.moveTo(currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
+							}
+							// TODO: draw marker
+							lastPoint = currentPoint;
+						}
+						context.stroke();
+					}
+				}
+			});
+		}
+
+		addData(data, id) {
+			if (typeof id !== "undefined") {
+				if (Array.isArray(data) && data.length === 2 && Array.isArray(data[0]) && Array.isArray(data[1])) {
+					console.log(data);
+					// check if lengths are the same
+					// check if all entries are numbers
+					// use generator function!
+					// add to legend
+					this.updatePlottingData();
+				} else if (typeof data === "function") {
+					if (typeof data(0) !== "number") {
+						throw "Error setting plot data: Plot function does not return numbers.";
+					}
+					const generator = function*(xMin, xMax, yMin, yMax, step) {
+						let x = xMin;
+						let y = x => data(x);
+						while (x <= xMax) {
+							while (true) { // while y is out of range or undefined
+								if (x > xMax) { // if x is out of range, break without yielding previous point
+									break;
+								} else if (y(x) <= yMax && y(x) >= yMin && !Number.isNaN(y(x))) { // if y is in range, yield the previous point and break
+									yield [x - step, y(x - step)];
+									break;
+								} else { // else increment x
+									x += step;
+								}
+							}
+							while (true) { // while y in in range and defined
+								if (x > xMax) { // if x is out of range, yield current point and break
+									yield [x, y(x)];
+									break;
+								} else if (y(x) > yMax || y(x) < yMin || Number.isNaN(y(x))) { // if y is out of range, yield current point and break
+									yield [x , y(x)];
+									break;
+								} else { // else yield point and increment x
+									yield [x, y(x)];
+									x += step;
+								}
+							}
+						}
+					};
+					this.legend[id] = {
+						data: generator,
+						markerStyle: "none"
+					};
+					this.updatePlottingData();
+				} else {
+					throw `Error setting plot data: Unrecognised data signature ${JSON.stringify(data)}.`;
+				}
+			} else {
+				throw `Error setting plot data: No ID string provided.`;
+			}
+		}
+
+		removeData(id) {
+			delete this.legend[id];
+			this.updatePlottingData();
 		}
 
 		setMajorTicks(...values) {
@@ -261,9 +373,13 @@ const core = (function() {
 			this.updateBackground();
 		}
 
-		setGridScale(value) {
-			this.gridScale = propertySetters.setAxesProperty("gridScale", "number", ...value);
+		setGridScale(...values) {
+			this.gridScale = propertySetters.setAxesProperty("gridScale", "number", ...values);
 			this.updateBackground();this.updateForeground();
+		}
+
+		setBackgroundCSS(value) {
+			// TODO: implement
 		}
 
 		setTraceColour(value) {
@@ -271,6 +387,7 @@ const core = (function() {
 		}
 
 		setTraceStyle(value) {
+			// none, dash, line
 			// TODO: implement
 		}
 
@@ -300,6 +417,7 @@ const core = (function() {
 	}
 
 	return {
+		activeCanvases: activeCanvases,
 		ResponsiveCanvas: ResponsiveCanvas,
 		ResponsivePlot2D: ResponsivePlot2D
 	};
