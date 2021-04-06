@@ -302,14 +302,10 @@ const core = (function() {
 								}
 							}
 							while (true) { // while y in in range and defined
-								if (x > xMax) { // if x is out of range, yield current point and break
-									yield [x, y(x)];
+								yield [x, y(x)];
+								if (x > xMax || y(x) > yMax || y(x) < yMin || Number.isNaN(y(x))) { // if x or y is out of range, yield current point and break
 									break;
-								} else if (y(x) > yMax || y(x) < yMin || Number.isNaN(y(x))) { // if y is out of range, yield current point and break
-									yield [x , y(x)];
-									break;
-								} else { // else yield point and increment x
-									yield [x, y(x)];
+								} else { // else increment x
 									x += step;
 								}
 							}
