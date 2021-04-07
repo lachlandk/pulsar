@@ -13,8 +13,8 @@
 	"nonew": true,
 	"plusplus": false,
 	"quotmark": true,
-	"undef": true,
-	"unused": true,
+	"undef": false,
+	"unused": false,
 	"strict": false,
 	"varstmt": false,
 
