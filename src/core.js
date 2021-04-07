@@ -33,16 +33,15 @@ const core = (function() {
 					y: values[1]
 				};
 			} else {
-				throw `Error setting axes property ${property}: Unexpected value "${JSON.stringify(values)}".`;
+				throw `Error setting axes property ${property}: Unexpected value ${JSON.stringify(values)}.`;
 			}
 			instance.updateBackground();
-			instance.updateForeground();
 		},
 		setSingleProperty(instance, property, expectedType, value) {
 			if (typeof value === expectedType) {
 				instance[property] = value;
 			} else {
-				throw `Error setting property ${property}: Unexpected value "${JSON.stringify(value)}".`;
+				throw `Error setting property ${property}: Unexpected value "${typeof value === "string" ? value : JSON.stringify(value)}".`;
 			}
 		},
 		setLegendProperty(instance, traceID, property, expectedType, value) {
@@ -274,7 +273,7 @@ const core = (function() {
 				for (const datasetID in this.legend) {
 					if (this.legend.hasOwnProperty(datasetID)) {
 						const dataset = this.legend[datasetID];
-						const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / (10 * this.gridScale.x));
+						const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / 100);
 						// TODO: set stroke, markers
 						context.strokeStyle = "red";
 						context.lineWidth = 3;
@@ -387,6 +386,8 @@ const core = (function() {
 
 		setGridScale(...sizes) {
 			propertySetters.setAxesProperty(this,"gridScale", "number", ...sizes);
+			this.updateLimits();
+			this.updateForeground();
 		}
 
 		setTraceColour(traceID, colour) {
