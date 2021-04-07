@@ -33,14 +33,24 @@ const core = (function() {
 					y: values[1]
 				};
 			} else {
-				throw `Error setting axes property ${property}: Unexpected value ${JSON.stringify(values)}.`;
+				throw `Error setting axes property ${property}: Unexpected value "${JSON.stringify(values)}".`;
 			}
+			instance.updateBackground();
+			instance.updateForeground();
 		},
 		setSingleProperty(instance, property, expectedType, value) {
 			if (typeof value === expectedType) {
 				instance[property] = value;
 			} else {
-				throw `Error setting property ${property}: Unexpected value ${JSON.stringify(value)}.`;
+				throw `Error setting property ${property}: Unexpected value "${JSON.stringify(value)}".`;
+			}
+		},
+		setLegendProperty(instance, traceID, property, expectedType, value) {
+			if (typeof instance.legend[traceID] !== "undefined") {
+				propertySetters.setSingleProperty(instance.legend[traceID], property, expectedType, value);
+				instance.updatePlottingData();
+			} else {
+				throw `Error setting legend property ${property}: Invalid trace ID "${typeof traceID === "string" ? traceID : JSON.stringify(traceID)}"`;
 			}
 		},
 		setArrayProperty(instance, expectedType, length, value) {
@@ -65,6 +75,14 @@ const core = (function() {
 			majorGridSize: {value: [5, 5], type: "number", setter: "setAxesProperty"},
 			minorGridSize: {value: [1, 1], type: "number", setter: "setAxesProperty"},
 			gridScale: {value: [10, 10], type: "number", setter: "setAxesProperty"}
+		},
+		ResponsivePlot2DTrace: {
+			traceColour: {value: "blue", type: "string", setter: "setSingleProperty"},
+			traceStyle: {value: "none", type: "string", setter: "setChoiceProperty"},
+			traceWidth: {value: 3, type: "number", setter: "setSingleProperty"},
+			markerColour: {value: "blue", type: "string", setter: "setSingleProperty"},
+			markerStyle: {value: "none", type: "string", setter: "setChoiceProperty"},
+			markerSize: {value: 5, type: "number", setter: "setSingleProperty"}
 		}
 	};
 
@@ -164,8 +182,6 @@ const core = (function() {
 			} else {
 				propertySetters.setAxesProperty(this,"origin", "number", ...point);
 			}
-			this.updateBackground();
-			this.updateForeground();
 		}
 
 		setID(id) {
@@ -283,8 +299,8 @@ const core = (function() {
 			});
 		}
 
-		addData(data, id) {
-			if (typeof id !== "undefined") {
+		addData(data, id, options={}) {
+			if (typeof id === "string") {
 				if (Array.isArray(data) && data.length === 2 && Array.isArray(data[0]) && Array.isArray(data[1])) {
 					console.log(data);
 					// check if lengths are the same
@@ -320,15 +336,15 @@ const core = (function() {
 						}
 					};
 					this.legend[id] = {
-						data: generator,
-						markerStyle: "none"
+						data: generator
 					};
 				} else {
 					throw `Error setting plot data: Unrecognised data signature ${JSON.stringify(data)}.`;
 				}
+				propertySetters.setupProperties(this.legend[id], "ResponsivePlot2DTrace", options);
 				this.updatePlottingData();
 			} else {
-				throw `Error setting plot data: No ID string provided.`;
+				throw `Error setting plot data: Unexpected type for ID "${JSON.stringify(id)}"`;
 			}
 		}
 
@@ -337,75 +353,65 @@ const core = (function() {
 			this.updatePlottingData();
 		}
 
-		setMajorTicks(...values) {
-			propertySetters.setAxesProperty(this,"majorTicks", "boolean", ...values);
-			this.updateBackground();
+		setMajorTicks(...choices) {
+			propertySetters.setAxesProperty(this,"majorTicks", "boolean", ...choices);
 		}
 
-		setMinorTicks(...values) {
-			propertySetters.setAxesProperty(this,"minorTicks", "boolean", ...values);
-			this.updateBackground();
+		setMinorTicks(...choices) {
+			propertySetters.setAxesProperty(this,"minorTicks", "boolean", ...choices);
 		}
 
-		setMajorTickSize(...values) {
-			propertySetters.setAxesProperty(this,"majorTickSize", "number", ...values);
-			this.updateBackground();
+		setMajorTickSize(...sizes) {
+			propertySetters.setAxesProperty(this,"majorTickSize", "number", ...sizes);
 		}
 
-		setMinorTickSize(...values) {
-			propertySetters.setAxesProperty(this,"minorTickSize", "number", ...values);
-			this.updateBackground();
+		setMinorTickSize(...sizes) {
+			propertySetters.setAxesProperty(this,"minorTickSize", "number", ...sizes);
 		}
 
-		setMajorGridlines(...values) {
-			propertySetters.setAxesProperty(this,"majorGridlines", "boolean", ...values);
-			this.updateBackground();
+		setMajorGridlines(...choices) {
+			propertySetters.setAxesProperty(this,"majorGridlines", "boolean", ...choices);
 		}
 
-		setMinorGridlines(...values) {
-			propertySetters.setAxesProperty(this,"minorGridlines", "boolean", ...values);
-			this.updateBackground();
+		setMinorGridlines(...choices) {
+			propertySetters.setAxesProperty(this,"minorGridlines", "boolean", ...choices);
 		}
 
-		setMajorGridSize(...values) {
-			propertySetters.setAxesProperty(this,"majorGridSize", "number", ...values);
-			this.updateBackground();
+		setMajorGridSize(...sizes) {
+			propertySetters.setAxesProperty(this,"majorGridSize", "number", ...sizes);
 		}
 
-		setMinorGridSize(...values) {
-			propertySetters.setAxesProperty(this,"minorGridSize", "number", ...values);
-			this.updateBackground();
+		setMinorGridSize(...sizes) {
+			propertySetters.setAxesProperty(this,"minorGridSize", "number", ...sizes);
 		}
 
-		setGridScale(...values) {
-			propertySetters.setAxesProperty(this,"gridScale", "number", ...values);
-			this.updateBackground();
-			this.updateForeground();
+		setGridScale(...sizes) {
+			propertySetters.setAxesProperty(this,"gridScale", "number", ...sizes);
 		}
 
-		setTraceColour(value) {
-			// TODO: implement
+		setTraceColour(traceID, colour) {
+			propertySetters.setLegendProperty(this, traceID, "traceColour", "string", colour);
 		}
 
-		setTraceStyle(value) {
+		setTraceStyle(traceID, style) {
 			// none, dash, line
 			// TODO: implement
 		}
 
-		setTraceWidth(value) {
+		setTraceWidth(traceID, width) {
+			propertySetters.setLegendProperty(this, traceID, "traceWidth", "number", width);
+		}
+
+		setMarkerColour(traceID, colour) {
+			propertySetters.setLegendProperty(this, traceID, "traceColour", "string", colour);
+		}
+
+		setMarkerStyle(traceID, style) {
 			// TODO: implement
 		}
 
-		setMarkerStyle(value) {
-			// TODO: implement
-		}
-
-		setMarkerSize(value) {
-			// TODO: implement
-		}
-
-		setMarkerColour(value) {
-			// TODO: implement
+		setMarkerSize(traceID, size) {
+			propertySetters.setLegendProperty(this, traceID, "traceWidth", "number", size);
 		}
 
 		setXLims(range) {
