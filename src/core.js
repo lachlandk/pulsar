@@ -1,31 +1,52 @@
 const core = (function() {
 	const propertySetters = {
-		setAxesProperty(property, expectedType, ...values) {
+		setupProperties(instance, prototype, options) {
+			for (const key in defaultProperties[prototype]) {
+				if (defaultProperties[prototype].hasOwnProperty(key)) {
+					const option = defaultProperties[prototype][key];
+					const multipleValues = Array.isArray(option.value);
+					if (Object.keys(options).includes(key)) {
+						if (multipleValues) {
+							propertySetters[option.setter](instance, key, option.type, ...(Array.isArray(options[key]) ? options[key] : [options[key]]));
+						} else {
+							propertySetters[option.setter](instance, key, option.type, options[key]);
+						}
+					} else {
+						if (multipleValues) {
+							propertySetters[option.setter](instance, key, option.type, ...option.value);
+						} else {
+							propertySetters[option.setter](instance, key, option.type, option.value);
+						}
+					}
+				}
+			}
+		},
+		setAxesProperty(instance, property, expectedType, ...values) {
 			if (values.length === 1 && typeof values[0] === expectedType) {
-				return {
+				instance[property] = {
 					x: values[0],
 					y: values[0]
 				};
 			} else if (values.length === 2 && typeof values[0] === expectedType && typeof values[1] === expectedType) {
-				return {
+				instance[property] = {
 					x: values[0],
 					y: values[1]
 				};
 			} else {
-				throw `Error setting axes ${property}: Unexpected value ${JSON.stringify(values)}.`;
+				throw `Error setting axes property ${property}: Unexpected value ${JSON.stringify(values)}.`;
 			}
 		},
-		setSingleProperty(property, expectedType, value) {
+		setSingleProperty(instance, property, expectedType, value) {
 			if (typeof value === expectedType) {
-				return value;
+				instance[property] = value;
 			} else {
-				throw `Error setting ${property}: Unexpected value ${JSON.stringify(value)}.`;
+				throw `Error setting property ${property}: Unexpected value ${JSON.stringify(value)}.`;
 			}
 		},
-		setArrayProperty(expectedType, length, value) {
+		setArrayProperty(instance, expectedType, length, value) {
 
 		},
-		setChoiceProperty(expectedType, choices, value) {
+		setChoiceProperty(instance, expectedType, choices, value) {
 
 		}
 	};
@@ -50,7 +71,7 @@ const core = (function() {
 	const activeCanvases = {};
 
 	class ResponsiveCanvas {
-		constructor(container) {
+		constructor(container, options={}) {
 			if (typeof container === "string") {
 				const element = document.getElementById(container);
 				if (element) {
@@ -79,6 +100,10 @@ const core = (function() {
 			this.foreground = this.foregroundCanvas.getContext("2d");
 			this.width = this.container.clientWidth;
 			this.height = this.container.clientHeight;
+			if (options.origin === "center" || options.origin === "centre") {
+				options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
+			}
+			propertySetters.setupProperties(this, "ResponsiveCanvas", options);
 			this.observer = new ResizeObserver(entries => {
 				for (const entry of entries) {
 					this.width = entry.target.clientWidth;
@@ -95,10 +120,6 @@ const core = (function() {
 			this.foregroundCanvas.style.top = "0";
 			this.container.appendChild(this.backgroundCanvas);
 			this.container.appendChild(this.foregroundCanvas);
-			this.origin = { // TODO: add to options
-				x: 0,
-				y: 0
-			};
 			this.setID(this.id);
 		}
 
@@ -139,52 +160,38 @@ const core = (function() {
 
 		setOrigin(...point) {
 			if (point.length === 1 && (point[0] === "centre" || point[0] === "center")) {
-				this.origin = propertySetters.setAxesProperty("origin", "number", Math.round(this.width / 2), Math.round(this.height / 2));
+				propertySetters.setAxesProperty(this,"origin", "number", Math.round(this.width / 2), Math.round(this.height / 2));
 			} else {
-				this.origin = propertySetters.setAxesProperty("origin", "number", ...point);
+				propertySetters.setAxesProperty(this,"origin", "number", ...point);
 			}
 			this.updateBackground();
 			this.updateForeground();
 		}
 
 		setID(id) {
-			if (typeof id === "string") {
-				delete activeCanvases[this.id];
-				activeCanvases[id] = this;
-				this.id = id;
-				this.backgroundCanvas.parentElement.id = this.id;
-				this.backgroundCanvas.id = `${this.id}-background-canvas`;
-				this.foregroundCanvas.id = `${this.id}-foreground-canvas`;
+			const oldID = this.id;
+			propertySetters.setSingleProperty(this, "id", "string", id);
+			delete activeCanvases[oldID];
+			activeCanvases[this.id] = this;
+			this.backgroundCanvas.parentElement.id = this.id;
+			this.backgroundCanvas.id = `${this.id}-background-canvas`;
+			this.foregroundCanvas.id = `${this.id}-foreground-canvas`;
+		}
+
+		setBackgroundCSS(cssString) {
+			if (typeof cssString === "string") {
+				this.backgroundCanvas.style.background = cssString;
 			} else {
-				throw `Error setting ID of ResponsiveCanvas: Unexpected argument ${JSON.stringify(id)}`;
+				throw `Error setting background CSS for canvas: Unexpected argument ${JSON.stringify(id)}`;
 			}
 		}
  	}
 
 	class ResponsivePlot2D extends ResponsiveCanvas {
 		constructor(container, options={}) {
-			super(container);
-
-			this.backgroundCanvas.style.background = "green";
-			for (const option in defaultProperties.ResponsivePlot2D) {
-				if (defaultProperties.ResponsivePlot2D.hasOwnProperty(option)) {
-					const key = defaultProperties.ResponsivePlot2D[option];
-					const multipleValues = Array.isArray(key.value);
-					if (Object.keys(options).includes(option)) {
-						if (multipleValues) {
-							this[option] = propertySetters[key.setter](option, key.type, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
-						} else {
-							this[option] = propertySetters[key.setter](option, key.type, options[option]);
-						}
-					} else {
-						if (multipleValues) {
-							this[option] = propertySetters[key.setter](option, key.type, ...key.value);
-						} else {
-							this[option] = propertySetters[key.setter](option, key.type, key.value);
-						}
-					}
-				}
-			}
+			super(container, options);
+			propertySetters.setupProperties(this, "ResponsivePlot2D", options);
+			this.updateLimits();
 			this.setBackground(context => {
 				// TODO: implement ticks
 				const drawGridSet = (which, width) => {
@@ -233,13 +240,15 @@ const core = (function() {
 				context.lineTo(this.width - this.origin.x, 0.5);
 				context.stroke();
 			});
-			this.xLims = [0, this.width / this.gridScale.x];
-			this.yLims = [0, this.height / this.gridScale.y];
 			this.legend = {};
 		}
 
 		setOrigin(...point) {
 			super.setOrigin(...point);
+			this.updateLimits();
+		}
+
+		updateLimits() {
 			this.xLims = [-this.origin.x / this.gridScale.x, (this.width - this.origin.x) / this.gridScale.x];
 			this.yLims = [-this.origin.y / this.gridScale.y, (this.height - this.origin.y) / this.gridScale.y];
 		}
@@ -282,7 +291,6 @@ const core = (function() {
 					// check if all entries are numbers
 					// use generator function!
 					// add to legend
-					this.updatePlottingData();
 				} else if (typeof data === "function") {
 					if (typeof data(0) !== "number") {
 						throw "Error setting plot data: Plot function does not return numbers.";
@@ -315,10 +323,10 @@ const core = (function() {
 						data: generator,
 						markerStyle: "none"
 					};
-					this.updatePlottingData();
 				} else {
 					throw `Error setting plot data: Unrecognised data signature ${JSON.stringify(data)}.`;
 				}
+				this.updatePlottingData();
 			} else {
 				throw `Error setting plot data: No ID string provided.`;
 			}
@@ -330,52 +338,49 @@ const core = (function() {
 		}
 
 		setMajorTicks(...values) {
-			this.majorTicks = propertySetters.setAxesProperty("majorTicks", "boolean", ...values);
+			propertySetters.setAxesProperty(this,"majorTicks", "boolean", ...values);
 			this.updateBackground();
 		}
 
 		setMinorTicks(...values) {
-			this.minorTicks = propertySetters.setAxesProperty("minorTicks", "boolean", ...values);
+			propertySetters.setAxesProperty(this,"minorTicks", "boolean", ...values);
 			this.updateBackground();
 		}
 
 		setMajorTickSize(...values) {
-			this.majorTickSize = propertySetters.setAxesProperty("majorTickSize", "number", ...values);
+			propertySetters.setAxesProperty(this,"majorTickSize", "number", ...values);
 			this.updateBackground();
 		}
 
 		setMinorTickSize(...values) {
-			this.minorTickSize = propertySetters.setAxesProperty("minorTickSize", "number", ...values);
+			propertySetters.setAxesProperty(this,"minorTickSize", "number", ...values);
 			this.updateBackground();
 		}
 
 		setMajorGridlines(...values) {
-			this.majorGridlines = propertySetters.setAxesProperty("majorGridlines", "boolean", ...values);
+			propertySetters.setAxesProperty(this,"majorGridlines", "boolean", ...values);
 			this.updateBackground();
 		}
 
 		setMinorGridlines(...values) {
-			this.minorGridlines = propertySetters.setAxesProperty("minorGridlines", "boolean", ...values);
+			propertySetters.setAxesProperty(this,"minorGridlines", "boolean", ...values);
 			this.updateBackground();
 		}
 
 		setMajorGridSize(...values) {
-			this.majorGridSize = propertySetters.setAxesProperty("majorGridSize", "number", ...values);
+			propertySetters.setAxesProperty(this,"majorGridSize", "number", ...values);
 			this.updateBackground();
 		}
 
 		setMinorGridSize(...values) {
-			this.minorGridSize = propertySetters.setAxesProperty("minorGridSize", "number", ...values);
+			propertySetters.setAxesProperty(this,"minorGridSize", "number", ...values);
 			this.updateBackground();
 		}
 
 		setGridScale(...values) {
-			this.gridScale = propertySetters.setAxesProperty("gridScale", "number", ...values);
-			this.updateBackground();this.updateForeground();
-		}
-
-		setBackgroundCSS(value) {
-			// TODO: implement
+			propertySetters.setAxesProperty(this,"gridScale", "number", ...values);
+			this.updateBackground();
+			this.updateForeground();
 		}
 
 		setTraceColour(value) {
