@@ -38,11 +38,22 @@ const core = (function() {
 			if (typeof value === expectedType) {
 				instance[property] = value;
 			} else {
-				throw `Error setting property ${property}: Unexpected value "${typeof value === "string" ? value : JSON.stringify(value)}".`;
+				throw `Error setting single property ${property}: Unexpected type "${typeof value === "string" ? value : JSON.stringify(value)}".`;
 			}
 		},
-		setArrayProperty(instance, property, expectedType, value, length) {
-
+		setArrayProperty(instance, property, expectedType, values, length) {
+			if (!Array.isArray(values)) {
+				throw `Error setting array property ${property}: "${typeof values === "string" ? values : JSON.stringify(values)}" is not an array.`;
+			} else if (values.length !== length) {
+				throw `Error setting array property ${property}: "${JSON.stringify(values)}" is not of length ${length}`;
+			} else {
+				for (const value of values) {
+					if (typeof value !== expectedType) {
+						throw `Error setting array property ${property}: "Unexpected type "${typeof value === "string" ? value : JSON.stringify(value)}" in array.`;
+					}
+				}
+				instance[property] = values;
+			}
 		},
 		setChoiceProperty(instance, property, expectedType, value, choices) {
 			if (typeof value === expectedType) {
@@ -54,10 +65,10 @@ const core = (function() {
 					}
 				}
 				if (!validChoice) {
-					throw `Error setting property ${property}: Invalid choice "${typeof value === "string" ? value : JSON.stringify(value)}".`;
+					throw `Error setting choice property ${property}: Invalid choice "${typeof value === "string" ? value : JSON.stringify(value)}".`;
 				}
 			} else {
-				throw `Error setting property ${property}: Unexpected value "${typeof value === "string" ? value : JSON.stringify(value)}".`;
+				throw `Error setting choice property ${property}: Unexpected type "${typeof value === "string" ? value : JSON.stringify(value)}".`;
 			}
 		},
 		setLegendProperty(instance, traceID, property, value) {
@@ -196,6 +207,7 @@ const core = (function() {
 			} else {
 				propertySetters.setAxesProperty(this,"origin", "number", ...point);
 			}
+			this.updateCanvasDimensions();
 		}
 
 		setID(id) {
@@ -233,13 +245,13 @@ const core = (function() {
 						while (currentX > -this.origin.x) {
 							context.moveTo(currentX + offset, -this.origin.y);
 							context.lineTo(currentX + offset, this.height - this.origin.y);
-							currentX -= Math.round(this.gridScale.x * this[`${which}GridSize`].x);
+							currentX -= this.gridScale.x * this[`${which}GridSize`].x;
 						}
 						currentX = this.gridScale.x * this[`${which}GridSize`].x;
 						while (currentX < this.width - this.origin.x) {
 							context.moveTo(currentX + offset, -this.origin.y);
 							context.lineTo(currentX + offset, this.height - this.origin.y);
-							currentX += Math.round(this.gridScale.x * this[`${which}GridSize`].x);
+							currentX += this.gridScale.x * this[`${which}GridSize`].x;
 						}
 					}
 					if (this[`${which}Gridlines`].y) {
@@ -247,13 +259,13 @@ const core = (function() {
 						while (currentY > -this.origin.y) {
 							context.moveTo(-this.origin.x, currentY + offset);
 							context.lineTo(this.width - this.origin.x, currentY + offset);
-							currentY -= Math.round(this.gridScale.y * this[`${which}GridSize`].y);
+							currentY -= this.gridScale.y * this[`${which}GridSize`].y;
 						}
 						currentY = this.gridScale.y * this[`${which}GridSize`].y;
 						while (currentY < this.height - this.origin.y) {
 							context.moveTo(-this.origin.x, currentY + offset);
 							context.lineTo(this.width - this.origin.x, currentY + offset);
-							currentY += Math.round(this.gridScale.y * this[`${which}GridSize`].y);
+							currentY += this.gridScale.y * this[`${which}GridSize`].y;
 						}
 					}
 					context.stroke();
@@ -293,19 +305,12 @@ const core = (function() {
 						context.strokeStyle = "red";
 						context.lineWidth = 3;
 						context.beginPath();
-						let lastPoint;
 						for (const currentPoint of dataGenerator) {
 							if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
 								currentPoint[1] = currentPoint[1] > 0 ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
 							}
-							if (lastPoint && Math.abs(lastPoint[1] - currentPoint[1]) < this.height / this.gridScale.y) {
-								// TODO: this deals with large discontinuities but not small ones so this will have to be changed in the future
-								context.lineTo(currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
-							} else {
-								context.moveTo(currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
-							}
+							context.lineTo(currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
 							// TODO: draw marker
-							lastPoint = currentPoint;
 						}
 						context.stroke();
 					}
@@ -326,6 +331,7 @@ const core = (function() {
 						throw "Error setting plot data: Plot function does not return numbers.";
 					}
 					const generator = function*(xMin, xMax, yMin, yMax, step) {
+						// TODO: discontinuities
 						let x = xMin;
 						let y = x => data(x);
 						while (x <= xMax) {
@@ -430,11 +436,29 @@ const core = (function() {
 		}
 
 		setXLims(range) {
-			// TODO: implement
+			const oldLims = this.xLims;
+			propertySetters.setArrayProperty(this, "xLims", "number", range, 2);
+			if (this.xLims[0] >= this.xLims[1]) {
+				this.xLims = oldLims;
+				throw `Error setting xLims: Lower limit cannot be higher than or equal to higher limit.`;
+			}
+			this.gridScale.x = this.width / Math.abs(this.xLims[0] - this.xLims[1]);
+			super.setOrigin(-this.xLims[0] * this.gridScale.x, this.origin.y);
+			this.updateBackground();
+			this.updatePlottingData();
 		}
 
 		setYLims(range) {
-			// TODO: implement
+			const oldLims = this.yLims;
+			propertySetters.setArrayProperty(this, "yLims", "number", range, 2);
+			if (this.yLims[0] >= this.yLims[1]) {
+				this.yLims = oldLims;
+				throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
+			}
+			this.gridScale.y = this.height / Math.abs(this.yLims[0] - this.yLims[1]);
+			super.setOrigin(this.origin.x, this.yLims[1] * this.gridScale.y);
+			this.updateBackground();
+			this.updatePlottingData();
 		}
 	}
 
