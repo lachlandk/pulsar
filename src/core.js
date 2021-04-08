@@ -4,20 +4,17 @@ const core = (function() {
 			for (const key in defaultProperties[prototype]) {
 				if (defaultProperties[prototype].hasOwnProperty(key)) {
 					const option = defaultProperties[prototype][key];
-					const multipleValues = Array.isArray(option.value);
-					if (Object.keys(options).includes(key)) {
-						if (multipleValues) {
-							propertySetters[option.setter](instance, key, option.type, ...(Array.isArray(options[key]) ? options[key] : [options[key]]));
-						} else {
-							propertySetters[option.setter](instance, key, option.type, options[key]);
-						}
+					const optionProvided = Object.keys(options).includes(key);
+					const parameters = [instance, key, option.type];
+					if (Array.isArray(option.value)) {
+						parameters.push(...(optionProvided ? (Array.isArray(options[key]) ? options[key] : [options[key]]) : option.value));
 					} else {
-						if (multipleValues) {
-							propertySetters[option.setter](instance, key, option.type, ...option.value);
-						} else {
-							propertySetters[option.setter](instance, key, option.type, option.value);
-						}
+						parameters.push(optionProvided ? options[key] : option.value);
 					}
+					if (Object.keys(defaultProperties[prototype][key]).includes("extra")) {
+						parameters.push(option.extra);
+					}
+					propertySetters[option.setter](...parameters);
 				}
 			}
 		},
@@ -44,19 +41,37 @@ const core = (function() {
 				throw `Error setting property ${property}: Unexpected value "${typeof value === "string" ? value : JSON.stringify(value)}".`;
 			}
 		},
-		setLegendProperty(instance, traceID, property, expectedType, value) {
+		setArrayProperty(instance, property, expectedType, value, length) {
+
+		},
+		setChoiceProperty(instance, property, expectedType, value, choices) {
+			if (typeof value === expectedType) {
+				let validChoice = false;
+				for (const choice of choices) {
+					if (value === choice) {
+						instance[property] = value;
+						validChoice = true;
+					}
+				}
+				if (!validChoice) {
+					throw `Error setting property ${property}: Invalid choice "${typeof value === "string" ? value : JSON.stringify(value)}".`;
+				}
+			} else {
+				throw `Error setting property ${property}: Unexpected value "${typeof value === "string" ? value : JSON.stringify(value)}".`;
+			}
+		},
+		setLegendProperty(instance, traceID, property, value) {
+			const defaults = defaultProperties.ResponsivePlot2DTrace[property];
 			if (typeof instance.legend[traceID] !== "undefined") {
-				propertySetters.setSingleProperty(instance.legend[traceID], property, expectedType, value);
+				const parameters = [instance.legend[traceID], property, defaults.type, value];
+				if (Object.keys(defaults).includes("extra")) {
+					parameters.push(defaults.extra);
+				}
+				propertySetters[defaults.setter](...parameters);
 				instance.updatePlottingData();
 			} else {
 				throw `Error setting legend property ${property}: Invalid trace ID "${typeof traceID === "string" ? traceID : JSON.stringify(traceID)}"`;
 			}
-		},
-		setArrayProperty(instance, expectedType, length, value) {
-
-		},
-		setChoiceProperty(instance, expectedType, choices, value) {
-
 		}
 	};
 
@@ -77,10 +92,10 @@ const core = (function() {
 		},
 		ResponsivePlot2DTrace: {
 			traceColour: {value: "blue", type: "string", setter: "setSingleProperty"},
-			traceStyle: {value: "none", type: "string", setter: "setChoiceProperty"},
+			traceStyle: {value: "solid", type: "string", setter: "setChoiceProperty", extra: ["solid", "dotted", "dashed", "dashdot", "none"]},
 			traceWidth: {value: 3, type: "number", setter: "setSingleProperty"},
 			markerColour: {value: "blue", type: "string", setter: "setSingleProperty"},
-			markerStyle: {value: "none", type: "string", setter: "setChoiceProperty"},
+			markerStyle: {value: "none", type: "string", setter: "setChoiceProperty", extra: ["point", "circle", "plus", "cross", "none"]},
 			markerSize: {value: 5, type: "number", setter: "setSingleProperty"}
 		}
 	};
@@ -391,28 +406,27 @@ const core = (function() {
 		}
 
 		setTraceColour(traceID, colour) {
-			propertySetters.setLegendProperty(this, traceID, "traceColour", "string", colour);
+			propertySetters.setLegendProperty(this, traceID, "traceColour", colour);
 		}
 
 		setTraceStyle(traceID, style) {
-			// none, dash, line
-			// TODO: implement
+			propertySetters.setLegendProperty(this, traceID, "traceStyle", style);
 		}
 
 		setTraceWidth(traceID, width) {
-			propertySetters.setLegendProperty(this, traceID, "traceWidth", "number", width);
+			propertySetters.setLegendProperty(this, traceID, "traceWidth", width);
 		}
 
 		setMarkerColour(traceID, colour) {
-			propertySetters.setLegendProperty(this, traceID, "traceColour", "string", colour);
+			propertySetters.setLegendProperty(this, traceID, "markerColour", colour);
 		}
 
 		setMarkerStyle(traceID, style) {
-			// TODO: implement
+			propertySetters.setLegendProperty(this, traceID, "markerStyle", style);
 		}
 
 		setMarkerSize(traceID, size) {
-			propertySetters.setLegendProperty(this, traceID, "traceWidth", "number", size);
+			propertySetters.setLegendProperty(this, traceID, "markerSize", size);
 		}
 
 		setXLims(range) {
