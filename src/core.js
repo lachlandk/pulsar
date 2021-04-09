@@ -323,7 +323,7 @@ const core = (function() {
 							if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
 								currentPoint[1] = currentPoint[1] > 0 ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
 							}
-							let xCoord = currentPoint[0] * this.gridScale.x, yCoord = -currentPoint[1] * this.gridScale.y
+							let xCoord = currentPoint[0] * this.gridScale.x, yCoord = -currentPoint[1] * this.gridScale.y;
 							context[dataset.traceStyle === "none" ? "moveTo" : "lineTo"](xCoord, yCoord);
 							if (dataset.markerStyle !== "none") {
 								switch (dataset.markerStyle) {
@@ -349,41 +349,51 @@ const core = (function() {
 			if (typeof id === "string") {
 				if (Array.isArray(data) && data.length === 2 && Array.isArray(data[0]) && Array.isArray(data[1])) {
 					console.log(data);
-					// check if lengths are the same
-					// check if all entries are numbers
-					// use generator function!
-					// add to legend
+					if (data[0].length !== data[1].length) {
+						throw "Error setting plot data: Lengths of data arrays are not equal";
+					}
+					for (let i = 0; i < data[0].length; i++) {
+						if (typeof data[0][i] !== "number" || typeof data[1][i] !== "number") {
+							throw "Error setting plot data: Data arrays contain types which are not numbers.";
+						}
+					}
+					this.legend[id] = {
+						data: function*() {
+							for (let i=0; i < data[0].length; i++) {
+								yield [data[0][i], data[1][i]];
+							}
+						}
+					};
 				} else if (typeof data === "function") {
 					if (typeof data(0) !== "number") {
 						throw "Error setting plot data: Plot function does not return numbers.";
 					}
-					const generator = function*(xMin, xMax, yMin, yMax, step) {
-						// TODO: discontinuities
-						let x = xMin;
-						let y = x => data(x);
-						while (x <= xMax) {
-							while (true) { // while y is out of range or undefined
-								if (x > xMax) { // if x is out of range, break without yielding previous point
-									break;
-								} else if (y(x) <= yMax && y(x) >= yMin && !Number.isNaN(y(x))) { // if y is in range, yield the previous point and break
-									yield [x - step, y(x - step)];
-									break;
-								} else { // else increment x
-									x += step;
+					this.legend[id] = {
+						data: function*(xMin, xMax, yMin, yMax, step) {
+							// TODO: discontinuities
+							let x = xMin;
+							let y = x => data(x);
+							while (x <= xMax) {
+								while (true) { // while y is out of range or undefined
+									if (x > xMax) { // if x is out of range, break without yielding previous point
+										break;
+									} else if (y(x) <= yMax && y(x) >= yMin && !Number.isNaN(y(x))) { // if y is in range, yield the previous point and break
+										yield [x - step, y(x - step)];
+										break;
+									} else { // else increment x
+										x += step;
+									}
 								}
-							}
-							while (true) { // while y in in range and defined
-								yield [x, y(x)];
-								if (x > xMax || y(x) > yMax || y(x) < yMin || Number.isNaN(y(x))) { // if x or y is out of range, yield current point and break
-									break;
-								} else { // else increment x
-									x += step;
+								while (true) { // while y in in range and defined
+									yield [x, y(x)];
+									if (x > xMax || y(x) > yMax || y(x) < yMin || Number.isNaN(y(x))) { // if x or y is out of range, yield current point and break
+										break;
+									} else { // else increment x
+										x += step;
+									}
 								}
 							}
 						}
-					};
-					this.legend[id] = {
-						data: generator
 					};
 				} else {
 					throw `Error setting plot data: Unrecognised data signature ${JSON.stringify(data)}.`;
