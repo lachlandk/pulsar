@@ -107,7 +107,7 @@ const core = (function() {
 			traceWidth: {value: 3, type: "number", setter: "setSingleProperty"},
 			markerColour: {value: "blue", type: "string", setter: "setSingleProperty"},
 			markerStyle: {value: "none", type: "string", setter: "setChoiceProperty", extra: ["point", "circle", "plus", "cross", "none"]},
-			markerSize: {value: 5, type: "number", setter: "setSingleProperty"}
+			markerSize: {value: 1, type: "number", setter: "setSingleProperty"}
 		}
 	};
 
@@ -302,15 +302,42 @@ const core = (function() {
 						const dataset = this.legend[datasetID];
 						const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / 100);
 						// TODO: set stroke, markers
-						context.strokeStyle = "red";
-						context.lineWidth = 3;
+						context.strokeStyle = dataset.traceColour;
+						context.lineWidth = dataset.traceWidth;
+						switch (dataset.traceStyle) {
+							case "solid":
+								context.setLineDash([]);
+								break;
+							case "dotted":
+								context.setLineDash([3, 3]);
+								break;
+							case "dashed":
+								context.setLineDash([10, 10]);
+								break;
+							case "dashdot":
+								context.setLineDash([15, 3, 3, 3]);
+								break;
+						}
 						context.beginPath();
 						for (const currentPoint of dataGenerator) {
 							if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
 								currentPoint[1] = currentPoint[1] > 0 ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
 							}
-							context.lineTo(currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
-							// TODO: draw marker
+							let xCoord = currentPoint[0] * this.gridScale.x, yCoord = -currentPoint[1] * this.gridScale.y
+							context[dataset.traceStyle === "none" ? "moveTo" : "lineTo"](xCoord, yCoord);
+							if (dataset.markerStyle !== "none") {
+								switch (dataset.markerStyle) {
+									// TODO: draw marker
+									case "point":
+										break;
+									case "circle":
+										break;
+									case "plus":
+										break;
+									case "cross":
+										break;
+								}
+							}
 						}
 						context.stroke();
 					}
