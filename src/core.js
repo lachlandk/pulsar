@@ -106,7 +106,7 @@ const core = (function() {
 			traceStyle: {value: "solid", type: "string", setter: "setChoiceProperty", extra: ["solid", "dotted", "dashed", "dashdot", "none"]},
 			traceWidth: {value: 3, type: "number", setter: "setSingleProperty"},
 			markerColour: {value: "blue", type: "string", setter: "setSingleProperty"},
-			markerStyle: {value: "none", type: "string", setter: "setChoiceProperty", extra: ["point", "circle", "plus", "cross", "none"]},
+			markerStyle: {value: "none", type: "string", setter: "setChoiceProperty", extra: ["circle", "plus", "cross", "none"]},
 			markerSize: {value: 1, type: "number", setter: "setSingleProperty"}
 		}
 	};
@@ -300,46 +300,69 @@ const core = (function() {
 				for (const datasetID in this.legend) {
 					if (this.legend.hasOwnProperty(datasetID)) {
 						const dataset = this.legend[datasetID];
-						const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / 100);
-						// TODO: set stroke, markers
-						context.strokeStyle = dataset.traceColour;
-						context.lineWidth = dataset.traceWidth;
-						switch (dataset.traceStyle) {
-							case "solid":
-								context.setLineDash([]);
-								break;
-							case "dotted":
-								context.setLineDash([3, 3]);
-								break;
-							case "dashed":
-								context.setLineDash([10, 10]);
-								break;
-							case "dashdot":
-								context.setLineDash([15, 3, 3, 3]);
-								break;
-						}
-						context.beginPath();
-						for (const currentPoint of dataGenerator) {
-							if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
-								currentPoint[1] = currentPoint[1] > 0 ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
+						if (dataset.traceStyle !== "none") {
+							context.strokeStyle = dataset.traceColour;
+							context.lineWidth = dataset.traceWidth;
+							switch (dataset.traceStyle) {
+								case "solid":
+									context.setLineDash([]);
+									break;
+								case "dotted":
+									context.setLineDash([3, 3]);
+									break;
+								case "dashed":
+									context.setLineDash([10, 10]);
+									break;
+								case "dashdot":
+									context.setLineDash([15, 3, 3, 3]);
+									break;
 							}
-							let xCoord = currentPoint[0] * this.gridScale.x, yCoord = -currentPoint[1] * this.gridScale.y;
-							context[dataset.traceStyle === "none" ? "moveTo" : "lineTo"](xCoord, yCoord);
-							if (dataset.markerStyle !== "none") {
-								switch (dataset.markerStyle) {
-									// TODO: draw marker
-									case "point":
-										break;
-									case "circle":
-										break;
-									case "plus":
-										break;
-									case "cross":
-										break;
+							const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / 100);
+							context.beginPath();
+							for (const currentPoint of dataGenerator) {
+								if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
+									currentPoint[1] = currentPoint[1] > 0 ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
 								}
+								context.lineTo(currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
+							}
+							context.stroke();
+						}
+						if (dataset.markerStyle !== "none") {
+							const markerSize = dataset.markerSize;
+							context.strokeStyle = dataset.markerColour;
+							context.fillStyle = dataset.markerColour;
+							context.lineWidth = 2 * markerSize;
+							const drawMarker = (() => {
+								switch (dataset.markerStyle) {
+									case "circle":
+										return (context, x, y) => {
+											context.arc(x, y, 5 * markerSize, 0, 2 * Math.PI);
+											context.fill();
+										};
+									case "plus":
+										return (context, x, y) => {
+											context.moveTo(x, y + 5 * markerSize);
+											context.lineTo(x, y - 5 * markerSize);
+											context.moveTo(x + 5 * markerSize, y);
+											context.lineTo(x - 5 * markerSize, y);
+											context.stroke();
+										};
+									case "cross":
+										return (context, x, y) => {
+											context.moveTo(x + 5 * markerSize, y + 5 * markerSize);
+											context.lineTo(x - 5 * markerSize, y - 5 * markerSize);
+											context.moveTo(x - 5 * markerSize, y + 5 * markerSize);
+											context.lineTo(x + 5 * markerSize, y - 5 * markerSize);
+											context.stroke();
+										};
+								}
+							})();
+							const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / 100);
+							for (const currentPoint of dataGenerator) {
+								context.beginPath();
+								drawMarker(context, currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
 							}
 						}
-						context.stroke();
 					}
 				}
 			});
@@ -348,7 +371,6 @@ const core = (function() {
 		addData(data, id, options={}) {
 			if (typeof id === "string") {
 				if (Array.isArray(data) && data.length === 2 && Array.isArray(data[0]) && Array.isArray(data[1])) {
-					console.log(data);
 					if (data[0].length !== data[1].length) {
 						throw "Error setting plot data: Lengths of data arrays are not equal";
 					}
