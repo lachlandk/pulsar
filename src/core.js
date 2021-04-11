@@ -92,7 +92,7 @@ const core = (function() {
 		},
 		ResponsivePlot2D: {
 			majorTicks: {value: [true, true], type: "boolean", setter: "setAxesProperty"},
-			minorTicks: {value: [true, true], type: "boolean", setter: "setAxesProperty"},
+			minorTicks: {value: [false, false], type: "boolean", setter: "setAxesProperty"},
 			majorTickSize: {value: [5, 5], type: "number", setter: "setAxesProperty"},
 			minorTickSize: {value: [1, 1], type: "number", setter: "setAxesProperty"},
 			majorGridlines: {value: [true, true], type: "boolean", setter: "setAxesProperty"},
@@ -235,47 +235,42 @@ const core = (function() {
 			propertySetters.setupProperties(this, "ResponsivePlot2D", options);
 			this.updateLimits();
 			this.setBackground(context => {
-				// TODO: implement ticks
-				const drawGridSet = (which, width) => {
-					context.lineWidth = width;
+				const drawGridSet = (majorOrMinor, xy, ticksOrGridlines, width, lineStart, lineEnd) => {
 					const offset = width % 2 === 0 ? 0 : 0.5;
-					context.beginPath();
-					if (this[`${which}Gridlines`].x) {
-						let currentX = 0;
-						while (currentX > -this.origin.x) {
-							context.moveTo(currentX + offset, -this.origin.y);
-							context.lineTo(currentX + offset, this.height - this.origin.y);
-							currentX -= this.gridScale.x * this[`${which}GridSize`].x;
+					const intervalSize = this[`${majorOrMinor + (ticksOrGridlines === "Ticks" ? "TickSize" : "GridSize")}`][xy];
+					context.lineWidth = width;
+					if (this[`${majorOrMinor + ticksOrGridlines}`][xy]) {
+						context.beginPath();
+						let currentValue = -Math.floor(this.origin[xy] / (intervalSize * this.gridScale[xy])) * intervalSize * this.gridScale[xy];
+						if (xy === "x") {
+							while (currentValue < this.width - this.origin.x) {
+								context.moveTo(currentValue + offset, lineStart);
+								context.lineTo(currentValue + offset, lineEnd);
+								currentValue += this.gridScale.x * intervalSize;
+							}
+						} else if (xy === "y") {
+							while (currentValue < this.height - this.origin.y) {
+								context.moveTo(lineStart, currentValue + offset);
+								context.lineTo(lineEnd, currentValue + offset);
+								currentValue += this.gridScale.y * intervalSize;
+							}
 						}
-						currentX = this.gridScale.x * this[`${which}GridSize`].x;
-						while (currentX < this.width - this.origin.x) {
-							context.moveTo(currentX + offset, -this.origin.y);
-							context.lineTo(currentX + offset, this.height - this.origin.y);
-							currentX += this.gridScale.x * this[`${which}GridSize`].x;
-						}
+						context.stroke();
 					}
-					if (this[`${which}Gridlines`].y) {
-						let currentY = 0;
-						while (currentY > -this.origin.y) {
-							context.moveTo(-this.origin.x, currentY + offset);
-							context.lineTo(this.width - this.origin.x, currentY + offset);
-							currentY -= this.gridScale.y * this[`${which}GridSize`].y;
-						}
-						currentY = this.gridScale.y * this[`${which}GridSize`].y;
-						while (currentY < this.height - this.origin.y) {
-							context.moveTo(-this.origin.x, currentY + offset);
-							context.lineTo(this.width - this.origin.x, currentY + offset);
-							currentY += this.gridScale.y * this[`${which}GridSize`].y;
-						}
-					}
-					context.stroke();
 				};
+
 				context.lineCap = "square";
 				context.strokeStyle = "rgb(0, 0, 0)";
-				drawGridSet("minor", 1);
-				drawGridSet("major", 2);
-				context.lineWidth = 3;
+				drawGridSet("minor", "x", "Gridlines", 1, -this.origin.y, this.height - this.origin.y);
+				drawGridSet("minor", "y", "Gridlines", 1, -this.origin.x, this.width - this.origin.x);
+				drawGridSet("major", "x", "Gridlines", 2, -this.origin.y, this.height - this.origin.y);
+				drawGridSet("major", "y", "Gridlines", 2, -this.origin.x, this.width - this.origin.x);
+				drawGridSet("minor", "x", "Ticks", 1, -3, 3);
+				drawGridSet("minor", "y", "Ticks", 1, -3, 3);
+				drawGridSet("major", "x", "Ticks", 2, -6, 6);
+				drawGridSet("major", "y", "Ticks", 2, -6, 6);
 				context.beginPath();
+				context.lineWidth = 3;
 				context.moveTo(0.5, -this.origin.y);
 				context.lineTo(0.5, this.height - this.origin.y);
 				context.moveTo(-this.origin.x, 0.5);
