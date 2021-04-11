@@ -99,7 +99,7 @@ const core = (function() {
 			minorGridlines: {value: [false, false], type: "boolean", setter: "setAxesProperty"},
 			majorGridSize: {value: [5, 5], type: "number", setter: "setAxesProperty"},
 			minorGridSize: {value: [1, 1], type: "number", setter: "setAxesProperty"},
-			gridScale: {value: [10, 10], type: "number", setter: "setAxesProperty"}
+			gridScale: {value: [50, 50], type: "number", setter: "setAxesProperty"}
 		},
 		ResponsivePlot2DTrace: {
 			traceColour: {value: "blue", type: "string", setter: "setSingleProperty"},
