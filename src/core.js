@@ -129,8 +129,7 @@ const core = (function() {
 				if (container.id) {
 					this.id = container.id;
 				} else {
-					this.id = `${this.constructor.name}-${Object.keys(activeCanvases).length + 1}`;
-					container.id = this.id;
+					throw `Error in ResponsiveCanvas constructor: Container element must have a valid ID.`;
 				}
 			} else {
 				throw "Error in ResponsiveCanvas constructor: Container parameter could not be recognised as an Element or an ID string.";
@@ -519,7 +518,7 @@ const core = (function() {
 			propertySetters.setLegendProperty(this, traceID, "markerSize", size);
 		}
 
-		setXLims(range) {
+		setXLims(...range) {
 			const oldLims = this.xLims;
 			propertySetters.setArrayProperty(this, "xLims", "number", range, 2);
 			if (this.xLims[0] >= this.xLims[1]) {
@@ -532,7 +531,7 @@ const core = (function() {
 			this._updatePlottingData();
 		}
 
-		setYLims(range) {
+		setYLims(...range) {
 			const oldLims = this.yLims;
 			propertySetters.setArrayProperty(this, "yLims", "number", range, 2);
 			if (this.yLims[0] >= this.yLims[1]) {
