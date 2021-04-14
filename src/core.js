@@ -143,6 +143,10 @@ const core = (function() {
 			this.foreground = this.foregroundCanvas.getContext("2d");
 			this.width = this.container.clientWidth;
 			this.height = this.container.clientHeight;
+			this.origin = {
+				x: 0,
+				y: 0
+			};
 			if (options.origin === "center" || options.origin === "centre") {
 				options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
 			}
@@ -164,6 +168,10 @@ const core = (function() {
 			this.container.appendChild(this.backgroundCanvas);
 			this.container.appendChild(this.foregroundCanvas);
 			this.setID(this.id);
+			this.currentTimeValue = 0;
+			this.startTimeStamp = 0;
+			this.offsetTimeStamp = 0;
+			this.timeEvolutionActive = false;
 		}
 
 		updateCanvasDimensions() {
@@ -198,6 +206,32 @@ const core = (function() {
 			this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 			if (this.foregroundFunction) {
 				this.foregroundFunction(this.foreground);
+			}
+		}
+
+		startTime() {
+			this.timeEvolutionActive = true;
+			this.startTimeStamp = performance.now();
+			window.requestAnimationFrame(timeStamp => this.updateTime(timeStamp));
+		}
+
+		pauseTime() {
+			this.timeEvolutionActive = false;
+			this.offsetTimeStamp = performance.now() - this.startTimeStamp;
+		}
+
+		stopTime() {
+			this.timeEvolutionActive = false;
+			this.currentTimeValue = 0;
+			this.offsetTimeStamp = 0;
+			this.updateForeground();
+		}
+
+		updateTime(currentTimeStamp) {
+			if (this.timeEvolutionActive) {
+				this.currentTimeValue = (this.offsetTimeStamp + currentTimeStamp - this.startTimeStamp) / 1000;
+				this.updateForeground();
+				window.requestAnimationFrame(currentTimeStamp => this.updateTime(currentTimeStamp));
 			}
 		}
 
@@ -312,7 +346,7 @@ const core = (function() {
 									context.setLineDash([15, 3, 3, 3]);
 									break;
 							}
-							const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / 100);
+							const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / 100, this.currentTimeValue);
 							context.beginPath();
 							for (const currentPoint of dataGenerator) {
 								if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
@@ -382,14 +416,14 @@ const core = (function() {
 						}
 					};
 				} else if (typeof data === "function") {
-					if (typeof data(0) !== "number") {
+					if (typeof data(0, 0) !== "number") {
 						throw "Error setting plot data: Plot function does not return numbers.";
 					}
 					this.legend[id] = {
-						data: function*(xMin, xMax, yMin, yMax, step) {
+						data: function*(xMin, xMax, yMin, yMax, step, t) {
 							// TODO: discontinuities
 							let x = xMin;
-							let y = x => data(x);
+							let y = x => data(x, t);
 							while (x <= xMax) {
 								while (true) { // while y is out of range or undefined
 									if (x > xMax) { // if x is out of range, break without yielding previous point
