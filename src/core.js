@@ -32,7 +32,7 @@ const core = (function() {
 			} else {
 				throw `Error setting axes property ${property}: Unexpected value ${JSON.stringify(values)}.`;
 			}
-			instance.updateBackground();
+			instance._updateBackground();
 		},
 		setSingleProperty(instance, property, expectedType, value) {
 			if (typeof value === expectedType) {
@@ -79,7 +79,7 @@ const core = (function() {
 					parameters.push(defaults.extra);
 				}
 				propertySetters[defaults.setter](...parameters);
-				instance.updatePlottingData();
+				instance._updatePlottingData();
 			} else {
 				throw `Error setting legend property ${property}: Invalid trace ID "${typeof traceID === "string" ? traceID : JSON.stringify(traceID)}"`;
 			}
@@ -143,10 +143,6 @@ const core = (function() {
 			this.foreground = this.foregroundCanvas.getContext("2d");
 			this.width = this.container.clientWidth;
 			this.height = this.container.clientHeight;
-			this.origin = {
-				x: 0,
-				y: 0
-			};
 			if (options.origin === "center" || options.origin === "centre") {
 				options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
 			}
@@ -155,7 +151,7 @@ const core = (function() {
 				for (const entry of entries) {
 					this.width = entry.target.clientWidth;
 					this.height = entry.target.clientHeight;
-					this.updateCanvasDimensions();
+					this._updateCanvasDimensions();
 				}
 			});
 			this.observer.observe(this.container);
@@ -174,45 +170,45 @@ const core = (function() {
 			this.timeEvolutionActive = false;
 		}
 
-		updateCanvasDimensions() {
+		_updateCanvasDimensions() {
 			this.backgroundCanvas.width = this.width;
 			this.backgroundCanvas.height = this.height;
 			this.background.translate(this.origin.x, this.origin.y);
-			this.updateBackground();
+			this._updateBackground();
 			this.foregroundCanvas.width = this.width;
 			this.foregroundCanvas.height = this.height;
 			this.foreground.translate(this.origin.x, this.origin.y);
-			this.updateForeground();
+			this._updateForeground();
 		}
 
-		setBackground(drawingFunction) {
-			this.backgroundFunction = drawingFunction;
-			this.updateBackground();
-		}
-
-		setForeground(drawingFunction) {
-			this.foregroundFunction = drawingFunction;
-			this.updateForeground();
-		}
-
-		updateBackground() {
+		_updateBackground() {
 			this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 			if (this.backgroundFunction) {
 				this.backgroundFunction(this.background);
 			}
 		}
 
-		updateForeground() {
+		_updateForeground() {
 			this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 			if (this.foregroundFunction) {
 				this.foregroundFunction(this.foreground);
 			}
 		}
 
+		setBackground(drawingFunction) {
+			this.backgroundFunction = drawingFunction;
+			this._updateBackground();
+		}
+
+		setForeground(drawingFunction) {
+			this.foregroundFunction = drawingFunction;
+			this._updateForeground();
+		}
+
 		startTime() {
 			this.timeEvolutionActive = true;
 			this.startTimeStamp = performance.now();
-			window.requestAnimationFrame(timeStamp => this.updateTime(timeStamp));
+			window.requestAnimationFrame(timeStamp => this._updateTime(timeStamp));
 		}
 
 		pauseTime() {
@@ -224,14 +220,14 @@ const core = (function() {
 			this.timeEvolutionActive = false;
 			this.currentTimeValue = 0;
 			this.offsetTimeStamp = 0;
-			this.updateForeground();
+			this._updateForeground();
 		}
 
-		updateTime(currentTimeStamp) {
+		_updateTime(currentTimeStamp) {
 			if (this.timeEvolutionActive) {
 				this.currentTimeValue = (this.offsetTimeStamp + currentTimeStamp - this.startTimeStamp) / 1000;
-				this.updateForeground();
-				window.requestAnimationFrame(currentTimeStamp => this.updateTime(currentTimeStamp));
+				this._updateForeground();
+				window.requestAnimationFrame(currentTimeStamp => this._updateTime(currentTimeStamp));
 			}
 		}
 
@@ -241,7 +237,7 @@ const core = (function() {
 			} else {
 				propertySetters.setAxesProperty(this,"origin", "number", ...point);
 			}
-			this.updateCanvasDimensions();
+			this._updateCanvasDimensions();
 		}
 
 		setID(id) {
@@ -267,7 +263,7 @@ const core = (function() {
 		constructor(container, options={}) {
 			super(container, options);
 			propertySetters.setupProperties(this, "ResponsivePlot2D", options);
-			this.updateLimits();
+			this._updateLimits();
 			this.setBackground(context => {
 				const drawGridSet = (majorOrMinor, xy, ticksOrGridlines, width, lineStart, lineEnd) => {
 					const offset = width % 2 === 0 ? 0 : 0.5;
@@ -314,17 +310,12 @@ const core = (function() {
 			this.legend = {};
 		}
 
-		setOrigin(...point) {
-			super.setOrigin(...point);
-			this.updateLimits();
-		}
-
-		updateLimits() {
+		_updateLimits() {
 			this.xLims = [-this.origin.x / this.gridScale.x, (this.width - this.origin.x) / this.gridScale.x];
 			this.yLims = [-this.origin.y / this.gridScale.y, (this.height - this.origin.y) / this.gridScale.y];
 		}
 
-		updatePlottingData() {
+		_updatePlottingData() {
 			this.setForeground(context => {
 				for (const datasetID in this.legend) {
 					if (this.legend.hasOwnProperty(datasetID)) {
@@ -450,7 +441,7 @@ const core = (function() {
 					throw `Error setting plot data: Unrecognised data signature ${JSON.stringify(data)}.`;
 				}
 				propertySetters.setupProperties(this.legend[id], "ResponsivePlot2DTrace", options);
-				this.updatePlottingData();
+				this._updatePlottingData();
 			} else {
 				throw `Error setting plot data: Unexpected type for ID "${JSON.stringify(id)}"`;
 			}
@@ -458,7 +449,12 @@ const core = (function() {
 
 		removeData(id) {
 			delete this.legend[id];
-			this.updatePlottingData();
+			this._updatePlottingData();
+		}
+
+		setOrigin(...point) {
+			super.setOrigin(...point);
+			this._updateLimits();
 		}
 
 		setMajorTicks(...choices) {
@@ -495,8 +491,8 @@ const core = (function() {
 
 		setGridScale(...sizes) {
 			propertySetters.setAxesProperty(this,"gridScale", "number", ...sizes);
-			this.updateLimits();
-			this.updateForeground();
+			this._updateLimits();
+			this._updateForeground();
 		}
 
 		setTraceColour(traceID, colour) {
@@ -532,8 +528,8 @@ const core = (function() {
 			}
 			this.gridScale.x = this.width / Math.abs(this.xLims[0] - this.xLims[1]);
 			super.setOrigin(-this.xLims[0] * this.gridScale.x, this.origin.y);
-			this.updateBackground();
-			this.updatePlottingData();
+			this._updateBackground();
+			this._updatePlottingData();
 		}
 
 		setYLims(range) {
@@ -545,8 +541,8 @@ const core = (function() {
 			}
 			this.gridScale.y = this.height / Math.abs(this.yLims[0] - this.yLims[1]);
 			super.setOrigin(this.origin.x, this.yLims[1] * this.gridScale.y);
-			this.updateBackground();
-			this.updatePlottingData();
+			this._updateBackground();
+			this._updatePlottingData();
 		}
 	}
 
