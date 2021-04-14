@@ -322,6 +322,7 @@ const core = (function() {
 						if (dataset.traceStyle !== "none") {
 							context.strokeStyle = dataset.traceColour;
 							context.lineWidth = dataset.traceWidth;
+							context.lineJoin = "round";
 							switch (dataset.traceStyle) {
 								case "solid":
 									context.setLineDash([]);
@@ -336,7 +337,7 @@ const core = (function() {
 									context.setLineDash([15, 3, 3, 3]);
 									break;
 							}
-							const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / 100, this.currentTimeValue);
+							const dataGenerator = dataset.data(this.currentTimeValue, ...this.xLims, ...this.yLims, 1 / 100);
 							context.beginPath();
 							for (const currentPoint of dataGenerator) {
 								if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
@@ -387,30 +388,52 @@ const core = (function() {
 			});
 		}
 
-		addData(data, id, options={}) {
+		addData(id, data, options={}) {
 			if (typeof id === "string") {
-				if (Array.isArray(data) && data.length === 2 && Array.isArray(data[0]) && Array.isArray(data[1])) {
-					if (data[0].length !== data[1].length) {
-						throw "Error setting plot data: Lengths of data arrays are not equal";
-					}
-					for (let i = 0; i < data[0].length; i++) {
-						if (typeof data[0][i] !== "number" || typeof data[1][i] !== "number") {
-							throw "Error setting plot data: Data arrays contain types which are not numbers.";
-						}
-					}
-					this.legend[id] = {
-						data: function*() {
-							for (let i=0; i < data[0].length; i++) {
-								yield [data[0][i], data[1][i]];
+				if (Array.isArray(data) && data.length === 2) {
+					if (Array.isArray(data[0])) {
+						if (Array.isArray(data[1])) {
+							if (data[0].length !== data[1].length) {
+								throw "Error setting plot data: Lengths of data arrays are not equal.";
 							}
+							for (let i = 0; i < data[0].length; i++) {
+								if (typeof data[0][i] !== "number" || (typeof data[1][i] === "function" ? typeof data[1][i](data[0][i], 0) !== "number" : typeof data[1][i] !== "number")) {
+									throw "Error setting plot data: Data arrays contain types which are not numbers.";
+								}
+							}
+							this.legend[id] = {
+								data: function*(t) {
+									for (let i=0; i < data[0].length; i++) {
+										yield [data[0][i], typeof data[1][i] === "function" ? data[1][i](data[0][i], t) : data[1][i]];
+									}
+								}
+							};
+						} else if (typeof data[1] === "function") {
+							if (typeof data[1](0, 0) !== "number") {
+								throw "Error setting plot data: Plot function does not return numbers.";
+							}
+							for (let i = 0; i < data[0].length; i++) {
+								if (typeof data[0][i] !== "number") {
+									throw "Error setting plot data: Data array contains types which are not numbers.";
+								}
+							}
+							this.legend[id] = {
+								data: function*(t) {
+									for (const x of data[0]) {
+										yield [x, data[1](x, t)];
+									}
+								}
+							};
 						}
-					};
+					} else if (typeof data[0] === "function" && typeof data[1] === "function") {
+						// TODO: parametric
+					}
 				} else if (typeof data === "function") {
 					if (typeof data(0, 0) !== "number") {
 						throw "Error setting plot data: Plot function does not return numbers.";
 					}
 					this.legend[id] = {
-						data: function*(xMin, xMax, yMin, yMax, step, t) {
+						data: function*(t, xMin, xMax, yMin, yMax, step) {
 							// TODO: discontinuities
 							let x = xMin;
 							let y = x => data(x, t);
