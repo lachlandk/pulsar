@@ -1,4 +1,4 @@
-function getActivePlots () {
+function getActivePlots() {
 	const activePlots = {};
 	for (const canvasID in core.activeCanvases) {
 		if (core.activeCanvases[canvasID] instanceof core.ResponsivePlot2D) {
@@ -8,7 +8,7 @@ function getActivePlots () {
 	return activePlots;
 }
 
-function plot (container, dataObject, options={}) {
+function plot(container, dataObject, options={}) {
 	let plotObject;
 	const plotID = typeof container === "string" ? container : document.getElementById(container);
 	if (core.activeCanvases.hasOwnProperty(plotID)) {
@@ -48,7 +48,7 @@ function plot (container, dataObject, options={}) {
 		}
 	}
 	if (dataObject !== null) {
-		plotObject.addData(dataObject.data, dataObject.id, dataObject.options);
+		plotObject.addData(dataObject.id, dataObject.data, dataObject.options);
 	}
 	return plotObject;
 }
