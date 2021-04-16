@@ -1,0 +1,22 @@
+{
+	"name": "pulsar",
+	"version": "0.0.1",
+	"type": "module",
+	"description": "A javascript data visualisation framework",
+	"main": "dist/pulsar-web.js",
+	"dependencies": {},
+	"devDependencies": {},
+	"scripts": {
+		"test": "echo \\\"Error: no tests specified\\\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/lachlandk/pulsar.git"
+	},
+	"author": "Lachlan Dufort-Kennett",
+	"license": "GPL-3.0-or-later",
+	"bugs": {
+		"url": "https://github.com/lachlandk/pulsar/issues"
+	},
+	"homepage": "https://github.com/lachlandk/pulsar#readme"
+}
