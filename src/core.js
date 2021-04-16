@@ -6,7 +6,7 @@ const core = (function() {
 					const option = defaultProperties[prototype][key];
 					const optionProvided = Object.keys(options).includes(key);
 					const parameters = [instance, key, option.type];
-					if (Array.isArray(option.value)) {
+					if (option.multi) {
 						parameters.push(...(optionProvided ? (Array.isArray(options[key]) ? options[key] : [options[key]]) : option.value));
 					} else {
 						parameters.push(optionProvided ? options[key] : option.value);
@@ -88,18 +88,18 @@ const core = (function() {
 
 	const defaultProperties = {
 		ResponsiveCanvas: {
-			origin: {value: [0, 0], type: "number", setter: "setAxesProperty"}
+			origin: {value: [0, 0], type: "number", setter: "setAxesProperty", multi: true}
 		},
 		ResponsivePlot2D: {
-			majorTicks: {value: [true, true], type: "boolean", setter: "setAxesProperty"},
-			minorTicks: {value: [false, false], type: "boolean", setter: "setAxesProperty"},
-			majorTickSize: {value: [5, 5], type: "number", setter: "setAxesProperty"},
-			minorTickSize: {value: [1, 1], type: "number", setter: "setAxesProperty"},
-			majorGridlines: {value: [true, true], type: "boolean", setter: "setAxesProperty"},
-			minorGridlines: {value: [false, false], type: "boolean", setter: "setAxesProperty"},
-			majorGridSize: {value: [5, 5], type: "number", setter: "setAxesProperty"},
-			minorGridSize: {value: [1, 1], type: "number", setter: "setAxesProperty"},
-			gridScale: {value: [50, 50], type: "number", setter: "setAxesProperty"}
+			majorTicks: {value: [true, true], type: "boolean", setter: "setAxesProperty", multi: true},
+			minorTicks: {value: [false, false], type: "boolean", setter: "setAxesProperty", multi: true},
+			majorTickSize: {value: [5, 5], type: "number", setter: "setAxesProperty", multi: true},
+			minorTickSize: {value: [1, 1], type: "number", setter: "setAxesProperty", multi: true},
+			majorGridlines: {value: [true, true], type: "boolean", setter: "setAxesProperty", multi: true},
+			minorGridlines: {value: [false, false], type: "boolean", setter: "setAxesProperty", multi: true},
+			majorGridSize: {value: [5, 5], type: "number", setter: "setAxesProperty", multi: true},
+			minorGridSize: {value: [1, 1], type: "number", setter: "setAxesProperty", multi: true},
+			gridScale: {value: [50, 50], type: "number", setter: "setAxesProperty", multi: true}
 		},
 		ResponsivePlot2DTrace: {
 			traceColour: {value: "blue", type: "string", setter: "setSingleProperty"},
@@ -107,7 +107,8 @@ const core = (function() {
 			traceWidth: {value: 3, type: "number", setter: "setSingleProperty"},
 			markerColour: {value: "blue", type: "string", setter: "setSingleProperty"},
 			markerStyle: {value: "none", type: "string", setter: "setChoiceProperty", extra: ["circle", "plus", "cross", "none"]},
-			markerSize: {value: 1, type: "number", setter: "setSingleProperty"}
+			markerSize: {value: 1, type: "number", setter: "setSingleProperty"},
+			parameterRange: {value: [0, 1], type: "number", setter: "setArrayProperty", extra: 2}
 		}
 	};
 
@@ -337,7 +338,7 @@ const core = (function() {
 									context.setLineDash([15, 3, 3, 3]);
 									break;
 							}
-							const dataGenerator = dataset.data(this.currentTimeValue, ...this.xLims, ...this.yLims, 1 / 100);
+							const dataGenerator = dataset.data(this.currentTimeValue, this.xLims, this.yLims, 0.001, dataset.parameterRange);
 							context.beginPath();
 							for (const currentPoint of dataGenerator) {
 								if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
@@ -397,14 +398,19 @@ const core = (function() {
 								throw "Error setting plot data: Lengths of data arrays are not equal.";
 							}
 							for (let i = 0; i < data[0].length; i++) {
-								if (typeof data[0][i] !== "number" || (typeof data[1][i] === "function" ? typeof data[1][i](data[0][i], 0) !== "number" : typeof data[1][i] !== "number")) {
+								const xValue = typeof data[0][i] === "function" ? data[0][i](0) : data[0][i];
+								const yValue = typeof data[1][i] === "function" ? data[1][i](0, 0) : data[1][i];
+								if (typeof xValue !== "number" || typeof yValue !== "number") {
 									throw "Error setting plot data: Data arrays contain types which are not numbers.";
 								}
 							}
 							this.legend[id] = {
 								data: function*(t) {
+									// TODO: add support for NaN
 									for (let i=0; i < data[0].length; i++) {
-										yield [data[0][i], typeof data[1][i] === "function" ? data[1][i](data[0][i], t) : data[1][i]];
+										const xValue = typeof data[0][i] === "function" ? data[0][i](t) : data[0][i];
+										const yValue = typeof data[1][i] === "function" ? data[1][i](xValue, t) : data[1][i];
+										yield [xValue, yValue];
 									}
 								}
 							};
@@ -419,6 +425,7 @@ const core = (function() {
 							}
 							this.legend[id] = {
 								data: function*(t) {
+									// TODO: add support for NaN
 									for (const x of data[0]) {
 										yield [x, data[1](x, t)];
 									}
@@ -426,22 +433,34 @@ const core = (function() {
 							};
 						}
 					} else if (typeof data[0] === "function" && typeof data[1] === "function") {
-						// TODO: parametric
+						this.legend[id] = {
+							// TODO: add support for NaN
+							data: function*(t, xLims, yLims, step, paramLims) {
+								let x = p => data[0](p, t);
+								let y = p => data[1](p, t);
+								let p = paramLims[0];
+								while(p <= paramLims[1]) {
+									yield [x(p), y(p)];
+									p += step;
+								}
+								yield [x(p), y(p)];
+							}
+						};
 					}
 				} else if (typeof data === "function") {
 					if (typeof data(0, 0) !== "number") {
 						throw "Error setting plot data: Plot function does not return numbers.";
 					}
 					this.legend[id] = {
-						data: function*(t, xMin, xMax, yMin, yMax, step) {
+						data: function*(t, xLims, yLims, step) {
 							// TODO: discontinuities
-							let x = xMin;
+							let x = xLims[0];
 							let y = x => data(x, t);
-							while (x <= xMax) {
+							while (x <= xLims[1]) {
 								while (true) { // while y is out of range or undefined
-									if (x > xMax) { // if x is out of range, break without yielding previous point
+									if (x > xLims[1]) { // if x is out of range, break without yielding previous point
 										break;
-									} else if (y(x) <= yMax && y(x) >= yMin && !Number.isNaN(y(x))) { // if y is in range, yield the previous point and break
+									} else if (y(x) <= yLims[1] && y(x) >= yLims[0] && !Number.isNaN(y(x))) { // if y is in range, yield the previous point and break
 										yield [x - step, y(x - step)];
 										break;
 									} else { // else increment x
@@ -450,7 +469,7 @@ const core = (function() {
 								}
 								while (true) { // while y in in range and defined
 									yield [x, y(x)];
-									if (x > xMax || y(x) > yMax || y(x) < yMin || Number.isNaN(y(x))) { // if x or y is out of range, yield current point and break
+									if (x > xLims[1] || y(x) > yLims[1] || y(x) < yLims[0] || Number.isNaN(y(x))) { // if x or y is out of range, yield current point and break
 										break;
 									} else { // else increment x
 										x += step;
@@ -517,30 +536,6 @@ const core = (function() {
 			this._updateForeground();
 		}
 
-		setTraceColour(traceID, colour) {
-			propertySetters.setLegendProperty(this, traceID, "traceColour", colour);
-		}
-
-		setTraceStyle(traceID, style) {
-			propertySetters.setLegendProperty(this, traceID, "traceStyle", style);
-		}
-
-		setTraceWidth(traceID, width) {
-			propertySetters.setLegendProperty(this, traceID, "traceWidth", width);
-		}
-
-		setMarkerColour(traceID, colour) {
-			propertySetters.setLegendProperty(this, traceID, "markerColour", colour);
-		}
-
-		setMarkerStyle(traceID, style) {
-			propertySetters.setLegendProperty(this, traceID, "markerStyle", style);
-		}
-
-		setMarkerSize(traceID, size) {
-			propertySetters.setLegendProperty(this, traceID, "markerSize", size);
-		}
-
 		setXLims(...range) {
 			const oldLims = this.xLims;
 			propertySetters.setArrayProperty(this, "xLims", "number", range, 2);
@@ -565,6 +560,34 @@ const core = (function() {
 			super.setOrigin(this.origin.x, this.yLims[1] * this.gridScale.y);
 			this._updateBackground();
 			this._updatePlottingData();
+		}
+
+		setTraceColour(traceID, colour) {
+			propertySetters.setLegendProperty(this, traceID, "traceColour", colour);
+		}
+
+		setTraceStyle(traceID, style) {
+			propertySetters.setLegendProperty(this, traceID, "traceStyle", style);
+		}
+
+		setTraceWidth(traceID, width) {
+			propertySetters.setLegendProperty(this, traceID, "traceWidth", width);
+		}
+
+		setMarkerColour(traceID, colour) {
+			propertySetters.setLegendProperty(this, traceID, "markerColour", colour);
+		}
+
+		setMarkerStyle(traceID, style) {
+			propertySetters.setLegendProperty(this, traceID, "markerStyle", style);
+		}
+
+		setMarkerSize(traceID, size) {
+			propertySetters.setLegendProperty(this, traceID, "markerSize", size);
+		}
+
+		setParameterRange(traceID, ...range) {
+			propertySetters.setLegendProperty(this, traceID, "parameterRange", range);
 		}
 	}
 
