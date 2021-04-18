@@ -24,7 +24,7 @@ function plot(container, dataObject, options={}) {
 			}
 		}
 	} else {
-		plotObject = new core.ResponsivePlot2D(container);
+		plotObject = new core.ResponsivePlot2D(container, options);
 		if (options.hasOwnProperty("backgroundCSS")) {
 			plotObject.setBackgroundCSS(options.backgroundCSS);
 		}
