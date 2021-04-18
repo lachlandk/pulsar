@@ -338,7 +338,7 @@ const core = (function() {
 									context.setLineDash([15, 3, 3, 3]);
 									break;
 							}
-							const dataGenerator = dataset.data(this.currentTimeValue, this.xLims, this.yLims, 0.001, dataset.parameterRange);
+							const dataGenerator = dataset.data(this.currentTimeValue, this.xLims, this.yLims, 0.01, dataset.parameterRange);
 							context.beginPath();
 							for (const currentPoint of dataGenerator) {
 								if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
