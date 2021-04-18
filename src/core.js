@@ -106,7 +106,7 @@ const core = (function() {
 			traceStyle: {value: "solid", type: "string", setter: "setChoiceProperty", extra: ["solid", "dotted", "dashed", "dashdot", "none"]},
 			traceWidth: {value: 3, type: "number", setter: "setSingleProperty"},
 			markerColour: {value: "blue", type: "string", setter: "setSingleProperty"},
-			markerStyle: {value: "none", type: "string", setter: "setChoiceProperty", extra: ["circle", "plus", "cross", "none"]},
+			markerStyle: {value: "none", type: "string", setter: "setChoiceProperty", extra: ["circle", "plus", "cross", "arrow", "none"]},
 			markerSize: {value: 1, type: "number", setter: "setSingleProperty"},
 			parameterRange: {value: [0, 1], type: "number", setter: "setArrayProperty", extra: 2}
 		}
@@ -376,12 +376,30 @@ const core = (function() {
 											context.lineTo(x + 5 * markerSize, y - 5 * markerSize);
 											context.stroke();
 										};
+									case "arrow":
+										return (context, x, y, theta) => {
+											if (!isNaN(theta)) {
+												context.translate(x, y);
+												context.rotate(-theta - Math.PI/2);
+												context.moveTo(0, -7 * markerSize);
+												context.lineTo(-5 * markerSize, 7 * markerSize);
+												context.lineTo(5 * markerSize, 7 * markerSize);
+												context.lineTo(0, -7 * markerSize);
+												context.fill();
+												context.rotate(theta + Math.PI/2);
+												context.translate(-x, -y);
+											}
+										};
 								}
 							})();
-							const dataGenerator = dataset.data(...this.xLims, ...this.yLims, 1 / 100);
+							const dataGenerator = dataset.data(this.currentTimeValue, this.xLims, this.yLims, 0.001, dataset.parameterRange);
+							let lastPoint = [NaN, NaN];
 							for (const currentPoint of dataGenerator) {
 								context.beginPath();
-								drawMarker(context, currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
+								const point = [currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y];
+								const angle = Math.atan2(point[1] - lastPoint[1], -point[0] + lastPoint[0]);
+								drawMarker(context, ...point, angle);
+								lastPoint = point;
 							}
 						}
 					}
