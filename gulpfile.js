@@ -6,7 +6,7 @@ const strip = require("gulp-strip-comments");
 const terser = require("gulp-terser");
 
 async function clean() {
-	const paths = await del(["dist/web/**"]);
+	const paths = await del(["dist/**"]);
 	console.log(`Deleted old files:\n - ${paths.join("\n - ")}`);
 }
 
@@ -48,10 +48,10 @@ async function webify() {
 		.pipe(replace("// gulp-inject library exports", sourceExports))
 		.pipe(strip())
 		.pipe(rename("pulsar-web.js"))
-		.pipe(gulp.dest("dist/web/"))
+		.pipe(gulp.dest("dist/"))
 		.pipe(terser())
 		.pipe(rename({extname: ".min.js"}))
-		.pipe(gulp.dest("dist/web/"));
+		.pipe(gulp.dest("dist/"));
 }
 
 exports.build = gulp.series(clean, webify);
