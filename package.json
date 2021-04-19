@@ -1,11 +1,17 @@
 {
 	"name": "pulsar",
 	"version": "0.0.1",
-	"type": "module",
 	"description": "A javascript data visualisation framework",
 	"main": "dist/pulsar-web.js",
 	"dependencies": {},
-	"devDependencies": {},
+	"devDependencies": {
+		"del": "^6.0.0",
+		"gulp": "^4.0.2",
+		"gulp-rename": "^2.0.0",
+		"gulp-replace": "^1.0.0",
+		"gulp-strip-comments": "^2.5.2",
+		"gulp-terser": "^2.0.1"
+	},
 	"scripts": {
 		"test": "echo \\\"Error: no tests specified\\\" && exit 1"
 	},
