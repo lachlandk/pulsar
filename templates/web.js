@@ -1,6 +1,6 @@
-(function (root, constructor){
-	root.Pulsar = new constructor();
-}(self, function (){
-/* inject:js */
-/* endinject */
-}));
+window.Pulsar = (function () {
+	// gulp-inject library body
+	return {
+		// gulp-inject library exports
+	};
+})();
