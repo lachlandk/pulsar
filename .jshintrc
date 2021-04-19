@@ -22,7 +22,7 @@
 	"boss": false,
 	"debug": false,
 	"eqnull": true,
-	"esversion": 7,
+	"esversion": 8,
 	"moz": false,
 	"evil": false,
 	"expr": false,
