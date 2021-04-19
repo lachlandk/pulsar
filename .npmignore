@@ -1,6 +1,9 @@
 # Intellij IDE Settings
 /.idea
 
+# Development
+.jshintrc
+
 # Testing
 /tests
 
