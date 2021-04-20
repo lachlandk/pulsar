@@ -165,10 +165,12 @@ const core = (function() {
 			this.container.appendChild(this.backgroundCanvas);
 			this.container.appendChild(this.foregroundCanvas);
 			this.setID(this.id);
-			this.currentTimeValue = 0;
-			this.startTimeStamp = 0;
-			this.offsetTimeStamp = 0;
-			this.timeEvolutionActive = false;
+			this.timeEvolutionData = {
+				currentTimeValue: 0,
+				startTimestampMS: 0,
+				offsetTimestampMS: 0,
+				timeEvolutionActive: false
+			};
 		}
 
 		_updateCanvasDimensions() {
@@ -207,28 +209,28 @@ const core = (function() {
 		}
 
 		startTime() {
-			this.timeEvolutionActive = true;
-			this.startTimeStamp = performance.now();
-			window.requestAnimationFrame(timeStamp => this._updateTime(timeStamp));
+			this.timeEvolutionData.timeEvolutionActive = true;
+			this.timeEvolutionData.startTimestampMS = performance.now();
+			window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
 		}
 
 		pauseTime() {
-			this.timeEvolutionActive = false;
-			this.offsetTimeStamp = performance.now() - this.startTimeStamp;
+			this.timeEvolutionData.timeEvolutionActive = false;
+			this.timeEvolutionData.offsetTimestampMS = performance.now() - this.timeEvolutionData.startTimestampMS;
 		}
 
 		stopTime() {
-			this.timeEvolutionActive = false;
-			this.currentTimeValue = 0;
-			this.offsetTimeStamp = 0;
+			this.timeEvolutionData.timeEvolutionActive = false;
+			this.timeEvolutionData.currentTimeValue = 0;
+			this.timeEvolutionData.offsetTimestampMS = 0;
 			this._updateForeground();
 		}
 
-		_updateTime(currentTimeStamp) {
-			if (this.timeEvolutionActive) {
-				this.currentTimeValue = (this.offsetTimeStamp + currentTimeStamp - this.startTimeStamp) / 1000;
+		_updateTime(currentTimestamp) {
+			if (this.timeEvolutionData.timeEvolutionActive) {
+				this.timeEvolutionData.currentTimeValue = (this.timeEvolutionData.offsetTimestampMS + currentTimestamp - this.timeEvolutionData.startTimestampMS) / 1000;
 				this._updateForeground();
-				window.requestAnimationFrame(currentTimeStamp => this._updateTime(currentTimeStamp));
+				window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
 			}
 		}
 
@@ -339,7 +341,7 @@ const core = (function() {
 									context.setLineDash([15, 3, 3, 3]);
 									break;
 							}
-							const dataGenerator = dataset.data(this.currentTimeValue, this.xLims, this.yLims, 0.01, dataset.parameterRange);
+							const dataGenerator = dataset.data(this.timeEvolutionData.currentTimeValue, this.xLims, this.yLims, 0.01, dataset.parameterRange);
 							context.beginPath();
 							for (const currentPoint of dataGenerator) {
 								if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
@@ -393,7 +395,7 @@ const core = (function() {
 										};
 								}
 							})();
-							const dataGenerator = dataset.data(this.currentTimeValue, this.xLims, this.yLims, 0.001, dataset.parameterRange);
+							const dataGenerator = dataset.data(this.timeEvolutionData.currentTimeValue, this.xLims, this.yLims, 0.001, dataset.parameterRange);
 							let lastPoint = [NaN, NaN];
 							for (const currentPoint of dataGenerator) {
 								context.beginPath();
