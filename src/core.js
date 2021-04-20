@@ -108,6 +108,7 @@ const core = (function() {
 			markerColour: {value: "blue", type: "string", setter: "setSingleProperty"},
 			markerStyle: {value: "none", type: "string", setter: "setChoiceProperty", extra: ["circle", "plus", "cross", "arrow", "none"]},
 			markerSize: {value: 1, type: "number", setter: "setSingleProperty"},
+			visibility: {value: true, type: "boolean", setter: "setSingleProperty"},
 			parameterRange: {value: [0, 1], type: "number", setter: "setArrayProperty", extra: 2}
 		}
 	};
@@ -318,7 +319,7 @@ const core = (function() {
 		_updatePlottingData() {
 			this.setForeground(context => {
 				for (const datasetID in this.legend) {
-					if (this.legend.hasOwnProperty(datasetID)) {
+					if (this.legend.hasOwnProperty(datasetID) && this.legend[datasetID].visibility === true) {
 						const dataset = this.legend[datasetID];
 						if (dataset.traceStyle !== "none") {
 							context.strokeStyle = dataset.traceColour;
@@ -602,6 +603,10 @@ const core = (function() {
 
 		setMarkerSize(traceID, size) {
 			propertySetters.setLegendProperty(this, traceID, "markerSize", size);
+		}
+
+		setVisibility(traceID, value) {
+			propertySetters.setLegendProperty(this, traceID, "visibility", value);
 		}
 
 		setParameterRange(traceID, ...range) {
