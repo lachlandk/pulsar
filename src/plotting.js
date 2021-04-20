@@ -36,8 +36,8 @@ function plot(container, dataObject, options={}) {
 		}
 	}
 	if (options.hasOwnProperty("reset") && options.reset === true) {
-		for (const id in plotObject.legend) {
-			if (plotObject.legend.hasOwnProperty(id)) {
+		for (const id in plotObject.plotData) {
+			if (plotObject.plotData.hasOwnProperty(id)) {
 				plotObject.removeData(id);
 			}
 		}

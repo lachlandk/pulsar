@@ -71,17 +71,17 @@ const core = (function() {
 				throw `Error setting choice property ${property}: Unexpected type "${typeof value === "string" ? value : JSON.stringify(value)}".`;
 			}
 		},
-		setLegendProperty(instance, trace, property, value) {
+		setPlotDataProperty(instance, trace, property, value) {
 			const defaults = defaultProperties.ResponsivePlot2DTrace[property];
-			if (typeof instance.legend[trace] !== "undefined") {
-				const parameters = [instance.legend[trace], property, defaults.type, value];
+			if (typeof instance.plotData[trace] !== "undefined") {
+				const parameters = [instance.plotData[trace], property, defaults.type, value];
 				if (Object.keys(defaults).includes("extra")) {
 					parameters.push(defaults.extra);
 				}
 				propertySetters[defaults.setter](...parameters);
 				instance._updatePlottingData();
 			} else {
-				throw `Error setting legend property ${property}: Invalid trace ID "${typeof trace === "string" ? trace : JSON.stringify(trace)}"`;
+				throw `Error setting plotData property ${property}: Invalid trace ID "${typeof trace === "string" ? trace : JSON.stringify(trace)}"`;
 			}
 		}
 	};
@@ -308,7 +308,7 @@ const core = (function() {
 				context.lineTo(this.width - this.origin.x, 0.5);
 				context.stroke();
 			});
-			this.legend = {};
+			this.plotData = {};
 		}
 
 		_updateLimits() {
@@ -318,9 +318,9 @@ const core = (function() {
 
 		_updatePlottingData() {
 			this.setForeground(context => {
-				for (const datasetID in this.legend) {
-					if (this.legend.hasOwnProperty(datasetID) && this.legend[datasetID].visibility === true) {
-						const dataset = this.legend[datasetID];
+				for (const datasetID in this.plotData) {
+					if (this.plotData.hasOwnProperty(datasetID) && this.plotData[datasetID].visibility === true) {
+						const dataset = this.plotData[datasetID];
 						if (dataset.traceStyle !== "none") {
 							context.strokeStyle = dataset.traceColour;
 							context.lineWidth = dataset.traceWidth;
@@ -423,7 +423,7 @@ const core = (function() {
 									throw "Error setting plot data: Data arrays contain types which are not numbers.";
 								}
 							}
-							this.legend[id] = {
+							this.plotData[id] = {
 								data: function*(t) {
 									// TODO: add support for NaN
 									for (let i=0; i < data[0].length; i++) {
@@ -442,7 +442,7 @@ const core = (function() {
 									throw "Error setting plot data: Data array contains types which are not numbers.";
 								}
 							}
-							this.legend[id] = {
+							this.plotData[id] = {
 								data: function*(t) {
 									// TODO: add support for NaN
 									for (const x of data[0]) {
@@ -452,7 +452,7 @@ const core = (function() {
 							};
 						}
 					} else if (typeof data[0] === "function" && typeof data[1] === "function") {
-						this.legend[id] = {
+						this.plotData[id] = {
 							// TODO: add support for NaN
 							data: function*(t, xLims, yLims, step, paramLims) {
 								let x = p => data[0](p, t);
@@ -470,7 +470,7 @@ const core = (function() {
 					if (typeof data(0, 0) !== "number") {
 						throw "Error setting plot data: Plot function does not return numbers.";
 					}
-					this.legend[id] = {
+					this.plotData[id] = {
 						data: function*(t, xLims, yLims, step) {
 							// TODO: discontinuities
 							let x = xLims[0];
@@ -500,7 +500,7 @@ const core = (function() {
 				} else {
 					throw `Error setting plot data: Unrecognised data signature ${JSON.stringify(data)}.`;
 				}
-				propertySetters.setupProperties(this.legend[id], "ResponsivePlot2DTrace", options);
+				propertySetters.setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
 				this._updatePlottingData();
 			} else {
 				throw `Error setting plot data: Unexpected type for ID "${JSON.stringify(id)}"`;
@@ -508,7 +508,7 @@ const core = (function() {
 		}
 
 		removeData(id) {
-			delete this.legend[id];
+			delete this.plotData[id];
 			this._updatePlottingData();
 		}
 
@@ -582,35 +582,35 @@ const core = (function() {
 		}
 
 		setTraceColour(trace, colour) {
-			propertySetters.setLegendProperty(this, trace, "traceColour", colour);
+			propertySetters.setPlotDataProperty(this, trace, "traceColour", colour);
 		}
 
 		setTraceStyle(trace, style) {
-			propertySetters.setLegendProperty(this, trace, "traceStyle", style);
+			propertySetters.setPlotDataProperty(this, trace, "traceStyle", style);
 		}
 
 		setTraceWidth(trace, width) {
-			propertySetters.setLegendProperty(this, trace, "traceWidth", width);
+			propertySetters.setPlotDataProperty(this, trace, "traceWidth", width);
 		}
 
 		setMarkerColour(trace, colour) {
-			propertySetters.setLegendProperty(this, trace, "markerColour", colour);
+			propertySetters.setPlotDataProperty(this, trace, "markerColour", colour);
 		}
 
 		setMarkerStyle(trace, style) {
-			propertySetters.setLegendProperty(this, trace, "markerStyle", style);
+			propertySetters.setPlotDataProperty(this, trace, "markerStyle", style);
 		}
 
 		setMarkerSize(trace, size) {
-			propertySetters.setLegendProperty(this, trace, "markerSize", size);
+			propertySetters.setPlotDataProperty(this, trace, "markerSize", size);
 		}
 
 		setVisibility(trace, value) {
-			propertySetters.setLegendProperty(this, trace, "visibility", value);
+			propertySetters.setPlotDataProperty(this, trace, "visibility", value);
 		}
 
 		setParameterRange(trace, ...range) {
-			propertySetters.setLegendProperty(this, trace, "parameterRange", range);
+			propertySetters.setPlotDataProperty(this, trace, "parameterRange", range);
 		}
 	}
 
