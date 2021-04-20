@@ -8,11 +8,10 @@ function getActivePlots() {
 	return activePlots;
 }
 
-function plot(container, dataObject, options={}) {
+function plot(id, data, options={}) {
 	let plotObject;
-	const plotID = typeof container === "string" ? container : document.getElementById(container);
-	if (core.activeCanvases.hasOwnProperty(plotID)) {
-		plotObject = core.activeCanvases[plotID];
+	if (core.activeCanvases.hasOwnProperty(id)) {
+		plotObject = core.activeCanvases[id];
 		for (const option in options) {
 			if (options.hasOwnProperty(option)) {
 				const optionSetter = plotObject[`set${option.charAt(0).toUpperCase() + option.slice(1)}`];
@@ -24,7 +23,7 @@ function plot(container, dataObject, options={}) {
 			}
 		}
 	} else {
-		plotObject = new core.ResponsivePlot2D(container, options);
+		plotObject = new core.ResponsivePlot2D(id, options);
 		if (options.hasOwnProperty("backgroundCSS")) {
 			plotObject.setBackgroundCSS(options.backgroundCSS);
 		}
@@ -42,8 +41,8 @@ function plot(container, dataObject, options={}) {
 			}
 		}
 	}
-	if (dataObject !== null) {
-		plotObject.addData(dataObject.id, dataObject.data, dataObject.options);
+	if (data !== null) {
+		plotObject.addData(data.id, data.data, data.options);
 	}
 	return plotObject;
 }
