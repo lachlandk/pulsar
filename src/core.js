@@ -71,17 +71,17 @@ const core = (function() {
 				throw `Error setting choice property ${property}: Unexpected type "${typeof value === "string" ? value : JSON.stringify(value)}".`;
 			}
 		},
-		setLegendProperty(instance, traceID, property, value) {
+		setLegendProperty(instance, trace, property, value) {
 			const defaults = defaultProperties.ResponsivePlot2DTrace[property];
-			if (typeof instance.legend[traceID] !== "undefined") {
-				const parameters = [instance.legend[traceID], property, defaults.type, value];
+			if (typeof instance.legend[trace] !== "undefined") {
+				const parameters = [instance.legend[trace], property, defaults.type, value];
 				if (Object.keys(defaults).includes("extra")) {
 					parameters.push(defaults.extra);
 				}
 				propertySetters[defaults.setter](...parameters);
 				instance._updatePlottingData();
 			} else {
-				throw `Error setting legend property ${property}: Invalid trace ID "${typeof traceID === "string" ? traceID : JSON.stringify(traceID)}"`;
+				throw `Error setting legend property ${property}: Invalid trace ID "${typeof trace === "string" ? trace : JSON.stringify(trace)}"`;
 			}
 		}
 	};
@@ -581,36 +581,36 @@ const core = (function() {
 			this._updatePlottingData();
 		}
 
-		setTraceColour(traceID, colour) {
-			propertySetters.setLegendProperty(this, traceID, "traceColour", colour);
+		setTraceColour(trace, colour) {
+			propertySetters.setLegendProperty(this, trace, "traceColour", colour);
 		}
 
-		setTraceStyle(traceID, style) {
-			propertySetters.setLegendProperty(this, traceID, "traceStyle", style);
+		setTraceStyle(trace, style) {
+			propertySetters.setLegendProperty(this, trace, "traceStyle", style);
 		}
 
-		setTraceWidth(traceID, width) {
-			propertySetters.setLegendProperty(this, traceID, "traceWidth", width);
+		setTraceWidth(trace, width) {
+			propertySetters.setLegendProperty(this, trace, "traceWidth", width);
 		}
 
-		setMarkerColour(traceID, colour) {
-			propertySetters.setLegendProperty(this, traceID, "markerColour", colour);
+		setMarkerColour(trace, colour) {
+			propertySetters.setLegendProperty(this, trace, "markerColour", colour);
 		}
 
-		setMarkerStyle(traceID, style) {
-			propertySetters.setLegendProperty(this, traceID, "markerStyle", style);
+		setMarkerStyle(trace, style) {
+			propertySetters.setLegendProperty(this, trace, "markerStyle", style);
 		}
 
-		setMarkerSize(traceID, size) {
-			propertySetters.setLegendProperty(this, traceID, "markerSize", size);
+		setMarkerSize(trace, size) {
+			propertySetters.setLegendProperty(this, trace, "markerSize", size);
 		}
 
-		setVisibility(traceID, value) {
-			propertySetters.setLegendProperty(this, traceID, "visibility", value);
+		setVisibility(trace, value) {
+			propertySetters.setLegendProperty(this, trace, "visibility", value);
 		}
 
-		setParameterRange(traceID, ...range) {
-			propertySetters.setLegendProperty(this, traceID, "parameterRange", range);
+		setParameterRange(trace, ...range) {
+			propertySetters.setLegendProperty(this, trace, "parameterRange", range);
 		}
 	}
 
