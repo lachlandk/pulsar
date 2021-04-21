@@ -1,0 +1,22 @@
+{
+	"plugins": [],
+	"source": {
+		"include": ["./dist/pulsar-web.js"]
+	},
+	"opts": {
+		"destination": "./docs/"
+	},
+	"tags": {
+		"allowUnknownTags": false,
+		"dictionaries": ["jsdoc"]
+	},
+	"templates": {
+		"cleverLinks": true,
+		"default": {
+			"outputSourceFiles": false,
+			"includeDate": false,
+			"useLongnameInNav": true
+		}
+	}
+}
+
