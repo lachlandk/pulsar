@@ -13,12 +13,14 @@ function plot(id, data, options={}) {
 	if (core.activeCanvases.hasOwnProperty(id)) {
 		plotObject = core.activeCanvases[id];
 		for (const option in options) {
-			if (options.hasOwnProperty(option)) {
+			if (options.hasOwnProperty(option) && option !== "gridScale") {
 				const optionSetter = plotObject[`set${option.charAt(0).toUpperCase() + option.slice(1)}`];
-				if (optionSetter.length === 0) {
-					optionSetter.call(plotObject, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
-				} else {
-					optionSetter.call(plotObject, options[option]);
+				if (optionSetter !== undefined) {
+					if (optionSetter.length === 0) {
+						optionSetter.call(plotObject, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
+					} else {
+						optionSetter.call(plotObject, options[option]);
+					}
 				}
 			}
 		}
