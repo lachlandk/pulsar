@@ -3,6 +3,7 @@
 
 # Development
 .jshintrc
+jsdoc.json
 
 # Testing
 /tests
