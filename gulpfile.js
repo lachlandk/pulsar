@@ -1,5 +1,6 @@
 const gulp = require("gulp");
 const del = require("del");
+const strip = require("gulp-strip-comments");
 const replace = require("gulp-replace");
 const rename = require("gulp-rename");
 const terser = require("gulp-terser");
@@ -15,7 +16,13 @@ async function clean() {
 async function generateSource() {
 	source.sourceFiles = await new Promise(resolve => {
 		const chunks = [];
-		const source = gulp.src("src/*.js");
+		const source = gulp.src("src/*.js").pipe(strip({
+			ignore: [
+				/\/\*\*\s*\n([^*]*(\*[^\/])?)*\*\//g,
+				/\/\*\s*\n([^*]*(\*[^\/])?)*\*\//g,
+				/\/\/.*/g
+			]
+		}));
 		source.on("data", chunk => chunks.push(chunk));
 		source.on("end", () => {
 			const files = [];
