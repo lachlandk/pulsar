@@ -1,4 +1,4 @@
-/***
+/*!
  * @licence
  * Pulsar.js - A javascript data visualisation framework
  * Copyright (C) 2021  Lachlan Dufort-Kennett
@@ -15,26 +15,24 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-***/
+*/
 window.Pulsar = (function () {
 	const core = (function() {
 		const propertySetters = {
 			setupProperties(instance, prototype, options) {
-				for (const key in defaultProperties[prototype]) {
-					if (defaultProperties[prototype].hasOwnProperty(key)) {
-						const option = defaultProperties[prototype][key];
-						const optionProvided = Object.keys(options).includes(key);
-						const parameters = [instance, key, option.type];
-						if (option.multi) {
-							parameters.push(...(optionProvided ? (Array.isArray(options[key]) ? options[key] : [options[key]]) : option.value));
-						} else {
-							parameters.push(optionProvided ? options[key] : option.value);
-						}
-						if (Object.keys(defaultProperties[prototype][key]).includes("extra")) {
-							parameters.push(option.extra);
-						}
-						propertySetters[option.setter](...parameters);
+				for (const key of Object.keys(defaultProperties[prototype])) {
+					const defaultOption = defaultProperties[prototype][key];
+					const optionProvided = Object.keys(options).includes(key);
+					const parameters = [instance, key, defaultOption.type];
+					if (defaultOption.multi) {
+						parameters.push(...(optionProvided ? (Array.isArray(options[key]) ? options[key] : [options[key]]) : defaultOption.value));
+					} else {
+						parameters.push(optionProvided ? options[key] : defaultOption.value);
 					}
+					if (Object.keys(defaultProperties[prototype][key]).includes("extra")) {
+						parameters.push(defaultOption.extra);
+					}
+					propertySetters[defaultOption.setter](...parameters);
 				}
 			},
 			setAxesProperty(instance, property, expectedType, ...values) {
@@ -91,20 +89,20 @@ window.Pulsar = (function () {
 				}
 			},
 			setPlotDataProperty(instance, trace, property, value) {
-				const defaults = defaultProperties.ResponsivePlot2DTrace[property];
+				const defaultOption = defaultProperties.ResponsivePlot2DTrace[property];
 				if (typeof instance.plotData[trace] !== "undefined") {
-					const parameters = [instance.plotData[trace], property, defaults.type, value];
-					if (Object.keys(defaults).includes("extra")) {
-						parameters.push(defaults.extra);
+					const parameters = [instance.plotData[trace], property, defaultOption.type, value];
+					if (Object.keys(defaultOption).includes("extra")) {
+						parameters.push(defaultOption.extra);
 					}
-					propertySetters[defaults.setter](...parameters);
+					propertySetters[defaultOption.setter](...parameters);
 					instance._updatePlottingData();
 				} else {
 					throw `Error setting plotData property ${property}: Invalid trace ID "${typeof trace === "string" ? trace : JSON.stringify(trace)}"`;
 				}
 			}
 		};
-	
+
 		const defaultProperties = {
 			ResponsiveCanvas: {
 				origin: {value: [0, 0], type: "number", setter: "setAxesProperty", multi: true}
@@ -131,11 +129,12 @@ window.Pulsar = (function () {
 				parameterRange: {value: [0, 1], type: "number", setter: "setArrayProperty", extra: 2}
 			}
 		};
-	
+
 		const activeCanvases = {};
-	
+
 		class ResponsiveCanvas {
 			constructor(container, options={}) {
+				this.id = "";
 				if (typeof container === "string") {
 					const element = document.getElementById(container);
 					if (element) {
@@ -163,18 +162,18 @@ window.Pulsar = (function () {
 				this.foreground = this.foregroundCanvas.getContext("2d");
 				this.width = this.container.clientWidth;
 				this.height = this.container.clientHeight;
-				if (options.origin === "center" || options.origin === "centre") {
+				if (options.origin === "centre") {
 					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
 				}
 				propertySetters.setupProperties(this, "ResponsiveCanvas", options);
-				this.observer = new ResizeObserver(entries => {
+				this._observer = new ResizeObserver(entries => {
 					for (const entry of entries) {
 						this.width = entry.target.clientWidth;
 						this.height = entry.target.clientHeight;
 						this._updateCanvasDimensions();
 					}
 				});
-				this.observer.observe(this.container);
+				this._observer.observe(this.container);
 				this.backgroundCanvas.style.position = "absolute";
 				this.backgroundCanvas.style.left = "0";
 				this.backgroundCanvas.style.top = "0";
@@ -191,7 +190,7 @@ window.Pulsar = (function () {
 					timeEvolutionActive: false
 				};
 			}
-	
+
 			_updateCanvasDimensions() {
 				this.backgroundCanvas.width = this.width;
 				this.backgroundCanvas.height = this.height;
@@ -202,66 +201,40 @@ window.Pulsar = (function () {
 				this.foreground.translate(this.origin.x, this.origin.y);
 				this._updateForeground();
 			}
-	
+
 			_updateBackground() {
 				this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 				if (this.backgroundFunction) {
 					this.backgroundFunction(this.background);
 				}
 			}
-	
+
 			_updateForeground() {
 				this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 				if (this.foregroundFunction) {
 					this.foregroundFunction(this.foreground);
 				}
 			}
-	
+
 			setBackground(drawingFunction) {
 				this.backgroundFunction = drawingFunction;
 				this._updateBackground();
 			}
-	
+
 			setForeground(drawingFunction) {
 				this.foregroundFunction = drawingFunction;
 				this._updateForeground();
 			}
-	
-			startTime() {
-				this.timeEvolutionData.timeEvolutionActive = true;
-				this.timeEvolutionData.startTimestampMS = performance.now();
-				window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
-			}
-	
-			pauseTime() {
-				this.timeEvolutionData.timeEvolutionActive = false;
-				this.timeEvolutionData.offsetTimestampMS = performance.now() - this.timeEvolutionData.startTimestampMS;
-			}
-	
-			stopTime() {
-				this.timeEvolutionData.timeEvolutionActive = false;
-				this.timeEvolutionData.currentTimeValue = 0;
-				this.timeEvolutionData.offsetTimestampMS = 0;
-				this._updateForeground();
-			}
-	
-			_updateTime(currentTimestamp) {
-				if (this.timeEvolutionData.timeEvolutionActive) {
-					this.timeEvolutionData.currentTimeValue = (this.timeEvolutionData.offsetTimestampMS + currentTimestamp - this.timeEvolutionData.startTimestampMS) / 1000;
-					this._updateForeground();
-					window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
-				}
-			}
-	
+
 			setOrigin(...point) {
-				if (point.length === 1 && (point[0] === "centre" || point[0] === "center")) {
+				if (point.length === 1 && point[0] === "centre") {
 					propertySetters.setAxesProperty(this,"origin", "number", Math.round(this.width / 2), Math.round(this.height / 2));
 				} else {
 					propertySetters.setAxesProperty(this,"origin", "number", ...point);
 				}
 				this._updateCanvasDimensions();
 			}
-	
+
 			setID(id) {
 				const oldID = this.id;
 				propertySetters.setSingleProperty(this, "id", "string", id);
@@ -271,7 +244,7 @@ window.Pulsar = (function () {
 				this.backgroundCanvas.id = `${this.id}-background-canvas`;
 				this.foregroundCanvas.id = `${this.id}-foreground-canvas`;
 			}
-	
+
 			setBackgroundCSS(cssString) {
 				if (typeof cssString === "string") {
 					this.backgroundCanvas.style.background = cssString;
@@ -279,12 +252,41 @@ window.Pulsar = (function () {
 					throw `Error setting background CSS for canvas: Unexpected argument ${JSON.stringify(id)}`;
 				}
 			}
+
+			startTime() {
+				this.timeEvolutionData.timeEvolutionActive = true;
+				this.timeEvolutionData.startTimestampMS = performance.now();
+				window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
+			}
+
+			pauseTime() {
+				this.timeEvolutionData.timeEvolutionActive = false;
+				this.timeEvolutionData.offsetTimestampMS = performance.now() - this.timeEvolutionData.startTimestampMS;
+			}
+
+			stopTime() {
+				this.timeEvolutionData.timeEvolutionActive = false;
+				this.timeEvolutionData.currentTimeValue = 0;
+				this.timeEvolutionData.offsetTimestampMS = 0;
+				this._updateForeground();
+			}
+
+			_updateTime(currentTimestamp) {
+				if (this.timeEvolutionData.timeEvolutionActive) {
+					this.timeEvolutionData.currentTimeValue = (this.timeEvolutionData.offsetTimestampMS + currentTimestamp - this.timeEvolutionData.startTimestampMS) / 1000;
+					this._updateForeground();
+					window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
+				}
+			}
 	 	}
-	
+
 		class ResponsivePlot2D extends ResponsiveCanvas {
 			constructor(container, options={}) {
 				super(container, options);
 				propertySetters.setupProperties(this, "ResponsivePlot2D", options);
+				this.xLims = [];
+				this.yLims = [];
+				this.plotData = {};
 				this._updateLimits();
 				this.setBackground(context => {
 					const drawGridSet = (majorOrMinor, xy, ticksOrGridlines, width, lineStart, lineEnd) => {
@@ -310,7 +312,6 @@ window.Pulsar = (function () {
 							context.stroke();
 						}
 					};
-	
 					context.lineCap = "square";
 					context.strokeStyle = "rgb(0, 0, 0)";
 					drawGridSet("minor", "x", "Gridlines", 1, -this.origin.y, this.height - this.origin.y);
@@ -329,14 +330,13 @@ window.Pulsar = (function () {
 					context.lineTo(this.width - this.origin.x, 0.5);
 					context.stroke();
 				});
-				this.plotData = {};
 			}
-	
+
 			_updateLimits() {
 				this.xLims = [-this.origin.x / this.gridScale.x, (this.width - this.origin.x) / this.gridScale.x];
 				this.yLims = [-this.origin.y / this.gridScale.y, (this.height - this.origin.y) / this.gridScale.y];
 			}
-	
+
 			_updatePlottingData() {
 				this.setForeground(context => {
 					for (const datasetID in this.plotData) {
@@ -428,7 +428,7 @@ window.Pulsar = (function () {
 					}
 				});
 			}
-	
+
 			addData(id, data, options={}) {
 				if (typeof id === "string") {
 					if (Array.isArray(data) && data.length === 2) {
@@ -523,55 +523,55 @@ window.Pulsar = (function () {
 					throw `Error setting plot data: Unexpected type for ID "${JSON.stringify(id)}"`;
 				}
 			}
-	
+
 			removeData(id) {
 				delete this.plotData[id];
 				this._updatePlottingData();
 			}
-	
-			setOrigin(...point) {
+
+				setOrigin(...point) {
 				super.setOrigin(...point);
 				this._updateLimits();
 			}
-	
+
 			setMajorTicks(...choices) {
 				propertySetters.setAxesProperty(this,"majorTicks", "boolean", ...choices);
 			}
-	
+
 			setMinorTicks(...choices) {
 				propertySetters.setAxesProperty(this,"minorTicks", "boolean", ...choices);
 			}
-	
+
 			setMajorTickSize(...sizes) {
 				propertySetters.setAxesProperty(this,"majorTickSize", "number", ...sizes);
 			}
-	
+
 			setMinorTickSize(...sizes) {
 				propertySetters.setAxesProperty(this,"minorTickSize", "number", ...sizes);
 			}
-	
+
 			setMajorGridlines(...choices) {
 				propertySetters.setAxesProperty(this,"majorGridlines", "boolean", ...choices);
 			}
-	
+
 			setMinorGridlines(...choices) {
 				propertySetters.setAxesProperty(this,"minorGridlines", "boolean", ...choices);
 			}
-	
+
 			setMajorGridSize(...sizes) {
 				propertySetters.setAxesProperty(this,"majorGridSize", "number", ...sizes);
 			}
-	
+
 			setMinorGridSize(...sizes) {
 				propertySetters.setAxesProperty(this,"minorGridSize", "number", ...sizes);
 			}
-	
+
 			setGridScale(...sizes) {
 				propertySetters.setAxesProperty(this,"gridScale", "number", ...sizes);
 				this._updateLimits();
 				this._updateForeground();
 			}
-	
+
 			setXLims(...range) {
 				const oldLims = this.xLims;
 				propertySetters.setArrayProperty(this, "xLims", "number", range, 2);
@@ -584,7 +584,7 @@ window.Pulsar = (function () {
 				this._updateBackground();
 				this._updatePlottingData();
 			}
-	
+
 			setYLims(...range) {
 				const oldLims = this.yLims;
 				propertySetters.setArrayProperty(this, "yLims", "number", range, 2);
@@ -597,82 +597,73 @@ window.Pulsar = (function () {
 				this._updateBackground();
 				this._updatePlottingData();
 			}
-	
+
 			setTraceColour(trace, colour) {
 				propertySetters.setPlotDataProperty(this, trace, "traceColour", colour);
 			}
-	
+
 			setTraceStyle(trace, style) {
 				propertySetters.setPlotDataProperty(this, trace, "traceStyle", style);
 			}
-	
+
 			setTraceWidth(trace, width) {
 				propertySetters.setPlotDataProperty(this, trace, "traceWidth", width);
 			}
-	
+
 			setMarkerColour(trace, colour) {
 				propertySetters.setPlotDataProperty(this, trace, "markerColour", colour);
 			}
-	
+
 			setMarkerStyle(trace, style) {
 				propertySetters.setPlotDataProperty(this, trace, "markerStyle", style);
 			}
-	
+
 			setMarkerSize(trace, size) {
 				propertySetters.setPlotDataProperty(this, trace, "markerSize", size);
 			}
-	
+
 			setVisibility(trace, value) {
 				propertySetters.setPlotDataProperty(this, trace, "visibility", value);
 			}
-	
+
 			setParameterRange(trace, ...range) {
 				propertySetters.setPlotDataProperty(this, trace, "parameterRange", range);
 			}
 		}
-	
-		return {
+
+			return {
 			activeCanvases: activeCanvases,
 			ResponsiveCanvas: ResponsiveCanvas,
 			ResponsivePlot2D: ResponsivePlot2D
 		};
 	})();
-	
-	function getActivePlots() {
-		const activePlots = {};
-		for (const canvasID in core.activeCanvases) {
-			if (core.activeCanvases[canvasID] instanceof core.ResponsivePlot2D) {
-				activePlots[canvasID] = core.activeCanvases[canvasID];
-			}
-		}
-		return activePlots;
-	}
-	
-	function plot(container, dataObject, options={}) {
+
+	function plot(id, data, options={}) {
 		let plotObject;
-		const plotID = typeof container === "string" ? container : document.getElementById(container);
-		if (core.activeCanvases.hasOwnProperty(plotID)) {
-			plotObject = core.activeCanvases[plotID];
+		if (core.activeCanvases.hasOwnProperty(id)) {
+			plotObject = core.activeCanvases[id];
 			for (const option in options) {
-				if (options.hasOwnProperty(option)) {
+				if (options.hasOwnProperty(option) && option !== "gridScale") {
 					const optionSetter = plotObject[`set${option.charAt(0).toUpperCase() + option.slice(1)}`];
-					if (optionSetter.length === 0) {
-						optionSetter.call(plotObject, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
-					} else {
-						optionSetter.call(plotObject, options[option]);
+					if (optionSetter !== undefined) {
+						if (optionSetter.length === 0) {
+							optionSetter.call(plotObject, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
+						} else {
+							optionSetter.call(plotObject, options[option]);
+						}
 					}
 				}
 			}
 		} else {
-			plotObject = new core.ResponsivePlot2D(container, options);
+			plotObject = new core.ResponsivePlot2D(id, options);
 			if (options.hasOwnProperty("backgroundCSS")) {
 				plotObject.setBackgroundCSS(options.backgroundCSS);
 			}
 			if (options.hasOwnProperty("xLims")) {
-				plotObject.setXLims(options.xLims);
+				plotObject.setXLims(...options.xLims);
 			}
 			if (options.hasOwnProperty("yLims")) {
-				plotObject.setYLims(options.yLims);
+				plotObject.setYLims(...options.yLims);
 			}
 		}
 		if (options.hasOwnProperty("reset") && options.reset === true) {
@@ -682,15 +673,25 @@ window.Pulsar = (function () {
 				}
 			}
 		}
-		if (dataObject !== null) {
-			plotObject.addData(dataObject.id, dataObject.data, dataObject.options);
+		if (data !== null) {
+			plotObject.addData(data.id, data.data, data.options);
 		}
 		return plotObject;
 	}
-	
-	return {
+
+	function getActivePlots() {
+		const activePlots = {};
+		for (const canvasID of Object.keys(core.activeCanvases)) {
+			if (core.activeCanvases[canvasID] instanceof core.ResponsivePlot2D) {
+				activePlots[canvasID] = core.activeCanvases[canvasID];
+			}
+		}
+		return activePlots;
+	}
+
+		return {
 		core: core,
-		getActivePlots: getActivePlots,
-		plot: plot
+		plot: plot,
+		getActivePlots: getActivePlots
 	};
 })();
