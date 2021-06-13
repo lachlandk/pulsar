@@ -1,10 +1,13 @@
 {
-	"plugins": [],
+	"plugins": [
+		"plugins/markdown"
+	],
 	"source": {
-		"include": ["./dist/pulsar-web.js"]
+		"include": ["./build/web/pulsar-web.js"]
 	},
 	"opts": {
-		"destination": "./docs/"
+		"destination": "./docs/",
+		"template": "./resources/default"
 	},
 	"tags": {
 		"allowUnknownTags": false,
@@ -15,7 +18,10 @@
 		"default": {
 			"outputSourceFiles": false,
 			"includeDate": false,
-			"useLongnameInNav": true
+			"useLongnameInNav": true,
+			"staticFiles": {
+				"include": ["./resources/"]
+			}
 		}
 	}
 }
