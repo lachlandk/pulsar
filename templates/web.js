@@ -1,4 +1,4 @@
-/***
+/*!
  * @licence
  * Pulsar.js - A javascript data visualisation framework
  * Copyright (C) 2021  Lachlan Dufort-Kennett
@@ -15,9 +15,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-***/
+*/
 /**
  * @namespace Pulsar
+ * @description This global object contains everything created by the Pulsar library.
+ * All Pulsar functions and classes are access from here.
  */
 window.Pulsar = (function () {
 // gulp-inject library body
