@@ -978,30 +978,31 @@ window.Pulsar = (function () {
 	
 			/**
 			 * Changes the range of `x` values to be shown on the plot by moving the origin and altering the grid scale.
-			 * @param {number} range The minimum and the maximum values of `x`.
+			 * @param {number} min The minimum value of `x`.
+			 * @param {number} max The maximum value of `x`.
 			 */
-			setXLims(...range) {
-				const oldLims = this.xLims;
-				propertySetters.setArrayProperty(this, "xLims", "number", range, 2);
-				if (this.xLims[0] >= this.xLims[1]) {
-					this.xLims = oldLims;
+			setXLims(min, max) {
+				if (max >= min) {
+					propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
+				} else {
 					throw `Error setting xLims: Lower limit cannot be higher than or equal to higher limit.`;
 				}
 				this.gridScale.x = this.width / Math.abs(this.xLims[0] - this.xLims[1]);
 				super.setOrigin(-this.xLims[0] * this.gridScale.x, this.origin.y);
 				this._updateBackground();
 				this._updatePlottingData();
+	
 			}
 	
 			/**
 			 * Changes the range of `y` values to be shown on the plot by moving the origin and altering the grid scale.
-			 * @param {number} range The minimum and the maximum values of `y`.
+			 * @param {number} min The minimum value of `y`.
+			 * @param {number} max The maximum value of `y`.
 			 */
-			setYLims(...range) {
-				const oldLims = this.yLims;
-				propertySetters.setArrayProperty(this, "yLims", "number", range, 2);
-				if (this.yLims[0] >= this.yLims[1]) {
-					this.yLims = oldLims;
+			setYLims(min, max) {
+				if (max >= min) {
+					propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
+				} else {
 					throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
 				}
 				this.gridScale.y = this.height / Math.abs(this.yLims[0] - this.yLims[1]);
@@ -1083,10 +1084,15 @@ window.Pulsar = (function () {
 			 * ```
 			 * This property has no effect at all if the function plotted does not have a free parameter.
 			 * @param {string} trace The ID of the trace to be updated.
-			 * @param {number} range Two numbers representing the minimum and maximum values of the parameter.
+			 * @param {number} min The minimum value of the free parameter.
+			 * @param {number} max The maximum value of the free parameter.
 			 */
-			setParameterRange(trace, ...range) {
-				propertySetters.setPlotDataProperty(this, trace, "parameterRange", range);
+			setParameterRange(trace, min, max) {
+				if (max >= min) {
+					propertySetters.setPlotDataProperty(this, trace, "parameterRange", [min, max]);
+				} else {
+					throw `Error setting parameterRange: Lower limit cannot be higher than or equal to higher limit.`;
+				}
 			}
 		}
 	

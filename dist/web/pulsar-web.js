@@ -572,24 +572,23 @@ window.Pulsar = (function () {
 				this._updateForeground();
 			}
 
-			setXLims(...range) {
-				const oldLims = this.xLims;
-				propertySetters.setArrayProperty(this, "xLims", "number", range, 2);
-				if (this.xLims[0] >= this.xLims[1]) {
-					this.xLims = oldLims;
+			setXLims(min, max) {
+				if (max >= min) {
+					propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
+				} else {
 					throw `Error setting xLims: Lower limit cannot be higher than or equal to higher limit.`;
 				}
 				this.gridScale.x = this.width / Math.abs(this.xLims[0] - this.xLims[1]);
 				super.setOrigin(-this.xLims[0] * this.gridScale.x, this.origin.y);
 				this._updateBackground();
 				this._updatePlottingData();
-			}
 
-			setYLims(...range) {
-				const oldLims = this.yLims;
-				propertySetters.setArrayProperty(this, "yLims", "number", range, 2);
-				if (this.yLims[0] >= this.yLims[1]) {
-					this.yLims = oldLims;
+				}
+
+			setYLims(min, max) {
+				if (max >= min) {
+					propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
+				} else {
 					throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
 				}
 				this.gridScale.y = this.height / Math.abs(this.yLims[0] - this.yLims[1]);
@@ -626,8 +625,12 @@ window.Pulsar = (function () {
 				propertySetters.setPlotDataProperty(this, trace, "visibility", value);
 			}
 
-			setParameterRange(trace, ...range) {
-				propertySetters.setPlotDataProperty(this, trace, "parameterRange", range);
+			setParameterRange(trace, min, max) {
+				if (max >= min) {
+					propertySetters.setPlotDataProperty(this, trace, "parameterRange", [min, max]);
+				} else {
+					throw `Error setting parameterRange: Lower limit cannot be higher than or equal to higher limit.`;
+				}
 			}
 		}
 
