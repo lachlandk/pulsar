@@ -361,7 +361,7 @@ window.Pulsar = (function () {
 			_updateBackground() {
 				this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 				if (this.backgroundFunction) {
-					this.backgroundFunction(this.background);
+					this.backgroundFunction(this.background, this.timeEvolutionData.currentTimeValue);
 				}
 			}
 	
@@ -372,14 +372,17 @@ window.Pulsar = (function () {
 			_updateForeground() {
 				this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 				if (this.foregroundFunction) {
-					this.foregroundFunction(this.foreground);
+					this.foregroundFunction(this.foreground, this.timeEvolutionData.currentTimeValue);
 				}
 			}
 	
 			/**
 			 * Sets the drawing function for the background canvas to `drawingFunction` and updates the canvas.
-			 * The argument `drawingFunction` should be a function which takes 1 argument, the
-			 * {@link https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D `CanvasRenderingContext2D`} for the background.
+			 * The argument `drawingFunction` should be a function which takes one or two arguments of its own, the first being the
+			 * {@link https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D `CanvasRenderingContext2D`} for the background,
+			 * and the second (which is optional) being the current time evolution value for the canvas object (in seconds).
+			 * The second argument need only specified if the drawing function contains animations which depend on the current
+			 * time value.
 			 * #### Example Usage
 			 * ```
 			 * myCanvas.setBackground(context => {
@@ -396,8 +399,9 @@ window.Pulsar = (function () {
 	
 			/**
 			 * Sets the drawing function for the foreground canvas to `drawingFunction` and updates the canvas.
-			 * The argument `drawingFunction` should be a function which takes 1 argument, the
-			 * {@link https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D `CanvasRenderingContext2D`} for the foreground.
+			 * The argument `drawingFunction` should be a function which takes one or two arguments of its own, the first being the
+			 * {@link https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D `CanvasRenderingContext2D`} for the background,
+			 * and the second (which is optional) being the current time evolution value for the canvas object (in seconds).
 			 * For example usage see {@link Pulsar.core.ResponsiveCanvas#setBackground setBackground()}.
 			 * @param {Function} drawingFunction The function which draws the foreground.
 			 */
@@ -619,7 +623,7 @@ window.Pulsar = (function () {
 			 * (data is added/removed, trace properties are changed, or the `xLims`/`yLims` are changed).
 			 */
 			_updatePlottingData() {
-				this.setForeground(context => {
+				this.setForeground((context, timeValue) => {
 					for (const datasetID in this.plotData) {
 						if (this.plotData.hasOwnProperty(datasetID) && this.plotData[datasetID].visibility === true) {
 							const dataset = this.plotData[datasetID];
@@ -641,7 +645,7 @@ window.Pulsar = (function () {
 										context.setLineDash([15, 3, 3, 3]);
 										break;
 								}
-								const dataGenerator = dataset.data(this.timeEvolutionData.currentTimeValue, this.xLims, this.yLims, 0.01, dataset.parameterRange);
+								const dataGenerator = dataset.data(timeValue, this.xLims, this.yLims, 0.01, dataset.parameterRange);
 								context.beginPath();
 								for (const currentPoint of dataGenerator) {
 									if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
@@ -695,7 +699,7 @@ window.Pulsar = (function () {
 											};
 									}
 								})();
-								const dataGenerator = dataset.data(this.timeEvolutionData.currentTimeValue, this.xLims, this.yLims, 0.001, dataset.parameterRange);
+								const dataGenerator = dataset.data(timeValue, this.xLims, this.yLims, 0.001, dataset.parameterRange);
 								let lastPoint = [NaN, NaN];
 								for (const currentPoint of dataGenerator) {
 									context.beginPath();

@@ -205,14 +205,14 @@ window.Pulsar = (function () {
 			_updateBackground() {
 				this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 				if (this.backgroundFunction) {
-					this.backgroundFunction(this.background);
+					this.backgroundFunction(this.background, this.timeEvolutionData.currentTimeValue);
 				}
 			}
 
 			_updateForeground() {
 				this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 				if (this.foregroundFunction) {
-					this.foregroundFunction(this.foreground);
+					this.foregroundFunction(this.foreground, this.timeEvolutionData.currentTimeValue);
 				}
 			}
 
@@ -338,7 +338,7 @@ window.Pulsar = (function () {
 			}
 
 			_updatePlottingData() {
-				this.setForeground(context => {
+				this.setForeground((context, timeValue) => {
 					for (const datasetID in this.plotData) {
 						if (this.plotData.hasOwnProperty(datasetID) && this.plotData[datasetID].visibility === true) {
 							const dataset = this.plotData[datasetID];
@@ -360,7 +360,7 @@ window.Pulsar = (function () {
 										context.setLineDash([15, 3, 3, 3]);
 										break;
 								}
-								const dataGenerator = dataset.data(this.timeEvolutionData.currentTimeValue, this.xLims, this.yLims, 0.01, dataset.parameterRange);
+								const dataGenerator = dataset.data(timeValue, this.xLims, this.yLims, 0.01, dataset.parameterRange);
 								context.beginPath();
 								for (const currentPoint of dataGenerator) {
 									if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
@@ -414,7 +414,7 @@ window.Pulsar = (function () {
 											};
 									}
 								})();
-								const dataGenerator = dataset.data(this.timeEvolutionData.currentTimeValue, this.xLims, this.yLims, 0.001, dataset.parameterRange);
+								const dataGenerator = dataset.data(timeValue, this.xLims, this.yLims, 0.001, dataset.parameterRange);
 								let lastPoint = [NaN, NaN];
 								for (const currentPoint of dataGenerator) {
 									context.beginPath();
