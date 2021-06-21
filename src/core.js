@@ -200,12 +200,12 @@ const core = (function() {
 	 * @description Class representing the base canvas object which all other Pulsar canvas objects inherit from.
 	 * This class is not meant to be instantiated directly by a user, mainly because it is not very useful by itself.
 	 * However, it does provide a lot of useful functionality which is used by subclasses.
-	 * A `ResponsiveCanvas` instance will create two canvases, a background and a foreground, and add them to a
-	 * container element in the DOM. These canvases will then fill this container element, and even change their size
-	 * when the container element is resized. The origin of a ResponsiveCanvas can be changed with `setOrigin`, and it
-	 * can be drawn on by passing a drawing function to `setBackground` or `setForeground`.
-	 * Read-only properties and methods beginning with an underscore should not be changed/called, otherwise they
-	 * may cause unpredictable behaviour.
+	 * A `ResponsiveCanvas` instance has two drawing surfaces, a background and a foreground.
+	 * These drawing surfaces can be added to the HTML page as canvas elements by calling `show` (Does nothing in a Node.js context).
+	 * These canvases will then fill the container element, and even change their size when the container element is resized.
+	 * The coordinate origin of a ResponsiveCanvas can be changed with `setOrigin`, and it can be drawn on and animated
+	 * by passing a drawing function to `setBackground` or `setForeground`. Read-only properties and methods beginning with
+	 * an underscore should not be changed/called, otherwise they may cause unpredictable behaviour.
 	 * #### Options
 	 * When a `ResponsiveCanvas` is created, its properties can be specified by passing an optional object literal with the options as key-value pairs.
 	 * The possible options are as follows (For a full example see the documentation for the {@link Pulsar.plot Pulsar.plot()} function).
@@ -217,84 +217,40 @@ const core = (function() {
 	// TODO: add images to this description
 	class ResponsiveCanvas {
 		/**
-		 * @param {string|Element} container The element or the ID of the element which the canvas object will be added to.
+		 * @param {string} id The ID of the canvas object.
 		 * @param {Object} [options={}]  Optional parameters from the table below.
 		 */
-		constructor(container, options={}) {
+		constructor(id, options={}) {
 			/**
 			 * @readonly
 			 * @description The unique ID for the canvas object.
 			 * @type {string}
 			 */
 			this.id = "";
-			if (typeof container === "string") {
-				const element = document.getElementById(container);
-				if (element) {
-					this.container = element;
-					this.id = container;
-				} else {
-					throw `Error in ResponsiveCanvas constructor: Element with ID ${JSON.stringify(container)} could not be found.`;
-				}
-				this.container = document.getElementById(container);
-			} else if (container instanceof Element) {
-				this.container = container;
-				if (container.id) {
-					this.id = container.id;
-				} else {
-					throw `Error in ResponsiveCanvas constructor: Container element must have a valid ID.`;
-				}
-			} else {
-				throw "Error in ResponsiveCanvas constructor: Container parameter could not be recognised as an Element or an ID string.";
-			}
-			activeCanvases[this.id] = this;
-			this.container.style.position = "relative";
-			this.backgroundCanvas = document.createElement("canvas");
-			this.foregroundCanvas = document.createElement("canvas");
 			/**
 			 * @readonly
 			 * @description A shortcut to the context for the background canvas. If no background canvas exists, this will be null.
 			 * @type {CanvasRenderingContext2D}
 			 */
-			this.background = this.backgroundCanvas.getContext("2d");
+			this.background = null;
 			/**
 			 * @readonly
 			 * @description A shortcut to the context for the foreground canvas. If no foreground canvas exists, this will be null.
 			 * @type {CanvasRenderingContext2D}
 			 */
-			this.foreground = this.foregroundCanvas.getContext("2d");
+			this.foreground = null;
 			/**
 			 * @readonly
 			 * @description The width (in pixels) of the canvas object on the HTML page. If the object is not on the HTML page, this will be null.
 			 * @type {number}
 			 */
-			this.width = this.container.clientWidth;
+			this.width = 0;
 			/**
 			 * @readonly
 			 * @description The height (in pixels) of the canvas object on the HTML page. If the object is not on the HTML page, this will be null.
 			 * @type {number}
 			 */
-			this.height = this.container.clientHeight;
-			if (options.origin === "centre") {
-				options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
-			}
-			propertySetters.setupProperties(this, "ResponsiveCanvas", options);
-			this._observer = new ResizeObserver(entries => {
-				for (const entry of entries) {
-					this.width = entry.target.clientWidth;
-					this.height = entry.target.clientHeight;
-					this._updateCanvasDimensions();
-				}
-			});
-			this._observer.observe(this.container);
-			this.backgroundCanvas.style.position = "absolute";
-			this.backgroundCanvas.style.left = "0";
-			this.backgroundCanvas.style.top = "0";
-			this.foregroundCanvas.style.position = "absolute";
-			this.foregroundCanvas.style.left = "0";
-			this.foregroundCanvas.style.top = "0";
-			this.container.appendChild(this.backgroundCanvas);
-			this.container.appendChild(this.foregroundCanvas);
-			this.setID(this.id);
+			this.height = 0;
 			/**
 			 * @readonly
 			 * @description An object holding data about the time evolution of the canvas object. The data is used internally
@@ -313,6 +269,20 @@ const core = (function() {
 				offsetTimestampMS: 0,
 				timeEvolutionActive: false
 			};
+			/**
+			 * @readonly
+			 * @description Object which holds properties for the displaying of the canvas object on the HTML page, such as
+			 * the origin value and backgroundCSS (if set).
+			 * @type {Object}
+			 */
+			this.displayProperties = {
+				origin: options.origin
+			};
+			this.setID(id);
+			if (options.origin === "centre") {
+				options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
+			}
+			propertySetters.setupProperties(this, "ResponsiveCanvas", options);
 		}
 
 		/**
@@ -321,6 +291,8 @@ const core = (function() {
 		 * (since setting the width and height resets the transforms), and calls the updateBackground and updateForeground functions.
 		 */
 		_updateCanvasDimensions() {
+			this.canvasContainer.style.width = `${this.width}px`;
+			this.canvasContainer.style.height = `${this.height}px`;
 			this.backgroundCanvas.width = this.width;
 			this.backgroundCanvas.height = this.height;
 			this.background.translate(this.origin.x, this.origin.y);
@@ -336,9 +308,11 @@ const core = (function() {
 		 * @description Clears the background and runs the drawing function (if there is one).
 		 */
 		_updateBackground() {
-			this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
-			if (this.backgroundFunction) {
-				this.backgroundFunction(this.background, this.timeEvolutionData.currentTimeValue);
+			if (this.background !== null) {
+				this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
+				if (this.backgroundFunction) {
+					this.backgroundFunction(this.background, this.timeEvolutionData.currentTimeValue);
+				}
 			}
 		}
 
@@ -347,9 +321,11 @@ const core = (function() {
 		 * @description Clears the foreground and runs the drawing function (if there is one).
 		 */
 		_updateForeground() {
-			this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
-			if (this.foregroundFunction) {
-				this.foregroundFunction(this.foreground, this.timeEvolutionData.currentTimeValue);
+			if (this.foreground !== null) {
+				this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
+				if (this.foregroundFunction) {
+					this.foregroundFunction(this.foreground, this.timeEvolutionData.currentTimeValue);
+				}
 			}
 		}
 
@@ -400,10 +376,13 @@ const core = (function() {
 		setOrigin(...point) {
 			if (point.length === 1 && point[0] === "centre") {
 				propertySetters.setAxesProperty(this,"origin", "number", Math.round(this.width / 2), Math.round(this.height / 2));
+				this.displayProperties.origin = "centre";
 			} else {
 				propertySetters.setAxesProperty(this,"origin", "number", ...point);
 			}
-			this._updateCanvasDimensions();
+			if (this.backgroundCanvas !== undefined && this.foregroundCanvas !== undefined) {
+				this._updateCanvasDimensions();
+			}
 		}
 
 		/**
@@ -413,13 +392,12 @@ const core = (function() {
 		 * @param {string} id New ID for the canvas object.
 		 */
 		setID(id) {
-			const oldID = this.id;
-			propertySetters.setSingleProperty(this, "id", "string", id);
-			delete activeCanvases[oldID];
-			activeCanvases[this.id] = this;
-			this.backgroundCanvas.parentElement.id = this.id;
-			this.backgroundCanvas.id = `${this.id}-background-canvas`;
-			this.foregroundCanvas.id = `${this.id}-foreground-canvas`;
+			if (activeCanvases[id] === undefined) {
+				propertySetters.setSingleProperty(this, "id", "string", id);
+				activeCanvases[this.id] = this;
+			} else {
+				throw `Error creating ResponsiveCanvas object: Object with ID "${typeof id === "string" ? id : JSON.stringify(id)}" already exists.`;
+			}
 		}
 
 		/**
@@ -430,7 +408,10 @@ const core = (function() {
 		 */
 		setBackgroundCSS(cssString) {
 			if (typeof cssString === "string") {
-				this.backgroundCanvas.style.background = cssString;
+				if (this.backgroundCanvas !== undefined) {
+					this.backgroundCanvas.style.background = cssString;
+				}
+				this.displayProperties.backgroundCSS = cssString;
 			} else {
 				throw `Error setting background CSS for canvas: Unexpected argument ${JSON.stringify(id)}`;
 			}
@@ -475,6 +456,16 @@ const core = (function() {
 				window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
 			}
 		}
+
+		/**
+		 * Displays the canvas object on the HTML page inside the element specified by the query selector.
+		 * A block-level element such as a `<div>` is recommended for the canvas object to work correctly.
+		 * If this method is run in a Node.js environment, it will do nothing.
+		 * @param {string} element {@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector Query selector} for the element.
+		 */
+		show(element) {
+			// implementation is platform dependent
+		}
  	}
 
 	/**
@@ -484,7 +475,7 @@ const core = (function() {
 	 * @description This class is the base class for all Pulsar plot objects. It extends {@link Pulsar.core.ResponsiveCanvas ResponsiveCanvas}.
 	 * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
 	 * {@link Pulsar.plot Pulsar.plot()} function. These objects behave similarly to a `ResponsiveCanvas`. They have a
-	 * background, which contains the axes and gridlines, and a foreground, which contains the plot data and can be animated.
+	 * background, which contains the axes and gridlines, and a foreground, which contains the plot data.
 	 * The ticks and gridlines can be toggled and the intervals between them can be changed. The size of a unit on the grid
 	 * is determined by the grid scale which, by default, is 50 pixels for both `x` and `y`, meaning that a step of one unit in both directions on
 	 * the grid would be 50 pixels on the screen. This can be changed with the {@link Pulsar.core.ResponsivePlot2D#setGridScale setGridScale()} method.
@@ -509,7 +500,7 @@ const core = (function() {
 	 */
 	class ResponsivePlot2D extends ResponsiveCanvas {
 		/**
-		 * @param {string|Element} container The element or the ID of the element which the plot object will be added to.
+		 * @param {string} container The ID of the plot object.
 		 * @param {Object} [options={}]  Optional parameters from the table below.
 		 */
 		constructor(container, options={}) {

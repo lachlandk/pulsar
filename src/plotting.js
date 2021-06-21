@@ -4,7 +4,7 @@
  */
 /**
  * @function Pulsar.plot
- * @param {string} id - The ID of the container element. If no element with this ID in the DOM, then an error will be thrown.
+ * @param {string} id - The ID of the plot object. Must be unique.
  * @param {Object|null} data - The data to be plotted. The structure of the object follows the exact same pattern as the signature of
  * [Pulsar.core.ResponsivePlot2D.addData()]{@link Pulsar.core.ResponsivePlot2D#addData}. If `null` is passed, no data will be plotted.
  * @param {string} data.id - The ID for the trace. This ID will be the key for the relevant entry in the [plotData]{@link Pulsar.core.ResponsivePlot2D#plotData}
@@ -15,7 +15,7 @@
  * @param {Object} options - Options for the plot.
  * @returns {Pulsar.core.ResponsivePlot2D}
  * @description
- * Creates a plot with the specified ID in the element with that ID, if one doesn't exist already, and plots the data with the options specified,
+ * Creates a plot with the specified ID, if one doesn't exist already, and plots the data with the options specified,
  * returning the {@link Pulsar.core.ResponsivePlot2D} object representing the plot. If a plot with the specified ID already exists,
  * then the data is added to the existing plot, the options passed are overridden and the existing plot object is returned.
  *
@@ -38,6 +38,7 @@
  * | `gridScale` | number \| Array.\<number\> | `[50, 50]` | See {@link Pulsar.core.ResponsivePlot2D#setGridScale ResponsivePlot2D.setGridScale()}. |
  * | `xLims` | Array.\<number\> | Dependent on canvas size. | See {@link Pulsar.core.ResponsivePlot2D#setXLims ResponsivePlot2D.setXLims()}. |
  * | `yLims` | Array.\<number\> | Dependent on canvas size. | See {@link Pulsar.core.ResponsivePlot2D#setYLims ResponsivePlot2D.setYLims()}. |
+ * | `reset` | boolean | `false` | Removes all data from the plot before adding the new data specified. |
  *
  * #### Creating a simple plot of a parabola.
  * ```
@@ -61,7 +62,7 @@
  */
 function plot(id, data, options={}) {
 	let plotObject;
-	if (core.activeCanvases.hasOwnProperty(id)) {
+	if (core.activeCanvases[id] !== undefined) {
 		plotObject = core.activeCanvases[id];
 		for (const option in options) {
 			if (options.hasOwnProperty(option) && option !== "gridScale") {
@@ -88,10 +89,8 @@ function plot(id, data, options={}) {
 		}
 	}
 	if (options.hasOwnProperty("reset") && options.reset === true) {
-		for (const id in plotObject.plotData) {
-			if (plotObject.plotData.hasOwnProperty(id)) {
-				plotObject.removeData(id);
-			}
+		for (const id of Object.keys(plotObject.plotData)) {
+			plotObject.removeData(id);
 		}
 	}
 	if (data !== null) {
