@@ -3,16 +3,18 @@ const del = require("del");
 const strip = require("gulp-strip-comments");
 const replace = require("gulp-replace");
 const rename = require("gulp-rename");
+const gulpIf = require("gulp-if");
+const lazypipe = require("lazypipe");
 const terser = require("gulp-terser");
 const log = require("fancy-log");
 const { exec } = require("child_process");
 
-async function build() {
-	const paths = await del(["build/web/**"]);
+async function create_build(sourceStringArray, template, filename) {
+	const paths = await del([`build/${template}**`]);
 	log(paths.length > 0 ? `Deleted old build files:\n - ${paths.join("\n - ")}` : "No old build files found to clear.");
 	const sourceFiles = await new Promise(resolve => {
 		const chunks = [];
-		const source = gulp.src("src/*.js").pipe(strip({
+		const source = gulp.src(sourceStringArray).pipe(strip({
 			ignore: /\/\*\*\s*\n([^*]|(\*(?!\/)))*\*\//g
 		}));
 		source.on("data", chunk => chunks.push(chunk));
@@ -48,27 +50,63 @@ async function build() {
 		}
 		return globalExports.join("\n");
 	})();
-	return gulp.src("templates/web.js")
+	return gulp.src(`templates/${template}.js`)
 		.pipe(replace("// gulp-inject library body", sourceString))
 		.pipe(replace("// gulp-inject library exports", sourceExports))
-		.pipe(rename("pulsar-web.js"))
-		.pipe(gulp.dest("build/web/"));
+		.pipe(rename(filename))
+		.pipe(gulp.dest(`build/${template}`));
 }
 
-async function dist() {
-	const paths = await del(["dist/web/**"]);
-	log(paths.length > 0 ? `Deleted old dist files:\n - ${paths.join("\n - ")}` : "No old dist files found to clear.");
-	return gulp.src("build/web/pulsar-web.js")
+async function create_dist(folder, doMinify) {
+	const minify = lazypipe()
+		.pipe(terser)
+		.pipe(rename,{
+			extname: ".min.js"
+		});
+	return gulp.src(`build/${folder}/*.js`)
 		.pipe(strip({
 			safe: true
 		}))
-		.pipe(gulp.dest("dist/web/"))
-		.pipe(terser())
-		.pipe(rename("pulsar-web.min.js"))
-		.pipe(gulp.dest("dist/web/"));
+		.pipe(gulp.dest(`dist/`))
+		.pipe(gulpIf(doMinify, minify()))
+		.pipe(gulp.dest(`dist/`));
+}
+
+function build_web() {
+	return create_build(["src/*.js", "src/web/*.js"], "web", "pulsar-web.js");
+}
+
+function build_node() {
+	return create_build(["src/*.js", "src/node/*.js"], "node", "pulsar.js");
+}
+
+function dist_web() {
+	return create_dist("web", true);
+
+}
+
+function dist_node() {
+	return create_dist("node", false);
+}
+
+function build() {
+	if (process.argv[3] === "--web") {
+		return build_web();
+	} else if (process.argv[3] === "--node") {
+		return build_node();
+	}
+}
+
+function dist() {
+	if (process.argv[3] === "--web") {
+		return dist_web();
+	} else if (process.argv[3] === "--node") {
+		return dist_node();
+	}
 }
 
 async function docs() {
+	// TODO: update for node/web versions
 	const paths = await del(["docs/**"]);
 	log(paths.length > 0 ? `Deleted old docs files:\n - ${paths.join("\n - ")}` : "No old docs files found to clear.");
 	return new Promise((resolve, reject) => {

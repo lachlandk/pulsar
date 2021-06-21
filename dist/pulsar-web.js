@@ -133,65 +133,31 @@ window.Pulsar = (function () {
 		const activeCanvases = {};
 
 		class ResponsiveCanvas {
-			constructor(container, options={}) {
+			constructor(id, options={}) {
 				this.id = "";
-				if (typeof container === "string") {
-					const element = document.getElementById(container);
-					if (element) {
-						this.container = element;
-						this.id = container;
-					} else {
-						throw `Error in ResponsiveCanvas constructor: Element with ID ${JSON.stringify(container)} could not be found.`;
-					}
-					this.container = document.getElementById(container);
-				} else if (container instanceof Element) {
-					this.container = container;
-					if (container.id) {
-						this.id = container.id;
-					} else {
-						throw `Error in ResponsiveCanvas constructor: Container element must have a valid ID.`;
-					}
-				} else {
-					throw "Error in ResponsiveCanvas constructor: Container parameter could not be recognised as an Element or an ID string.";
-				}
-				activeCanvases[this.id] = this;
-				this.container.style.position = "relative";
-				this.backgroundCanvas = document.createElement("canvas");
-				this.foregroundCanvas = document.createElement("canvas");
-				this.background = this.backgroundCanvas.getContext("2d");
-				this.foreground = this.foregroundCanvas.getContext("2d");
-				this.width = this.container.clientWidth;
-				this.height = this.container.clientHeight;
-				if (options.origin === "centre") {
-					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
-				}
-				propertySetters.setupProperties(this, "ResponsiveCanvas", options);
-				this._observer = new ResizeObserver(entries => {
-					for (const entry of entries) {
-						this.width = entry.target.clientWidth;
-						this.height = entry.target.clientHeight;
-						this._updateCanvasDimensions();
-					}
-				});
-				this._observer.observe(this.container);
-				this.backgroundCanvas.style.position = "absolute";
-				this.backgroundCanvas.style.left = "0";
-				this.backgroundCanvas.style.top = "0";
-				this.foregroundCanvas.style.position = "absolute";
-				this.foregroundCanvas.style.left = "0";
-				this.foregroundCanvas.style.top = "0";
-				this.container.appendChild(this.backgroundCanvas);
-				this.container.appendChild(this.foregroundCanvas);
-				this.setID(this.id);
+				this.background = null;
+				this.foreground = null;
+				this.width = 0;
+				this.height = 0;
 				this.timeEvolutionData = {
 					currentTimeValue: 0,
 					startTimestampMS: 0,
 					offsetTimestampMS: 0,
 					timeEvolutionActive: false
 				};
+				this.displayProperties = {
+					origin: options.origin
+				};
+				this.setID(id);
+				if (options.origin === "centre") {
+					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
+				}
+				propertySetters.setupProperties(this, "ResponsiveCanvas", options);
 			}
 
 			_updateCanvasDimensions() {
+				this.canvasContainer.style.width = `${this.width}px`;
+				this.canvasContainer.style.height = `${this.height}px`;
 				this.backgroundCanvas.width = this.width;
 				this.backgroundCanvas.height = this.height;
 				this.background.translate(this.origin.x, this.origin.y);
@@ -203,16 +169,20 @@ window.Pulsar = (function () {
 			}
 
 			_updateBackground() {
-				this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
-				if (this.backgroundFunction) {
-					this.backgroundFunction(this.background, this.timeEvolutionData.currentTimeValue);
+				if (this.background !== null) {
+					this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
+					if (this.backgroundFunction) {
+						this.backgroundFunction(this.background, this.timeEvolutionData.currentTimeValue);
+					}
 				}
 			}
 
 			_updateForeground() {
-				this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
-				if (this.foregroundFunction) {
-					this.foregroundFunction(this.foreground, this.timeEvolutionData.currentTimeValue);
+				if (this.foreground !== null) {
+					this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
+					if (this.foregroundFunction) {
+						this.foregroundFunction(this.foreground, this.timeEvolutionData.currentTimeValue);
+					}
 				}
 			}
 
@@ -229,25 +199,30 @@ window.Pulsar = (function () {
 			setOrigin(...point) {
 				if (point.length === 1 && point[0] === "centre") {
 					propertySetters.setAxesProperty(this,"origin", "number", Math.round(this.width / 2), Math.round(this.height / 2));
+					this.displayProperties.origin = "centre";
 				} else {
 					propertySetters.setAxesProperty(this,"origin", "number", ...point);
 				}
-				this._updateCanvasDimensions();
+				if (this.backgroundCanvas !== undefined && this.foregroundCanvas !== undefined) {
+					this._updateCanvasDimensions();
+				}
 			}
 
 			setID(id) {
-				const oldID = this.id;
-				propertySetters.setSingleProperty(this, "id", "string", id);
-				delete activeCanvases[oldID];
-				activeCanvases[this.id] = this;
-				this.backgroundCanvas.parentElement.id = this.id;
-				this.backgroundCanvas.id = `${this.id}-background-canvas`;
-				this.foregroundCanvas.id = `${this.id}-foreground-canvas`;
+				if (activeCanvases[id] === undefined) {
+					propertySetters.setSingleProperty(this, "id", "string", id);
+					activeCanvases[this.id] = this;
+				} else {
+					throw `Error creating ResponsiveCanvas object: Object with ID "${typeof id === "string" ? id : JSON.stringify(id)}" already exists.`;
+				}
 			}
 
 			setBackgroundCSS(cssString) {
 				if (typeof cssString === "string") {
-					this.backgroundCanvas.style.background = cssString;
+					if (this.backgroundCanvas !== undefined) {
+						this.backgroundCanvas.style.background = cssString;
+					}
+					this.displayProperties.backgroundCSS = cssString;
 				} else {
 					throw `Error setting background CSS for canvas: Unexpected argument ${JSON.stringify(id)}`;
 				}
@@ -277,6 +252,9 @@ window.Pulsar = (function () {
 					this._updateForeground();
 					window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
 				}
+			}
+
+			show(element) {
 			}
 	 	}
 
@@ -643,7 +621,7 @@ window.Pulsar = (function () {
 
 	function plot(id, data, options={}) {
 		let plotObject;
-		if (core.activeCanvases.hasOwnProperty(id)) {
+		if (core.activeCanvases[id] !== undefined) {
 			plotObject = core.activeCanvases[id];
 			for (const option in options) {
 				if (options.hasOwnProperty(option) && option !== "gridScale") {
@@ -670,10 +648,8 @@ window.Pulsar = (function () {
 			}
 		}
 		if (options.hasOwnProperty("reset") && options.reset === true) {
-			for (const id in plotObject.plotData) {
-				if (plotObject.plotData.hasOwnProperty(id)) {
-					plotObject.removeData(id);
-				}
+			for (const id of Object.keys(plotObject.plotData)) {
+				plotObject.removeData(id);
 			}
 		}
 		if (data !== null) {
@@ -691,6 +667,41 @@ window.Pulsar = (function () {
 		}
 		return activePlots;
 	}
+
+		core.ResponsiveCanvas.prototype.show = function (element) {
+		this.containerElement = document.querySelector(element);
+		this.canvasContainer = document.createElement("div");
+		this.canvasContainer.id = this.id;
+		this.canvasContainer.style.position = "relative";
+		this.backgroundCanvas = document.createElement("canvas");
+		this.foregroundCanvas = document.createElement("canvas");
+		this.backgroundCanvas.style.position = "absolute";
+		this.backgroundCanvas.style.left = "0";
+		this.backgroundCanvas.style.top = "0";
+		this.backgroundCanvas.id = `${this.id}-background-canvas`;
+		this.foregroundCanvas.style.position = "absolute";
+		this.foregroundCanvas.style.left = "0";
+		this.foregroundCanvas.style.top = "0";
+		this.foregroundCanvas.id = `${this.id}-foreground-canvas`;
+		this.canvasContainer.appendChild(this.backgroundCanvas);
+		this.canvasContainer.appendChild(this.foregroundCanvas);
+		this.containerElement.appendChild(this.canvasContainer);
+		this.background = this.backgroundCanvas.getContext("2d");
+		this.foreground = this.foregroundCanvas.getContext("2d");
+		this.width = this.containerElement.clientWidth;
+		this.height = this.containerElement.clientHeight;
+		this._observer = new ResizeObserver(entries => {
+			for (const entry of entries) {
+				this.width = entry.target.clientWidth;
+				this.height = entry.target.clientHeight;
+				this._updateCanvasDimensions();
+			}
+		});
+		this._observer.observe(this.containerElement);
+		for (const property of Object.keys(this.displayProperties)) {
+			this[`set${property[0].toUpperCase()}${property.slice(1)}`](this.displayProperties[property]);
+		}
+	};
 
 		return {
 		core: core,
