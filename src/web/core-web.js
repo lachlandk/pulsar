@@ -1,3 +1,9 @@
+/**
+ * Displays the canvas object on the HTML page inside the element specified by the query selector.
+ * A block-level element such as a `<div>` is recommended for the canvas object to work correctly.
+ * This is not available in Node.js environments.
+ * @param {string} element {@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector Query selector} for the element.
+ */
 core.ResponsiveCanvas.prototype.show = function (element) {
 	this.containerElement = document.querySelector(element);
 	this.canvasContainer = document.createElement("div");
@@ -20,14 +26,14 @@ core.ResponsiveCanvas.prototype.show = function (element) {
 	this.foreground = this.foregroundCanvas.getContext("2d");
 	this.width = this.containerElement.clientWidth;
 	this.height = this.containerElement.clientHeight;
-	this._observer = new ResizeObserver(entries => {
+	this.observer = new ResizeObserver(entries => {
 		for (const entry of entries) {
 			this.width = entry.target.clientWidth;
 			this.height = entry.target.clientHeight;
 			this._updateCanvasDimensions();
 		}
 	});
-	this._observer.observe(this.containerElement);
+	this.observer.observe(this.containerElement);
 	for (const property of Object.keys(this.displayProperties)) {
 		this[`set${property[0].toUpperCase()}${property.slice(1)}`](this.displayProperties[property]);
 	}

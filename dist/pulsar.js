@@ -135,10 +135,6 @@ module.exports = (function () {
 		class ResponsiveCanvas {
 			constructor(id, options={}) {
 				this.id = "";
-				this.background = null;
-				this.foreground = null;
-				this.width = 0;
-				this.height = 0;
 				this.timeEvolutionData = {
 					currentTimeValue: 0,
 					startTimestampMS: 0,
@@ -150,7 +146,7 @@ module.exports = (function () {
 				};
 				this.setID(id);
 				if (options.origin === "centre") {
-					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
+					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)]; 
 				}
 				propertySetters.setupProperties(this, "ResponsiveCanvas", options);
 			}
@@ -169,7 +165,7 @@ module.exports = (function () {
 			}
 
 			_updateBackground() {
-				if (this.background !== null) {
+				if (this.background !== undefined) {
 					this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 					if (this.backgroundFunction) {
 						this.backgroundFunction(this.background, this.timeEvolutionData.currentTimeValue);
@@ -178,7 +174,7 @@ module.exports = (function () {
 			}
 
 			_updateForeground() {
-				if (this.foreground !== null) {
+				if (this.foreground !== undefined) {
 					this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 					if (this.foregroundFunction) {
 						this.foregroundFunction(this.foreground, this.timeEvolutionData.currentTimeValue);
@@ -253,9 +249,6 @@ module.exports = (function () {
 					window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
 				}
 			}
-
-			show(element) {
-			}
 	 	}
 
 		class ResponsivePlot2D extends ResponsiveCanvas {
@@ -317,8 +310,8 @@ module.exports = (function () {
 
 			_updatePlottingData() {
 				this.setForeground((context, timeValue) => {
-					for (const datasetID in this.plotData) {
-						if (this.plotData.hasOwnProperty(datasetID) && this.plotData[datasetID].visibility === true) {
+					for (const datasetID of Object.keys(this.plotData)) {
+						if (this.plotData[datasetID].visibility === true) {
 							const dataset = this.plotData[datasetID];
 							if (dataset.traceStyle !== "none") {
 								context.strokeStyle = dataset.traceColour;
@@ -668,11 +661,8 @@ module.exports = (function () {
 		return activePlots;
 	}
 
-		core.ResponsiveCanvas.prototype.show = function () {
-		console.warn(`WARNING: "show" method called in a non-browser environment. Method has no effect.`);
-	};
 
-		return {
+			return {
 		core: core,
 		plot: plot,
 		getActivePlots: getActivePlots

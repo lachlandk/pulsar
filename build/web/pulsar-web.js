@@ -252,30 +252,6 @@ window.Pulsar = (function () {
 				this.id = "";
 				/**
 				 * @readonly
-				 * @description A shortcut to the context for the background canvas. If no background canvas exists, this will be null.
-				 * @type {CanvasRenderingContext2D}
-				 */
-				this.background = null;
-				/**
-				 * @readonly
-				 * @description A shortcut to the context for the foreground canvas. If no foreground canvas exists, this will be null.
-				 * @type {CanvasRenderingContext2D}
-				 */
-				this.foreground = null;
-				/**
-				 * @readonly
-				 * @description The width (in pixels) of the canvas object on the HTML page. If the object is not on the HTML page, this will be null.
-				 * @type {number}
-				 */
-				this.width = 0;
-				/**
-				 * @readonly
-				 * @description The height (in pixels) of the canvas object on the HTML page. If the object is not on the HTML page, this will be null.
-				 * @type {number}
-				 */
-				this.height = 0;
-				/**
-				 * @readonly
 				 * @description An object holding data about the time evolution of the canvas object. The data is used internally
 				 * by the time evolution methods. The `DOMHighResTimeStamps` are obtained from calls to
 				 * {@link https://developer.mozilla.org/en-US/docs/Web/API/Performance/now `performance.now()`}.
@@ -303,7 +279,7 @@ window.Pulsar = (function () {
 				};
 				this.setID(id);
 				if (options.origin === "centre") {
-					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
+					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)]; 
 				}
 				propertySetters.setupProperties(this, "ResponsiveCanvas", options);
 			}
@@ -331,7 +307,7 @@ window.Pulsar = (function () {
 			 * @description Clears the background and runs the drawing function (if there is one).
 			 */
 			_updateBackground() {
-				if (this.background !== null) {
+				if (this.background !== undefined) {
 					this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 					if (this.backgroundFunction) {
 						this.backgroundFunction(this.background, this.timeEvolutionData.currentTimeValue);
@@ -344,7 +320,7 @@ window.Pulsar = (function () {
 			 * @description Clears the foreground and runs the drawing function (if there is one).
 			 */
 			_updateForeground() {
-				if (this.foreground !== null) {
+				if (this.foreground !== undefined) {
 					this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 					if (this.foregroundFunction) {
 						this.foregroundFunction(this.foreground, this.timeEvolutionData.currentTimeValue);
@@ -369,6 +345,10 @@ window.Pulsar = (function () {
 			 * @param {Function} drawingFunction The function which draws the background.
 			 */
 			setBackground(drawingFunction) {
+				/**
+				 * The function which draws the background.
+				 * @type {Function}
+				 */
 				this.backgroundFunction = drawingFunction;
 				this._updateBackground();
 			}
@@ -382,6 +362,10 @@ window.Pulsar = (function () {
 			 * @param {Function} drawingFunction The function which draws the foreground.
 			 */
 			setForeground(drawingFunction) {
+				/**
+				 * The function which draws the foreground.
+				 * @type {Function}
+				 */
 				this.foregroundFunction = drawingFunction;
 				this._updateForeground();
 			}
@@ -476,15 +460,6 @@ window.Pulsar = (function () {
 					this._updateForeground();
 					window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
 				}
-			}
-	
-			/**
-			 * Displays the canvas object on the HTML page inside the element specified by the query selector.
-			 * A block-level element such as a `<div>` is recommended for the canvas object to work correctly.
-			 * If this method is run in a Node.js environment, it will do nothing.
-			 * @param {string} element {@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector Query selector} for the element.
-			 */
-			show(element) {
 			}
 	 	}
 	
@@ -614,8 +589,8 @@ window.Pulsar = (function () {
 			 */
 			_updatePlottingData() {
 				this.setForeground((context, timeValue) => {
-					for (const datasetID in this.plotData) {
-						if (this.plotData.hasOwnProperty(datasetID) && this.plotData[datasetID].visibility === true) {
+					for (const datasetID of Object.keys(this.plotData)) {
+						if (this.plotData[datasetID].visibility === true) {
 							const dataset = this.plotData[datasetID];
 							if (dataset.traceStyle !== "none") {
 								context.strokeStyle = dataset.traceColour;
@@ -1215,6 +1190,12 @@ window.Pulsar = (function () {
 		return activePlots;
 	}
 	
+	/**
+	 * Displays the canvas object on the HTML page inside the element specified by the query selector.
+	 * A block-level element such as a `<div>` is recommended for the canvas object to work correctly.
+	 * This is not available in Node.js environments.
+	 * @param {string} element {@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector Query selector} for the element.
+	 */
 	core.ResponsiveCanvas.prototype.show = function (element) {
 		this.containerElement = document.querySelector(element);
 		this.canvasContainer = document.createElement("div");
@@ -1237,14 +1218,14 @@ window.Pulsar = (function () {
 		this.foreground = this.foregroundCanvas.getContext("2d");
 		this.width = this.containerElement.clientWidth;
 		this.height = this.containerElement.clientHeight;
-		this._observer = new ResizeObserver(entries => {
+		this.observer = new ResizeObserver(entries => {
 			for (const entry of entries) {
 				this.width = entry.target.clientWidth;
 				this.height = entry.target.clientHeight;
 				this._updateCanvasDimensions();
 			}
 		});
-		this._observer.observe(this.containerElement);
+		this.observer.observe(this.containerElement);
 		for (const property of Object.keys(this.displayProperties)) {
 			this[`set${property[0].toUpperCase()}${property.slice(1)}`](this.displayProperties[property]);
 		}

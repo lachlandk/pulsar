@@ -135,10 +135,6 @@ window.Pulsar = (function () {
 		class ResponsiveCanvas {
 			constructor(id, options={}) {
 				this.id = "";
-				this.background = null;
-				this.foreground = null;
-				this.width = 0;
-				this.height = 0;
 				this.timeEvolutionData = {
 					currentTimeValue: 0,
 					startTimestampMS: 0,
@@ -150,7 +146,7 @@ window.Pulsar = (function () {
 				};
 				this.setID(id);
 				if (options.origin === "centre") {
-					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)];
+					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)]; 
 				}
 				propertySetters.setupProperties(this, "ResponsiveCanvas", options);
 			}
@@ -169,7 +165,7 @@ window.Pulsar = (function () {
 			}
 
 			_updateBackground() {
-				if (this.background !== null) {
+				if (this.background !== undefined) {
 					this.background.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 					if (this.backgroundFunction) {
 						this.backgroundFunction(this.background, this.timeEvolutionData.currentTimeValue);
@@ -178,7 +174,7 @@ window.Pulsar = (function () {
 			}
 
 			_updateForeground() {
-				if (this.foreground !== null) {
+				if (this.foreground !== undefined) {
 					this.foreground.clearRect(-this.origin.x, -this.origin.y, this.width, this.height);
 					if (this.foregroundFunction) {
 						this.foregroundFunction(this.foreground, this.timeEvolutionData.currentTimeValue);
@@ -253,9 +249,6 @@ window.Pulsar = (function () {
 					window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
 				}
 			}
-
-			show(element) {
-			}
 	 	}
 
 		class ResponsivePlot2D extends ResponsiveCanvas {
@@ -317,8 +310,8 @@ window.Pulsar = (function () {
 
 			_updatePlottingData() {
 				this.setForeground((context, timeValue) => {
-					for (const datasetID in this.plotData) {
-						if (this.plotData.hasOwnProperty(datasetID) && this.plotData[datasetID].visibility === true) {
+					for (const datasetID of Object.keys(this.plotData)) {
+						if (this.plotData[datasetID].visibility === true) {
 							const dataset = this.plotData[datasetID];
 							if (dataset.traceStyle !== "none") {
 								context.strokeStyle = dataset.traceColour;
@@ -668,7 +661,7 @@ window.Pulsar = (function () {
 		return activePlots;
 	}
 
-		core.ResponsiveCanvas.prototype.show = function (element) {
+	core.ResponsiveCanvas.prototype.show = function (element) {
 		this.containerElement = document.querySelector(element);
 		this.canvasContainer = document.createElement("div");
 		this.canvasContainer.id = this.id;
@@ -690,14 +683,14 @@ window.Pulsar = (function () {
 		this.foreground = this.foregroundCanvas.getContext("2d");
 		this.width = this.containerElement.clientWidth;
 		this.height = this.containerElement.clientHeight;
-		this._observer = new ResizeObserver(entries => {
+		this.observer = new ResizeObserver(entries => {
 			for (const entry of entries) {
 				this.width = entry.target.clientWidth;
 				this.height = entry.target.clientHeight;
 				this._updateCanvasDimensions();
 			}
 		});
-		this._observer.observe(this.containerElement);
+		this.observer.observe(this.containerElement);
 		for (const property of Object.keys(this.displayProperties)) {
 			this[`set${property[0].toUpperCase()}${property.slice(1)}`](this.displayProperties[property]);
 		}
