@@ -1191,7 +1191,8 @@ window.Pulsar = (function () {
 	}
 	
 	/**
-	 * Displays the canvas object on the HTML page inside the element specified by the query selector.
+	 * @alias Pulsar.core.ResponsiveCanvas#show
+	 * @description Displays the canvas object on the HTML page inside the element specified by the query selector.
 	 * A block-level element such as a `<div>` is recommended for the canvas object to work correctly.
 	 * This is not available in Node.js environments.
 	 * @param {string} element {@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector Query selector} for the element.

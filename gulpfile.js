@@ -125,4 +125,4 @@ async function docs() {
 
 exports.build = build;
 exports.dist = dist;
-exports.docs = gulp.series(build, docs);
+exports.docs = gulp.series(docs);
