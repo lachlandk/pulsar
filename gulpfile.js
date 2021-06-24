@@ -40,7 +40,7 @@ async function create_build(sourceStringArray, template, filename) {
 	const sourceExports = (() => {
 		const globals = [];
 		for (const file of sourceFiles) {
-			for (const match of file.contents.matchAll(/^(?:const|function)\s([a-zA-Z_$][\w$]*)/gm)) {
+			for (const match of file.contents.matchAll(/^(?:const|function|class)\s([a-zA-Z_$][\w$]*)/gm)) {
 				globals.push(match[1]);
 			}
 		}

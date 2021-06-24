@@ -612,43 +612,22 @@ window.Pulsar = (function () {
 		};
 	})();
 
-	function plot(id, data, options={}) {
-		let plotObject;
-		if (core.activeCanvases[id] !== undefined) {
-			plotObject = core.activeCanvases[id];
-			for (const option in options) {
-				if (options.hasOwnProperty(option) && option !== "gridScale") {
-					const optionSetter = plotObject[`set${option.charAt(0).toUpperCase() + option.slice(1)}`];
-					if (optionSetter !== undefined) {
-						if (optionSetter.length === 0) {
-							optionSetter.call(plotObject, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
-						} else {
-							optionSetter.call(plotObject, options[option]);
-						}
-					}
-				}
-			}
-		} else {
-			plotObject = new core.ResponsivePlot2D(id, options);
+	class Plot extends core.ResponsivePlot2D {
+		constructor(id, data=null, options={}) {
+			super(id, options);
 			if (options.hasOwnProperty("backgroundCSS")) {
-				plotObject.setBackgroundCSS(options.backgroundCSS);
+				this.setBackgroundCSS(options.backgroundCSS);
 			}
 			if (options.hasOwnProperty("xLims")) {
-				plotObject.setXLims(...options.xLims);
+				this.setXLims(...options.xLims);
 			}
 			if (options.hasOwnProperty("yLims")) {
-				plotObject.setYLims(...options.yLims);
+				this.setYLims(...options.yLims);
+			}
+			if (data !== null) {
+				this.addData(data.id, data.data, data.options);
 			}
 		}
-		if (options.hasOwnProperty("reset") && options.reset === true) {
-			for (const id of Object.keys(plotObject.plotData)) {
-				plotObject.removeData(id);
-			}
-		}
-		if (data !== null) {
-			plotObject.addData(data.id, data.data, data.options);
-		}
-		return plotObject;
 	}
 
 	function getActivePlots() {
@@ -698,7 +677,7 @@ window.Pulsar = (function () {
 
 		return {
 		core: core,
-		plot: plot,
+		Plot: Plot,
 		getActivePlots: getActivePlots
 	};
 })();

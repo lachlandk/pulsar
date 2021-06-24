@@ -232,8 +232,7 @@ module.exports = (function () {
 		 * an underscore should not be changed/called, otherwise they may cause unpredictable behaviour.
 		 * #### Options
 		 * When a `ResponsiveCanvas` is created, its properties can be specified by passing an optional object literal with the options as key-value pairs.
-		 * The possible options are as follows (For a full example see the documentation for the {@link Pulsar.plot Pulsar.plot()} function).
-		 * When passing two values instead of just one, use an array.
+		 * The possible options are as follows: (When passing two values instead of just one, use an array).
 		 * | Name | Type | Default | Description |
 		 * --- | --- | --- | ---
 		 * | `origin` | number \| Array.\<number\> \| string | `[0, 0]` | See {@link Pulsar.core.ResponsiveCanvas#setOrigin setOrigin()}. |
@@ -469,8 +468,8 @@ module.exports = (function () {
 		 * @alias Pulsar.core.ResponsivePlot2D
 		 * @description This class is the base class for all Pulsar plot objects. It extends {@link Pulsar.core.ResponsiveCanvas ResponsiveCanvas}.
 		 * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
-		 * {@link Pulsar.plot Pulsar.plot()} function. These objects behave similarly to a `ResponsiveCanvas`. They have a
-		 * background, which contains the axes and gridlines, and a foreground, which contains the plot data.
+		 * {@link Pulsar.Plot Pulsar.Plot} class. `ResponsivePlot2D` objects behave similarly to a `ResponsiveCanvas`.
+		 * They have a background, which contains the axes and gridlines, and a foreground, which contains the plot data.
 		 * The ticks and gridlines can be toggled and the intervals between them can be changed. The size of a unit on the grid
 		 * is determined by the grid scale which, by default, is 50 pixels for both `x` and `y`, meaning that a step of one unit in both directions on
 		 * the grid would be 50 pixels on the screen. This can be changed with the {@link Pulsar.core.ResponsivePlot2D#setGridScale setGridScale()} method.
@@ -479,7 +478,7 @@ module.exports = (function () {
 		 * may cause unpredictable behaviour.
 		 * #### Options
 		 * When a `ResponsivePlot2D` is created, its properties can be specified by passing an optional object literal with the options as key-value pairs.
-		 * The possible options are as follows (For a full example see the documentation for the {@link Pulsar.plot Pulsar.plot()} function).
+		 * The possible options are as follows (For a full example see the documentation for the {@link Pulsar.Plot Pulsar.Plot} class).
 		 * When passing two values instead of just one, use an array.
 		 * | Name | Type | Default | Description |
 		 * --- | --- | --- | ---
@@ -1073,26 +1072,15 @@ module.exports = (function () {
 	})();
 	
 	/**
-	 * @function Pulsar.plot
-	 * @param {string} id - The ID of the plot object. Must be unique.
-	 * @param {Object|null} data - The data to be plotted. The structure of the object follows the exact same pattern as the signature of
-	 * [Pulsar.core.ResponsivePlot2D.addData()]{@link Pulsar.core.ResponsivePlot2D#addData}. If `null` is passed, no data will be plotted.
-	 * @param {string} data.id - The ID for the trace. This ID will be the key for the relevant entry in the [plotData]{@link Pulsar.core.ResponsivePlot2D#plotData}
-	 * property of the plot object.
-	 * @param {Array | Function} data.data - The data to be plotted. See the [addData()]{@link Pulsar.core.ResponsivePlot2D#addData}
-	 * method documentation for more details.
-	 * @param {Object} data.object - The options for the data. See the [addData()]{@link Pulsar.core.ResponsivePlot2D#addData} method documentation for more details.
-	 * @param {Object} options - Options for the plot.
-	 * @returns {Pulsar.core.ResponsivePlot2D}
+	 * @alias Pulsar.Plot
 	 * @description
-	 * Creates a plot with the specified ID, if one doesn't exist already, and plots the data with the options specified,
-	 * returning the {@link Pulsar.core.ResponsivePlot2D} object representing the plot. If a plot with the specified ID already exists,
-	 * then the data is added to the existing plot, the options passed are overridden and the existing plot object is returned.
+	 * Class representing the basic figure object that more complicated plot types inherit from. This type extends
+	 * {@link Pulsar.core.ResponsivePlot2D ResponsivePlot2D}.
 	 *
 	 * #### Options
 	 * The possible options are those from the {@link Pulsar.core.ResponsivePlot2D} and {@link Pulsar.core.ResponsiveCanvas} classes,
-	 * with the addition of `xLims` and `yLims` - which if specified will override the `gridScale` option - and also a `backgroundCSS` option for
-	 * specifying the background of the canvas. Here is the full list of options.
+	 * with the addition of `xLims` and `yLims` - which if specified will override the `gridScale` option if either is present -
+	 * and also a `backgroundCSS` option for specifying the background of the canvas. Here is the full list of options:
 	 * | Name | Type | Default | Description |
 	 * --- | --- | --- | ---
 	 * | `origin` | number \| Array.\<number\> \| string | `[0, 0]` | See {@link Pulsar.core.ResponsiveCanvas#setOrigin ResponsiveCanvas.setOrigin()}. |
@@ -1108,19 +1096,18 @@ module.exports = (function () {
 	 * | `gridScale` | number \| Array.\<number\> | `[50, 50]` | See {@link Pulsar.core.ResponsivePlot2D#setGridScale ResponsivePlot2D.setGridScale()}. |
 	 * | `xLims` | Array.\<number\> | Dependent on canvas size. | See {@link Pulsar.core.ResponsivePlot2D#setXLims ResponsivePlot2D.setXLims()}. |
 	 * | `yLims` | Array.\<number\> | Dependent on canvas size. | See {@link Pulsar.core.ResponsivePlot2D#setYLims ResponsivePlot2D.setYLims()}. |
-	 * | `reset` | boolean | `false` | Removes all data from the plot before adding the new data specified. |
 	 *
 	 * #### Creating a simple plot of a parabola.
 	 * ```
 	 * // first, create a <div> element and add it to the body:
 	 * const container = document.createElement("div");
-	 * container.id = "myPlot";
+	 * container.id = "myPlotContainer";
 	 * container.style.width = "500px";
 	 * container.style.height = "500px";
 	 * document.body.appendChild(container);
 	 *
 	 * // now, we can create the plot:
-	 * Pulsar.plot("myPlot", {
+	 * const figure = new Pulsar.Plot("myPlot", {
 	 *     id: "parabola",
 	 *     data: x => x**2
 	 * }, {
@@ -1128,45 +1115,36 @@ module.exports = (function () {
 	 *     minorTicks: true,
 	 *     yLims: [-2, 4]
 	 * });
+	 * figure.show("#myPlotContainer");
 	 * ```
 	 */
-	function plot(id, data, options={}) {
-		let plotObject;
-		if (core.activeCanvases[id] !== undefined) {
-			plotObject = core.activeCanvases[id];
-			for (const option in options) {
-				if (options.hasOwnProperty(option) && option !== "gridScale") {
-					const optionSetter = plotObject[`set${option.charAt(0).toUpperCase() + option.slice(1)}`];
-					if (optionSetter !== undefined) {
-						if (optionSetter.length === 0) {
-							optionSetter.call(plotObject, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
-						} else {
-							optionSetter.call(plotObject, options[option]);
-						}
-					}
-				}
-			}
-		} else {
-			plotObject = new core.ResponsivePlot2D(id, options);
+	class Plot extends core.ResponsivePlot2D {
+		/**
+		 * @param {string} id - The ID of the plot object. Must be unique.
+		 * @param {Object|null} data - The data to be plotted. The structure of the object follows the exact same pattern as the signature of
+		 * [Pulsar.core.ResponsivePlot2D.addData()]{@link Pulsar.core.ResponsivePlot2D#addData}. If `null` is passed, no data will be plotted.
+		 * @param {string} data.id - The ID for the trace. This ID will be the key for the relevant entry in the [plotData]{@link Pulsar.core.ResponsivePlot2D#plotData}
+		 * property of the plot object.
+		 * @param {Array | Function} data.data - The data to be plotted. See the [addData()]{@link Pulsar.core.ResponsivePlot2D#addData}
+		 * method documentation for more details.
+		 * @param {Object} data.object - The options for the data. See the [addData()]{@link Pulsar.core.ResponsivePlot2D#addData} method documentation for more details.
+		 * @param {Object} options - Options for the plot.
+		 */
+		constructor(id, data=null, options={}) {
+			super(id, options);
 			if (options.hasOwnProperty("backgroundCSS")) {
-				plotObject.setBackgroundCSS(options.backgroundCSS);
+				this.setBackgroundCSS(options.backgroundCSS);
 			}
 			if (options.hasOwnProperty("xLims")) {
-				plotObject.setXLims(...options.xLims);
+				this.setXLims(...options.xLims);
 			}
 			if (options.hasOwnProperty("yLims")) {
-				plotObject.setYLims(...options.yLims);
+				this.setYLims(...options.yLims);
+			}
+			if (data !== null) {
+				this.addData(data.id, data.data, data.options);
 			}
 		}
-		if (options.hasOwnProperty("reset") && options.reset === true) {
-			for (const id of Object.keys(plotObject.plotData)) {
-				plotObject.removeData(id);
-			}
-		}
-		if (data !== null) {
-			plotObject.addData(data.id, data.data, data.options);
-		}
-		return plotObject;
 	}
 	
 	/**
@@ -1175,7 +1153,7 @@ module.exports = (function () {
 	 * @returns {Object}
 	 * #### Example Usage
 	 * ```
-	 * plot = Pulsar.plot("myPlot", null);
+	 * const plot = new Pulsar.Plot("myPlot");
 	 * console.log(Pulsar.getActivePlots());
 	 * // Object { myPlot: {...} }
 	 * ```
@@ -1193,7 +1171,7 @@ module.exports = (function () {
 	
 	return {
 		core: core,
-		plot: plot,
+		Plot: Plot,
 		getActivePlots: getActivePlots
 	};
 })();

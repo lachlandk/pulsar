@@ -208,8 +208,7 @@ const core = (function() {
 	 * an underscore should not be changed/called, otherwise they may cause unpredictable behaviour.
 	 * #### Options
 	 * When a `ResponsiveCanvas` is created, its properties can be specified by passing an optional object literal with the options as key-value pairs.
-	 * The possible options are as follows (For a full example see the documentation for the {@link Pulsar.plot Pulsar.plot()} function).
-	 * When passing two values instead of just one, use an array.
+	 * The possible options are as follows: (When passing two values instead of just one, use an array).
 	 * | Name | Type | Default | Description |
 	 * --- | --- | --- | ---
 	 * | `origin` | number \| Array.\<number\> \| string | `[0, 0]` | See {@link Pulsar.core.ResponsiveCanvas#setOrigin setOrigin()}. |
@@ -448,8 +447,8 @@ const core = (function() {
 	 * @alias Pulsar.core.ResponsivePlot2D
 	 * @description This class is the base class for all Pulsar plot objects. It extends {@link Pulsar.core.ResponsiveCanvas ResponsiveCanvas}.
 	 * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
-	 * {@link Pulsar.plot Pulsar.plot()} function. These objects behave similarly to a `ResponsiveCanvas`. They have a
-	 * background, which contains the axes and gridlines, and a foreground, which contains the plot data.
+	 * {@link Pulsar.Plot Pulsar.Plot} class. `ResponsivePlot2D` objects behave similarly to a `ResponsiveCanvas`.
+	 * They have a background, which contains the axes and gridlines, and a foreground, which contains the plot data.
 	 * The ticks and gridlines can be toggled and the intervals between them can be changed. The size of a unit on the grid
 	 * is determined by the grid scale which, by default, is 50 pixels for both `x` and `y`, meaning that a step of one unit in both directions on
 	 * the grid would be 50 pixels on the screen. This can be changed with the {@link Pulsar.core.ResponsivePlot2D#setGridScale setGridScale()} method.
@@ -458,7 +457,7 @@ const core = (function() {
 	 * may cause unpredictable behaviour.
 	 * #### Options
 	 * When a `ResponsivePlot2D` is created, its properties can be specified by passing an optional object literal with the options as key-value pairs.
-	 * The possible options are as follows (For a full example see the documentation for the {@link Pulsar.plot Pulsar.plot()} function).
+	 * The possible options are as follows (For a full example see the documentation for the {@link Pulsar.Plot Pulsar.Plot} class).
 	 * When passing two values instead of just one, use an array.
 	 * | Name | Type | Default | Description |
 	 * --- | --- | --- | ---
