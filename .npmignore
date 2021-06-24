@@ -4,9 +4,17 @@
 # Development
 .jshintrc
 jsdoc.json
+gulpfile.js
+/src
+/templates
+/build
 
 # Testing
 /tests
+
+# Docs
+/docs
+/resources
 
 # Git
 .gitattributes
