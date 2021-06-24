@@ -2,7 +2,7 @@
 	"name": "@lachlandk/pulsar",
 	"version": "0.0.1",
 	"description": "A javascript data visualisation framework",
-	"main": "dist/pulsar-web.js",
+	"main": "dist/pulsar.js",
 	"dependencies": {},
 	"devDependencies": {
 		"del": "^6.0.0",
