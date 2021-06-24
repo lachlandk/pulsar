@@ -400,7 +400,7 @@ module.exports = (function () {
 				});
 			}
 
-			addData(id, data, options={}) {
+			plot(id, data, options={}) {
 				if (typeof id === "string") {
 					if (Array.isArray(data) && data.length === 2) {
 						if (Array.isArray(data[0])) {
@@ -625,7 +625,7 @@ module.exports = (function () {
 				this.setYLims(...options.yLims);
 			}
 			if (data !== null) {
-				this.addData(data.id, data.data, data.options);
+				this.plot(data.id, data.data, data.options);
 			}
 		}
 	}

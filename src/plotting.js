@@ -54,12 +54,12 @@ class Plot extends core.ResponsivePlot2D {
 	/**
 	 * @param {string} id - The ID of the plot object. Must be unique.
 	 * @param {Object|null} data - The data to be plotted. The structure of the object follows the exact same pattern as the signature of
-	 * [Pulsar.core.ResponsivePlot2D.addData()]{@link Pulsar.core.ResponsivePlot2D#addData}. If `null` is passed, no data will be plotted.
+	 * [Pulsar.core.ResponsivePlot2D.plot()]{@link Pulsar.core.ResponsivePlot2D#plot}. If `null` is passed, no data will be plotted.
 	 * @param {string} data.id - The ID for the trace. This ID will be the key for the relevant entry in the [plotData]{@link Pulsar.core.ResponsivePlot2D#plotData}
 	 * property of the plot object.
-	 * @param {Array | Function} data.data - The data to be plotted. See the [addData()]{@link Pulsar.core.ResponsivePlot2D#addData}
+	 * @param {Array | Function} data.data - The data to be plotted. See the [plot()]{@link Pulsar.core.ResponsivePlot2D#plot}
 	 * method documentation for more details.
-	 * @param {Object} data.object - The options for the data. See the [addData()]{@link Pulsar.core.ResponsivePlot2D#addData} method documentation for more details.
+	 * @param {Object} data.object - The options for the data. See the [plot()]{@link Pulsar.core.ResponsivePlot2D#plot} method documentation for more details.
 	 * @param {Object} options - Options for the plot.
 	 */
 	constructor(id, data=null, options={}) {
@@ -74,7 +74,7 @@ class Plot extends core.ResponsivePlot2D {
 			this.setYLims(...options.yLims);
 		}
 		if (data !== null) {
-			this.addData(data.id, data.data, data.options);
+			this.plot(data.id, data.data, data.options);
 		}
 	}
 }

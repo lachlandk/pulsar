@@ -473,7 +473,7 @@ window.Pulsar = (function () {
 		 * The ticks and gridlines can be toggled and the intervals between them can be changed. The size of a unit on the grid
 		 * is determined by the grid scale which, by default, is 50 pixels for both `x` and `y`, meaning that a step of one unit in both directions on
 		 * the grid would be 50 pixels on the screen. This can be changed with the {@link Pulsar.core.ResponsivePlot2D#setGridScale setGridScale()} method.
-		 * Data is added to the plot using the {@link Pulsar.core.ResponsivePlot2D#addData addData()} method.
+		 * Data is added to the plot using the {@link Pulsar.core.ResponsivePlot2D#plot plot()} method.
 		 * Read-only properties and methods beginning with an underscore should not be changed/called, otherwise they
 		 * may cause unpredictable behaviour.
 		 * #### Options
@@ -687,16 +687,16 @@ window.Pulsar = (function () {
 			 * - The simplest way to add continuous data to an array is simply by passing a function with a single argument for
 			 * `x` which outputs a corresponding `y` value.
 			 * ```
-			 * plot.addData("sineWave", x => Math.sin(x));
+			 * plot.plot("sineWave", x => Math.sin(x));
 			 * ```
 			 * - Time dependence for the `y` values may also be introduced by using the second argument for time.
 			 * ```
-			 * plot.addData("movingSineWave", (x, t) => Math.sin(x-t));
+			 * plot.plot("movingSineWave", (x, t) => Math.sin(x-t));
 			 * ```
 			 * - Parametric curves can also be plotted by passing a two-element array with both elements being functions where
 			 * the first argument is the free parameter.
 			 * ```
-			 * plot.addData("circle", [
+			 * plot.plot("circle", [
 			 *     p => Math.cos(p),
 			 *     p => Math.sin(p)
 			 * ], {
@@ -705,7 +705,7 @@ window.Pulsar = (function () {
 			 * ```
 			 * - These parametric curves can also be made time-dependent using the second argument as time.
 			 * ```
-			 * plot.addData("lissajousFigure", [
+			 * plot.plot("lissajousFigure", [
 			 *     (p, t) => Math.cos(3*p*t),
 			 *     (p, t) => Math.sin(4*p*t)
 			 * ], {
@@ -716,7 +716,7 @@ window.Pulsar = (function () {
 			 * - The simplest method for discrete data is passing a two-element array where each element is an array of numbers, one
 			 * for the `x` values and one for the `y` values. The arrays may be arbitrarily large, as long as they are the same length.
 			 * ```
-			 * plot.addData("discreteParabola", [
+			 * plot.plot("discreteParabola", [
 			 *     [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
 			 *     [25, 16, 9, 4, 1, 0, 1, 4, 9, 16, 25]
 			 * ]);
@@ -724,14 +724,14 @@ window.Pulsar = (function () {
 			 * - A variation of this is where the second array is replaced with a function which takes the `x` values as an
 			 * argument, thus acting as a map.
 			 * ```
-			 * plot.addData("anotherDiscreteParabola", [
+			 * plot.plot("anotherDiscreteParabola", [
 			 *     [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
 			 *     x => x**2
 			 * ]);
 			 * ```
 			 * - The function can also accept a time parameter.
 			 * ```
-			 * plot.addData("movingDiscreteParabola", [
+			 * plot.plot("movingDiscreteParabola", [
 			 *     [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
 			 *     (x, t) => (x-t)**2
 			 * ]);
@@ -739,7 +739,7 @@ window.Pulsar = (function () {
 			 * - The `x` values in a discrete plot can also be made to be time-dependent using functions (Note that any functions
 			 * in the second array must have `x` as the first argument, even if it is not used).
 			 * ```
-			 * plot.addData("anticlockwiseHand", [
+			 * plot.plot("anticlockwiseHand", [
 			 *     [0, t => Math.cos(t)],
 			 *     [0, (x, t) => Math.sin(t)]
 			 * ]);
@@ -761,7 +761,7 @@ window.Pulsar = (function () {
 			 * @param {Array | Function} data Data to be plotted.
 			 * @param {Object} [options={}] Optional parameters from the table below.
 			 */
-			addData(id, data, options={}) {
+			plot(id, data, options={}) {
 				if (typeof id === "string") {
 					if (Array.isArray(data) && data.length === 2) {
 						if (Array.isArray(data[0])) {
@@ -1047,7 +1047,7 @@ window.Pulsar = (function () {
 			 * parameterised functions, one would do:
 			 * ```
 			 * // myPlot is a ResponsivePlot2D instance.
-			 * myPlot.addData("circle", [p => Math.cos(p), p => Math.sin(p)]);
+			 * myPlot.plot("circle", [p => Math.cos(p), p => Math.sin(p)]);
 			 * myPlot.setParameterRange("circle", 0, 2*Math.PI);
 			 * ```
 			 * This property has no effect at all if the function plotted does not have a free parameter.
@@ -1122,12 +1122,12 @@ window.Pulsar = (function () {
 		/**
 		 * @param {string} id - The ID of the plot object. Must be unique.
 		 * @param {Object|null} data - The data to be plotted. The structure of the object follows the exact same pattern as the signature of
-		 * [Pulsar.core.ResponsivePlot2D.addData()]{@link Pulsar.core.ResponsivePlot2D#addData}. If `null` is passed, no data will be plotted.
+		 * [Pulsar.core.ResponsivePlot2D.plot()]{@link Pulsar.core.ResponsivePlot2D#plot}. If `null` is passed, no data will be plotted.
 		 * @param {string} data.id - The ID for the trace. This ID will be the key for the relevant entry in the [plotData]{@link Pulsar.core.ResponsivePlot2D#plotData}
 		 * property of the plot object.
-		 * @param {Array | Function} data.data - The data to be plotted. See the [addData()]{@link Pulsar.core.ResponsivePlot2D#addData}
+		 * @param {Array | Function} data.data - The data to be plotted. See the [plot()]{@link Pulsar.core.ResponsivePlot2D#plot}
 		 * method documentation for more details.
-		 * @param {Object} data.object - The options for the data. See the [addData()]{@link Pulsar.core.ResponsivePlot2D#addData} method documentation for more details.
+		 * @param {Object} data.object - The options for the data. See the [plot()]{@link Pulsar.core.ResponsivePlot2D#plot} method documentation for more details.
 		 * @param {Object} options - Options for the plot.
 		 */
 		constructor(id, data=null, options={}) {
@@ -1142,7 +1142,7 @@ window.Pulsar = (function () {
 				this.setYLims(...options.yLims);
 			}
 			if (data !== null) {
-				this.addData(data.id, data.data, data.options);
+				this.plot(data.id, data.data, data.options);
 			}
 		}
 	}
