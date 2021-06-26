@@ -276,6 +276,16 @@ window.Pulsar = (function () {
 				this.displayProperties = {
 					origin: options.origin
 				};
+				/**
+				 * @readonly
+				 * @description Object containing key-value pairs of (normally - but not necessarily - numerical) constants for the drawing environment.
+				 * Constants can be set with the {@link Pulsar.core.ResponsiveCanvas#setConstant setConstant()} method, and they can be connected up
+				 * to an input element on the HTML page with the {@link Pulsar.core.ResponsiveCanvas#connectElementAttribute connectInputElement()} method.
+				 * They do not provide much functionality by themselves, but other classes which extend `ResponsiveCanvas`
+				 * make use of them for display and interactivity purposes.
+				 * @type {Object}
+				 */
+				this.constants = {};
 				this.setID(id);
 				if (options.origin === "centre") {
 					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)]; 
@@ -460,7 +470,16 @@ window.Pulsar = (function () {
 					window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
 				}
 			}
-	 	}
+	
+			/**
+			 * Sets the value of a constant.
+			 * @param name The name of the constant. This will be the key in the {@link Pulsar.core.ResponsiveCanvas#constants constants} object.
+			 * @param value The value of the constant.
+			 */
+			setConstant(name, value) {
+				this.constants[name] = value;
+			}
+		}
 	
 		/**
 		 * The base class for all Pulsar plot objects.
@@ -1207,6 +1226,54 @@ window.Pulsar = (function () {
 		this.observer.observe(this.containerElement);
 		for (const property of Object.keys(this.displayProperties)) {
 			this[`set${property[0].toUpperCase()}${property.slice(1)}`](this.displayProperties[property]);
+		}
+	};
+	
+	/**
+	 * @alias Pulsar.core.ResponsiveCanvas#connectElementAttribute
+	 * @description Sets up an event listener for `event` which when triggered will set the value of `constant` to the value
+	 * of `attribute` on the `element`. The element attribute value can be transformed using the optional `transform` argument, which takes
+	 * the form of a function with one argument (the input value) and one return (the transformed input value). One example usage
+	 * of this is coercing a boolean to an number by passing the `Number` constructor (`Number(true) === 1, Number(false) === 0`).
+	 *
+	 * #### Example Usage
+	 * ```
+	 * // Creating a slider on the HTML page and connecting its `value` attribute to a constant.
+	 * slider = document.createElement("input");
+	 * slider.type = "range";
+	 * document.body.appendChild(slider);
+	 *
+	 * // The following are functionally equivalent:
+	 * plot.connectElementAttribute(slider, "input", "value", "myConstant", Number);
+	 * // ----------
+	 * slider.oninput = function() {
+	 *     plot.setConstant("A", Number(this.value));
+	 * };
+	 * ```
+	 * @param {string|Element} element A {@link https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector Query selector} or a reference to the element.
+	 * @param {string} event The event that will trigger the constant update.
+	 * @param {string} attribute The attribute of the element which will become the constant value.
+	 * @param {string} constant The name of the constant to be updated.
+	 * @param {function} transform Optional transform function for the value of the input element.
+	 */
+	core.ResponsiveCanvas.prototype.connectElementAttribute = function(element, event, attribute, constant, transform=(x)=>x) {
+		if (element instanceof Element) {
+			element.addEventListener(event, () => {
+				this.setConstant(constant, transform(element[attribute]));
+			});
+			this.setConstant(constant, transform(element[attribute]));
+		} else if (typeof element === "string") {
+			const target = document.querySelector(element);
+			if (target instanceof Element) {
+				target.addEventListener(event, () => {
+					this.setConstant(constant, transform(target[attribute]));
+				});
+				this.setConstant(constant, transform(target[attribute]));
+			} else {
+				throw `Element with ID "${element}" could not be found.`;
+			}
+		} else {
+			throw `Element is not a valid element.`;
 		}
 	};
 	

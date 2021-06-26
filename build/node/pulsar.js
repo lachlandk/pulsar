@@ -276,6 +276,16 @@ module.exports = (function () {
 				this.displayProperties = {
 					origin: options.origin
 				};
+				/**
+				 * @readonly
+				 * @description Object containing key-value pairs of (normally - but not necessarily - numerical) constants for the drawing environment.
+				 * Constants can be set with the {@link Pulsar.core.ResponsiveCanvas#setConstant setConstant()} method, and they can be connected up
+				 * to an input element on the HTML page with the {@link Pulsar.core.ResponsiveCanvas#connectElementAttribute connectInputElement()} method.
+				 * They do not provide much functionality by themselves, but other classes which extend `ResponsiveCanvas`
+				 * make use of them for display and interactivity purposes.
+				 * @type {Object}
+				 */
+				this.constants = {};
 				this.setID(id);
 				if (options.origin === "centre") {
 					options.origin = [Math.round(this.width / 2), Math.round(this.height / 2)]; 
@@ -460,7 +470,16 @@ module.exports = (function () {
 					window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
 				}
 			}
-	 	}
+	
+			/**
+			 * Sets the value of a constant.
+			 * @param name The name of the constant. This will be the key in the {@link Pulsar.core.ResponsiveCanvas#constants constants} object.
+			 * @param value The value of the constant.
+			 */
+			setConstant(name, value) {
+				this.constants[name] = value;
+			}
+		}
 	
 		/**
 		 * The base class for all Pulsar plot objects.
