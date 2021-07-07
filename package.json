@@ -4,7 +4,7 @@
 	"description": "A javascript data visualisation framework",
 	"main": "dist/pulsar.js",
 	"module": "dist/pulsar.js",
-	"types": "dist/type/pulsar.d.ts",
+	"types": "dist/types/pulsar.d.ts",
 	"type": "module",
 	"devDependencies": {
 		"del": "^6.0.0",
