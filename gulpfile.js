@@ -13,7 +13,7 @@ export async function build() {
 		.pipe(project());
 	return merge([
 		result.dts.pipe(gulp.dest("build/types")),
-		result.js.pipe(gulp.dest("build"))
+		result.js.pipe(gulp.dest("build/pulsar"))
 	]);
 }
 
