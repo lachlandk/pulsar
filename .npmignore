@@ -4,9 +4,9 @@
 # Development
 .jshintrc
 jsdoc.json
+tsconfig.json
 gulpfile.js
 /src
-/templates
 /build
 
 # Testing
@@ -14,7 +14,6 @@ gulpfile.js
 
 # Docs
 /docs
-/resources
 
 # Git
 .gitattributes
