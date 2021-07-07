@@ -4,7 +4,7 @@ export function setupProperties(instance, prototype, options) {
     for (const key of Object.keys(propertySet)) {
         const propertyDefault = propertySet[key];
         const optionProvided = Object.keys(options).includes(key);
-        const args = [instance, key, propertyDefault.type, undefined];
+        const args = [instance, key, propertyDefault.type];
         if (propertyDefault.multi) {
             args.push(...(optionProvided ? (Array.isArray(options[key]) ? options[key] : [options[key]]) : propertyDefault.value));
         }

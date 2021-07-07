@@ -7,7 +7,7 @@ export function setupProperties(instance: indexableObject, prototype: keyof prop
     for (const key of Object.keys(propertySet) as string[]) {
         const propertyDefault = propertySet[key];
         const optionProvided = Object.keys(options).includes(key);
-        const args: [indexableObject, string, string, unknown] = [instance, key, propertyDefault.type, undefined];
+        const args: unknown[] = [instance, key, propertyDefault.type];
         if (propertyDefault.multi) {
             args.push(...(optionProvided ? (Array.isArray(options[key]) ? options[key] : [options[key]]) : propertyDefault.value));
         } else {
@@ -16,7 +16,7 @@ export function setupProperties(instance: indexableObject, prototype: keyof prop
         if (propertyDefault.extra) {
             args.push(propertyDefault.extra);
         }
-        propertySetters[propertyDefault.setter](...args);
+        propertySetters[propertyDefault.setter](...(args as [indexableObject, string, string, unknown[]]));
     }
 }
 
