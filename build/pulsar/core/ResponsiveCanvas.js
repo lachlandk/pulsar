@@ -26,11 +26,8 @@ export class ResponsiveCanvas {
             backgroundFunction: null,
             foregroundFunction: null
         };
+        // TODO: add child objects to options to allow more options
         this.setID(id);
-        if (options.origin !== undefined) {
-            this.setOrigin(...(Array.isArray(options.origin) ? options.origin : [options.origin]));
-            delete options.origin;
-        }
         setupProperties(this, "ResponsiveCanvas", options);
     }
     _updateCanvasDimensions() {
@@ -86,7 +83,7 @@ export class ResponsiveCanvas {
     }
     setID(id) {
         if (activeCanvases[id] === undefined) {
-            propertySetters.setSingleProperty(this, "id", "string", id);
+            this.id = id;
             activeCanvases[this.id] = this;
         }
         else {

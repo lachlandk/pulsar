@@ -1,7 +1,7 @@
 import { ResponsiveCanvasOptions } from "./defaults.js";
 import { point2D, drawingFunction } from "../helpers/index.js";
 export interface ResponsiveCanvasObject {
-    readonly id: string;
+    id: string;
     readonly properties: {
         origin: point2D;
         backgroundCSS: string;
@@ -22,7 +22,7 @@ export interface ResponsiveCanvasObject {
     show: (element: string) => void;
 }
 export declare class ResponsiveCanvas implements ResponsiveCanvasObject {
-    readonly id: string;
+    id: string;
     readonly properties: ResponsiveCanvasObject["properties"];
     readonly constants: ResponsiveCanvasObject["constants"];
     protected readonly _timeEvolutionData: {

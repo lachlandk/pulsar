@@ -3,12 +3,12 @@ import { setupProperties, propertySetters, point2D, drawingFunction } from "../h
 import { activeCanvases } from "./activeCanvases.js";
 
 export interface ResponsiveCanvasObject {
-    readonly id: string
-    readonly properties: {
+    id: string
+    properties: {
         origin: point2D
         backgroundCSS: string
     }
-    readonly constants: {
+    constants: {
         [name: string]: any
     }
     setBackground: (drawingFunction: drawingFunction) => void
@@ -25,18 +25,18 @@ export interface ResponsiveCanvasObject {
 }
 
 export class ResponsiveCanvas implements ResponsiveCanvasObject {
-    readonly id: string = ""
-    readonly properties: ResponsiveCanvasObject["properties"] = {
+    id: string = ""
+    properties: ResponsiveCanvasObject["properties"] = {
         ...optionsObjects.ResponsiveCanvas
     }
-    readonly constants: ResponsiveCanvasObject["constants"] = {}
-    protected readonly _timeEvolutionData = {
+    constants: ResponsiveCanvasObject["constants"] = {}
+    protected _timeEvolutionData = {
         currentTimeValue: 0,
         startTimestampMS: 0,
         offsetTimestampMS: 0,
         timeEvolutionActive: false
     }
-    protected readonly _displayProperties = {
+    protected _displayProperties = {
         width: 0,
         height: 0,
         originArgCache: {x: 0, y: 0} as point2D | "centre",
@@ -52,11 +52,8 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
     }
 
     constructor(id: string, options: Partial<ResponsiveCanvasOptions> = {}) {
+        // TODO: add child objects to options to allow more options
         this.setID(id);
-        if (options.origin !== undefined) {
-            this.setOrigin(...(Array.isArray(options.origin) ? options.origin : [options.origin]));
-            delete options.origin;
-        }
         setupProperties(this, "ResponsiveCanvas", options);
     }
 
@@ -118,7 +115,7 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
 
     setID(id: string) {
         if (activeCanvases[id] === undefined) {
-            propertySetters.setSingleProperty(this, "id", "string", id);
+            this.id = id;
             activeCanvases[this.id] = this;
         } else {
             throw `Error creating ResponsiveCanvas object: Object with ID "${id}" already exists.`;

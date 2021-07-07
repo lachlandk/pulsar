@@ -3,7 +3,7 @@ import { choice2D, point2D, propertySetters, setupProperties } from "../helpers/
 import { optionsObjects, ResponsivePlot2DOptions, ResponsivePlot2DTraceOptions } from "./defaults.js";
 
 export interface ResponsivePlot2DObject extends ResponsiveCanvasObject {
-    readonly properties: ResponsiveCanvasObject["properties"] & {
+    properties: ResponsiveCanvasObject["properties"] & {
         majorTicks: choice2D
         minorTicks: choice2D
         majorTickSize: point2D
@@ -16,7 +16,7 @@ export interface ResponsivePlot2DObject extends ResponsiveCanvasObject {
         xLims: [number, number]
         yLims: [number, number]
     }
-    readonly plotData: {
+    plotData: {
         [trace: string]: ResponsivePlot2DTraceObject
     }
     plot: (id: string, data: ResponsivePlot2DTraceDataType, options: ResponsivePlot2DTraceOptions) => void
@@ -43,8 +43,8 @@ export interface ResponsivePlot2DObject extends ResponsiveCanvasObject {
 }
 
 interface ResponsivePlot2DTraceObject {
-    readonly data: (t: number, xLims: [number, number], yLims: [number, number], step: number, paramLims: [number, number]) => Generator<[number, number]>
-    readonly properties: {
+    data: (t: number, xLims: [number, number], yLims: [number, number], step: number, paramLims: [number, number]) => Generator<[number, number]>
+    properties: {
         traceColour: string
         traceStyle: "solid" | "dotted" | "dashed" | "dashdot" | "none"
         traceWidth: number
@@ -62,11 +62,11 @@ export type ResponsivePlot2DTraceDataType = (x: number, t: number) => number |
         [(number | ((t: number) => number))[], (number | ((x: number, t: number) => number))[]]
 
 export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot2DObject {
-    readonly properties: ResponsivePlot2DObject["properties"] = {
+    properties: ResponsivePlot2DObject["properties"] = {
         ...optionsObjects.ResponsiveCanvas,
         ...optionsObjects.ResponsivePlot2D
     }
-    readonly plotData: ResponsivePlot2DObject["plotData"] = {}
+    plotData: ResponsivePlot2DObject["plotData"] = {}
 
     constructor(id: string, options: Partial<ResponsivePlot2DOptions> = {}) {
         super(id, options);
