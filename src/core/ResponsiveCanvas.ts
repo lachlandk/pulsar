@@ -39,34 +39,49 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
     protected _displayProperties = {
         width: 0,
         height: 0,
-        originArgCache: {x: 0, y: 0} as point2D | "centre",
+        originArgCache: [0] as (number | "centre")[],
         containerElement: null as HTMLElement | null,
-        resizeObserver: null as ResizeObserver | null,
-        canvasContainer: null as HTMLDivElement | null,
-        backgroundCanvas: null as HTMLCanvasElement | null,
-        foregroundCanvas: null as HTMLCanvasElement | null,
+        resizeObserver: new ResizeObserver(entries => {
+            for (const entry of entries) {
+                this._displayProperties.width = entry.target.clientWidth;
+                this._displayProperties.height = entry.target.clientHeight;
+                this._updateCanvasDimensions();
+            }
+        }),
+        backgroundCanvas: document.createElement("canvas"),
+        foregroundCanvas: document.createElement("canvas"),
         background: null as CanvasRenderingContext2D | null,
         foreground: null as CanvasRenderingContext2D | null,
-        backgroundFunction: null as drawingFunction | null,
-        foregroundFunction: null as drawingFunction | null
+        backgroundFunction: (() => {}) as drawingFunction,
+        foregroundFunction: (() => {}) as drawingFunction
     }
 
     constructor(id: string, options: Partial<ResponsiveCanvasOptions> = {}) {
         // TODO: add child objects to options to allow more options
         this.setID(id);
         setupProperties(this, "ResponsiveCanvas", options);
+        this._displayProperties.backgroundCanvas.style.position = "absolute";
+        this._displayProperties.backgroundCanvas.style.left = "0";
+        this._displayProperties.backgroundCanvas.style.top = "0";
+        this._displayProperties.backgroundCanvas.id = `${this.id}-background-canvas`;
+        this._displayProperties.background = this._displayProperties.backgroundCanvas.getContext("2d");
+        this._displayProperties.foregroundCanvas.style.position = "absolute";
+        this._displayProperties.foregroundCanvas.style.left = "0";
+        this._displayProperties.foregroundCanvas.style.top = "0";
+        this._displayProperties.foregroundCanvas.id = `${this.id}-foreground-canvas`;
+        this._displayProperties.foreground = this._displayProperties.foregroundCanvas.getContext("2d");
     }
 
     protected _updateCanvasDimensions() {
-        if (this._displayProperties.canvasContainer !== null) {
-            this._displayProperties.canvasContainer!.style.width = `${this._displayProperties.width}px`;
-            this._displayProperties.canvasContainer!.style.height = `${this._displayProperties.height}px`;
-            this._displayProperties.backgroundCanvas!.width = this._displayProperties.width;
-            this._displayProperties.backgroundCanvas!.height = this._displayProperties.height;
+        if (this._displayProperties.containerElement !== null) {
+            this._displayProperties.containerElement.style.width = `${this._displayProperties.width}px`;
+            this._displayProperties.containerElement.style.height = `${this._displayProperties.height}px`;
+            this._displayProperties.backgroundCanvas.width = this._displayProperties.width;
+            this._displayProperties.backgroundCanvas.height = this._displayProperties.height;
             this._displayProperties.background!.translate(this.properties.origin.x, this.properties.origin.y);
             this._updateBackground();
-            this._displayProperties.foregroundCanvas!.width = this._displayProperties.width;
-            this._displayProperties.foregroundCanvas!.height = this._displayProperties.height;
+            this._displayProperties.foregroundCanvas.width = this._displayProperties.width;
+            this._displayProperties.foregroundCanvas.height = this._displayProperties.height;
             this._displayProperties.foreground!.translate(this.properties.origin.x, this.properties.origin.y);
             this._updateForeground();
         }
@@ -103,14 +118,11 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
     setOrigin(...point: ("centre" | number)[]) {
         if (point.length === 1 && point[0] === "centre") {
             propertySetters.setAxesProperty(this,"origin", "number", Math.round(this._displayProperties.width / 2), Math.round(this._displayProperties.height / 2));
-            this._displayProperties.originArgCache = "centre";
         } else {
             propertySetters.setAxesProperty(this,"origin", "number", ...point);
-            this._displayProperties.originArgCache = this.properties.origin;
         }
-        if (this._displayProperties.backgroundCanvas !== null && this._displayProperties.foregroundCanvas !== null) {
-            this._updateCanvasDimensions();
-        }
+        this._displayProperties.originArgCache = point;
+        this._updateCanvasDimensions();
     }
 
     setID(id: string) {
@@ -124,9 +136,7 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
 
     setBackgroundCSS(cssString: string) {
         propertySetters.setSingleProperty(this, "backgroundCSS", "string", cssString)
-        if (this._displayProperties.backgroundCanvas !== null) {
-            this._displayProperties.backgroundCanvas.style.background = cssString;
-        }
+        this._displayProperties.backgroundCanvas.style.background = cssString;
     }
 
     startTime() {
@@ -179,40 +189,15 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
     }
 
     show(element: string) {
-        // TODO: get rid of containerElement (replace with canvasContainer)
         this._displayProperties.containerElement = document.querySelector(element);
         if (this._displayProperties.containerElement !== null) {
-            this._displayProperties.canvasContainer = document.createElement("div");
-            this._displayProperties.canvasContainer.id = this.id;
-            this._displayProperties.canvasContainer.style.position = "relative";
-            this._displayProperties.backgroundCanvas = document.createElement("canvas");
-            this._displayProperties.foregroundCanvas = document.createElement("canvas");
-            this._displayProperties.backgroundCanvas.style.position = "absolute";
-            this._displayProperties.backgroundCanvas.style.left = "0";
-            this._displayProperties.backgroundCanvas.style.top = "0";
-            this._displayProperties.backgroundCanvas.id = `${this.id}-background-canvas`;
-            this._displayProperties.foregroundCanvas.style.position = "absolute";
-            this._displayProperties.foregroundCanvas.style.left = "0";
-            this._displayProperties.foregroundCanvas.style.top = "0";
-            this._displayProperties.foregroundCanvas.id = `${this.id}-foreground-canvas`;
-            this._displayProperties.canvasContainer.appendChild(this._displayProperties.backgroundCanvas);
-            this._displayProperties.canvasContainer.appendChild(this._displayProperties.foregroundCanvas);
-            this._displayProperties.containerElement.appendChild(this._displayProperties.canvasContainer);
-            this._displayProperties.background = this._displayProperties.backgroundCanvas.getContext("2d");
-            this._displayProperties.foreground = this._displayProperties.foregroundCanvas.getContext("2d");
+            this._displayProperties.containerElement.style.position = "relative";
+            this._displayProperties.containerElement.appendChild(this._displayProperties.backgroundCanvas);
+            this._displayProperties.containerElement.appendChild(this._displayProperties.foregroundCanvas);
             this._displayProperties.width = this._displayProperties.containerElement.clientWidth;
             this._displayProperties.height = this._displayProperties.containerElement.clientHeight;
-            this._displayProperties.resizeObserver = new ResizeObserver(entries => {
-                for (const entry of entries) {
-                    this._displayProperties.width = entry.target.clientWidth;
-                    this._displayProperties.height = entry.target.clientHeight;
-                    this._updateCanvasDimensions();
-                }
-            });
             this._displayProperties.resizeObserver.observe(this._displayProperties.containerElement);
-            for (const property of Object.keys(this.properties)) {
-                (this as {[property: string]: any})[`set${property[0].toUpperCase()}${property.slice(1)}`]((this.properties as {[property: string]: any})[property]);
-            }
+            this.setOrigin(...this._displayProperties.originArgCache);
         } else {
             throw `Element with querySelector "${element}" could not be found.`;
         }

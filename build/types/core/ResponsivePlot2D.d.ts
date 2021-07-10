@@ -2,7 +2,7 @@ import { ResponsiveCanvasObject, ResponsiveCanvas } from "./ResponsiveCanvas.js"
 import { choice2D, point2D } from "../helpers/index.js";
 import { ResponsivePlot2DOptions, ResponsivePlot2DTraceOptions } from "./defaults.js";
 export interface ResponsivePlot2DObject extends ResponsiveCanvasObject {
-    readonly properties: ResponsiveCanvasObject["properties"] & {
+    properties: ResponsiveCanvasObject["properties"] & {
         majorTicks: choice2D;
         minorTicks: choice2D;
         majorTickSize: point2D;
@@ -15,7 +15,7 @@ export interface ResponsivePlot2DObject extends ResponsiveCanvasObject {
         xLims: [number, number];
         yLims: [number, number];
     };
-    readonly plotData: {
+    plotData: {
         [trace: string]: ResponsivePlot2DTraceObject;
     };
     plot: (id: string, data: ResponsivePlot2DTraceDataType, options: ResponsivePlot2DTraceOptions) => void;
@@ -41,8 +41,8 @@ export interface ResponsivePlot2DObject extends ResponsiveCanvasObject {
     setParameterRange: (trace: string, min: number, max: number) => void;
 }
 interface ResponsivePlot2DTraceObject {
-    readonly data: (t: number, xLims: [number, number], yLims: [number, number], step: number, paramLims: [number, number]) => Generator<[number, number]>;
-    readonly properties: {
+    data: (t: number, xLims: [number, number], yLims: [number, number], step: number, paramLims: [number, number]) => Generator<[number, number]>;
+    properties: {
         traceColour: string;
         traceStyle: "solid" | "dotted" | "dashed" | "dashdot" | "none";
         traceWidth: number;
@@ -64,8 +64,8 @@ export declare type ResponsivePlot2DTraceDataType = (x: number, t: number) => nu
     (number | ((x: number, t: number) => number))[]
 ];
 export declare class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot2DObject {
-    readonly properties: ResponsivePlot2DObject["properties"];
-    readonly plotData: ResponsivePlot2DObject["plotData"];
+    properties: ResponsivePlot2DObject["properties"];
+    plotData: ResponsivePlot2DObject["plotData"];
     constructor(id: string, options?: Partial<ResponsivePlot2DOptions>);
     protected _updateLimits(): void;
     protected _updatePlottingData(): void;

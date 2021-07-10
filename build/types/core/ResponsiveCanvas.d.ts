@@ -2,11 +2,11 @@ import { ResponsiveCanvasOptions } from "./defaults.js";
 import { point2D, drawingFunction } from "../helpers/index.js";
 export interface ResponsiveCanvasObject {
     id: string;
-    readonly properties: {
+    properties: {
         origin: point2D;
         backgroundCSS: string;
     };
-    readonly constants: {
+    constants: {
         [name: string]: any;
     };
     setBackground: (drawingFunction: drawingFunction) => void;
@@ -23,27 +23,26 @@ export interface ResponsiveCanvasObject {
 }
 export declare class ResponsiveCanvas implements ResponsiveCanvasObject {
     id: string;
-    readonly properties: ResponsiveCanvasObject["properties"];
-    readonly constants: ResponsiveCanvasObject["constants"];
-    protected readonly _timeEvolutionData: {
+    properties: ResponsiveCanvasObject["properties"];
+    constants: ResponsiveCanvasObject["constants"];
+    protected _timeEvolutionData: {
         currentTimeValue: number;
         startTimestampMS: number;
         offsetTimestampMS: number;
         timeEvolutionActive: boolean;
     };
-    protected readonly _displayProperties: {
+    protected _displayProperties: {
         width: number;
         height: number;
-        originArgCache: point2D | "centre";
+        originArgCache: (number | "centre")[];
         containerElement: HTMLElement | null;
-        resizeObserver: ResizeObserver | null;
-        canvasContainer: HTMLDivElement | null;
-        backgroundCanvas: HTMLCanvasElement | null;
-        foregroundCanvas: HTMLCanvasElement | null;
+        resizeObserver: ResizeObserver;
+        backgroundCanvas: HTMLCanvasElement;
+        foregroundCanvas: HTMLCanvasElement;
         background: CanvasRenderingContext2D | null;
         foreground: CanvasRenderingContext2D | null;
-        backgroundFunction: drawingFunction | null;
-        foregroundFunction: drawingFunction | null;
+        backgroundFunction: drawingFunction;
+        foregroundFunction: drawingFunction;
     };
     constructor(id: string, options?: Partial<ResponsiveCanvasOptions>);
     protected _updateCanvasDimensions(): void;
