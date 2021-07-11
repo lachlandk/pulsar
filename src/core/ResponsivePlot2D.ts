@@ -81,13 +81,13 @@ export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot
                     context.beginPath();
                     let currentValue = -Math.floor(this.properties.origin[xy] / (intervalSize * this.properties.gridScale[xy])) * intervalSize * this.properties.gridScale[xy];
                     if (xy === "x") {
-                        while (currentValue < this._displayProperties.width - this.properties.origin.x) {
+                        while (currentValue < this._displayData.width - this.properties.origin.x) {
                             context.moveTo(currentValue + offset, lineStart);
                             context.lineTo(currentValue + offset, lineEnd);
                             currentValue += this.properties.gridScale.x * intervalSize;
                         }
                     } else if (xy === "y") {
-                        while (currentValue < this._displayProperties.height - this.properties.origin.y) {
+                        while (currentValue < this._displayData.height - this.properties.origin.y) {
                             context.moveTo(lineStart, currentValue + offset);
                             context.lineTo(lineEnd, currentValue + offset);
                             currentValue += this.properties.gridScale.y * intervalSize;
@@ -98,10 +98,10 @@ export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot
             };
             context.lineCap = "square";
             context.strokeStyle = "rgb(0, 0, 0)";
-            drawGridSet("minor", "x", "Gridlines", 1, -this.properties.origin.y, this._displayProperties.height - this.properties.origin.y);
-            drawGridSet("minor", "y", "Gridlines", 1, -this.properties.origin.x, this._displayProperties.width - this.properties.origin.x);
-            drawGridSet("major", "x", "Gridlines", 2, -this.properties.origin.y, this._displayProperties.height - this.properties.origin.y);
-            drawGridSet("major", "y", "Gridlines", 2, -this.properties.origin.x, this._displayProperties.width - this.properties.origin.x);
+            drawGridSet("minor", "x", "Gridlines", 1, -this.properties.origin.y, this._displayData.height - this.properties.origin.y);
+            drawGridSet("minor", "y", "Gridlines", 1, -this.properties.origin.x, this._displayData.width - this.properties.origin.x);
+            drawGridSet("major", "x", "Gridlines", 2, -this.properties.origin.y, this._displayData.height - this.properties.origin.y);
+            drawGridSet("major", "y", "Gridlines", 2, -this.properties.origin.x, this._displayData.width - this.properties.origin.x);
             drawGridSet("minor", "x", "Ticks", 1, -3, 3);
             drawGridSet("minor", "y", "Ticks", 1, -3, 3);
             drawGridSet("major", "x", "Ticks", 2, -6, 6);
@@ -109,16 +109,16 @@ export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot
             context.beginPath();
             context.lineWidth = 3;
             context.moveTo(0.5, -this.properties.origin.y);
-            context.lineTo(0.5, this._displayProperties.height - this.properties.origin.y);
+            context.lineTo(0.5, this._displayData.height - this.properties.origin.y);
             context.moveTo(-this.properties.origin.x, 0.5);
-            context.lineTo(this._displayProperties.width - this.properties.origin.x, 0.5);
+            context.lineTo(this._displayData.width - this.properties.origin.x, 0.5);
             context.stroke();
         });
     }
 
     protected _updateLimits() {
-        this.properties.xLims = [-this.properties.origin.x / this.properties.gridScale.x, (this._displayProperties.width - this.properties.origin.x) / this.properties.gridScale.x];
-        this.properties.yLims = [-this.properties.origin.y / this.properties.gridScale.y, (this._displayProperties.height - this.properties.origin.y) / this.properties.gridScale.y];
+        this.properties.xLims = [-this.properties.origin.x / this.properties.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.properties.gridScale.x];
+        this.properties.yLims = [-this.properties.origin.y / this.properties.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.properties.gridScale.y];
     }
 
     protected _updatePlottingData() {
@@ -372,7 +372,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot
     setXLims(min: number, max: number) {
         if (max >= min) {
             propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
-            this.properties.gridScale.x = this._displayProperties.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
+            this.properties.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
             super.setOrigin(-this.properties.xLims[0] * this.properties.gridScale.x, this.properties.origin.y);
             this._updateBackground();
             this._updatePlottingData();
@@ -385,7 +385,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot
     setYLims(min: number, max: number) {
         if (max >= min) {
             propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
-            this.properties.gridScale.y = this._displayProperties.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
+            this.properties.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
             super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.properties.gridScale.y);
             this._updateBackground();
             this._updatePlottingData();

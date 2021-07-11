@@ -31,7 +31,7 @@ export declare class ResponsiveCanvas implements ResponsiveCanvasObject {
         offsetTimestampMS: number;
         timeEvolutionActive: boolean;
     };
-    protected _displayProperties: {
+    protected _displayData: {
         width: number;
         height: number;
         originArgCache: (number | "centre")[];

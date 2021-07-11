@@ -36,15 +36,15 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
         offsetTimestampMS: 0,
         timeEvolutionActive: false
     }
-    protected _displayProperties = {
+    protected _displayData = {
         width: 0,
         height: 0,
         originArgCache: [0] as (number | "centre")[],
         containerElement: null as HTMLElement | null,
         resizeObserver: new ResizeObserver(entries => {
             for (const entry of entries) {
-                this._displayProperties.width = entry.target.clientWidth;
-                this._displayProperties.height = entry.target.clientHeight;
+                this._displayData.width = entry.target.clientWidth;
+                this._displayData.height = entry.target.clientHeight;
                 this._updateCanvasDimensions();
             }
         }),
@@ -60,68 +60,64 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
         // TODO: add child objects to options to allow more options
         this.setID(id);
         setupProperties(this, "ResponsiveCanvas", options);
-        this._displayProperties.backgroundCanvas.style.position = "absolute";
-        this._displayProperties.backgroundCanvas.style.left = "0";
-        this._displayProperties.backgroundCanvas.style.top = "0";
-        this._displayProperties.backgroundCanvas.id = `${this.id}-background-canvas`;
-        this._displayProperties.background = this._displayProperties.backgroundCanvas.getContext("2d");
-        this._displayProperties.foregroundCanvas.style.position = "absolute";
-        this._displayProperties.foregroundCanvas.style.left = "0";
-        this._displayProperties.foregroundCanvas.style.top = "0";
-        this._displayProperties.foregroundCanvas.id = `${this.id}-foreground-canvas`;
-        this._displayProperties.foreground = this._displayProperties.foregroundCanvas.getContext("2d");
+        this._displayData.backgroundCanvas.style.position = "absolute";
+        this._displayData.backgroundCanvas.style.left = "0";
+        this._displayData.backgroundCanvas.style.top = "0";
+        this._displayData.backgroundCanvas.id = `${this.id}-background-canvas`;
+        this._displayData.background = this._displayData.backgroundCanvas.getContext("2d");
+        this._displayData.foregroundCanvas.style.position = "absolute";
+        this._displayData.foregroundCanvas.style.left = "0";
+        this._displayData.foregroundCanvas.style.top = "0";
+        this._displayData.foregroundCanvas.id = `${this.id}-foreground-canvas`;
+        this._displayData.foreground = this._displayData.foregroundCanvas.getContext("2d");
     }
 
     protected _updateCanvasDimensions() {
-        if (this._displayProperties.containerElement !== null) {
-            this._displayProperties.containerElement.style.width = `${this._displayProperties.width}px`;
-            this._displayProperties.containerElement.style.height = `${this._displayProperties.height}px`;
-            this._displayProperties.backgroundCanvas.width = this._displayProperties.width;
-            this._displayProperties.backgroundCanvas.height = this._displayProperties.height;
-            this._displayProperties.background!.translate(this.properties.origin.x, this.properties.origin.y);
+        if (this._displayData.containerElement !== null) {
+            this._displayData.containerElement.style.width = `${this._displayData.width}px`;
+            this._displayData.containerElement.style.height = `${this._displayData.height}px`;
+            this._displayData.backgroundCanvas.width = this._displayData.width;
+            this._displayData.backgroundCanvas.height = this._displayData.height;
+            this._displayData.background!.translate(this.properties.origin.x, this.properties.origin.y);
             this._updateBackground();
-            this._displayProperties.foregroundCanvas.width = this._displayProperties.width;
-            this._displayProperties.foregroundCanvas.height = this._displayProperties.height;
-            this._displayProperties.foreground!.translate(this.properties.origin.x, this.properties.origin.y);
+            this._displayData.foregroundCanvas.width = this._displayData.width;
+            this._displayData.foregroundCanvas.height = this._displayData.height;
+            this._displayData.foreground!.translate(this.properties.origin.x, this.properties.origin.y);
             this._updateForeground();
         }
     }
 
     protected _updateBackground() {
-        if (this._displayProperties.background !== null) {
-            this._displayProperties.background.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayProperties.width, this._displayProperties.height);
-            if (this._displayProperties.backgroundFunction) {
-                this._displayProperties.backgroundFunction(this._displayProperties.background, this._timeEvolutionData.currentTimeValue);
-            }
+        if (this._displayData.background !== null) {
+            this._displayData.background.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
+            this._displayData.backgroundFunction(this._displayData.background, this._timeEvolutionData.currentTimeValue);
         }
     }
 
     protected _updateForeground() {
-        if (this._displayProperties.foreground !== null) {
-            this._displayProperties.foreground.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayProperties.width, this._displayProperties.height);
-            if (this._displayProperties.foregroundFunction) {
-                this._displayProperties.foregroundFunction(this._displayProperties.foreground, this._timeEvolutionData.currentTimeValue);
-            }
+        if (this._displayData.foreground !== null) {
+            this._displayData.foreground.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
+            this._displayData.foregroundFunction(this._displayData.foreground, this._timeEvolutionData.currentTimeValue);
         }
     }
 
     setBackground(drawingFunction: drawingFunction) {
-        this._displayProperties.backgroundFunction = drawingFunction;
+        this._displayData.backgroundFunction = drawingFunction;
         this._updateBackground();
     }
 
     setForeground(drawingFunction: drawingFunction) {
-        this._displayProperties.foregroundFunction = drawingFunction;
+        this._displayData.foregroundFunction = drawingFunction;
         this._updateForeground();
     }
 
     setOrigin(...point: ("centre" | number)[]) {
         if (point.length === 1 && point[0] === "centre") {
-            propertySetters.setAxesProperty(this,"origin", "number", Math.round(this._displayProperties.width / 2), Math.round(this._displayProperties.height / 2));
+            propertySetters.setAxesProperty(this,"origin", "number", Math.round(this._displayData.width / 2), Math.round(this._displayData.height / 2));
         } else {
             propertySetters.setAxesProperty(this,"origin", "number", ...point);
         }
-        this._displayProperties.originArgCache = point;
+        this._displayData.originArgCache = point;
         this._updateCanvasDimensions();
     }
 
@@ -136,7 +132,7 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
 
     setBackgroundCSS(cssString: string) {
         propertySetters.setSingleProperty(this, "backgroundCSS", "string", cssString)
-        this._displayProperties.backgroundCanvas.style.background = cssString;
+        this._displayData.backgroundCanvas.style.background = cssString;
     }
 
     startTime() {
@@ -189,15 +185,15 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
     }
 
     show(element: string) {
-        this._displayProperties.containerElement = document.querySelector(element);
-        if (this._displayProperties.containerElement !== null) {
-            this._displayProperties.containerElement.style.position = "relative";
-            this._displayProperties.containerElement.appendChild(this._displayProperties.backgroundCanvas);
-            this._displayProperties.containerElement.appendChild(this._displayProperties.foregroundCanvas);
-            this._displayProperties.width = this._displayProperties.containerElement.clientWidth;
-            this._displayProperties.height = this._displayProperties.containerElement.clientHeight;
-            this._displayProperties.resizeObserver.observe(this._displayProperties.containerElement);
-            this.setOrigin(...this._displayProperties.originArgCache);
+        this._displayData.containerElement = document.querySelector(element);
+        if (this._displayData.containerElement !== null) {
+            this._displayData.containerElement.style.position = "relative";
+            this._displayData.containerElement.appendChild(this._displayData.backgroundCanvas);
+            this._displayData.containerElement.appendChild(this._displayData.foregroundCanvas);
+            this._displayData.width = this._displayData.containerElement.clientWidth;
+            this._displayData.height = this._displayData.containerElement.clientHeight;
+            this._displayData.resizeObserver.observe(this._displayData.containerElement);
+            this.setOrigin(...this._displayData.originArgCache);
         } else {
             throw `Element with querySelector "${element}" could not be found.`;
         }
