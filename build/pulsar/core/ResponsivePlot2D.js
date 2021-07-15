@@ -11,9 +11,9 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
         this.setBackground(context => {
             const drawGridSet = (majorOrMinor, xy, ticksOrGridlines, width, lineStart, lineEnd) => {
                 const offset = width % 2 === 0 ? 0 : 0.5;
-                const intervalSize = this[`${majorOrMinor + (ticksOrGridlines === "Ticks" ? "TickSize" : "GridSize")}`][xy];
+                const intervalSize = this.properties[`${majorOrMinor + (ticksOrGridlines === "Ticks" ? "TickSize" : "GridSize")}`][xy];
                 context.lineWidth = width;
-                if (this[`${majorOrMinor}${ticksOrGridlines}`][xy]) {
+                if (this.properties[`${majorOrMinor}${ticksOrGridlines}`][xy]) {
                     context.beginPath();
                     let currentValue = -Math.floor(this.properties.origin[xy] / (intervalSize * this.properties.gridScale[xy])) * intervalSize * this.properties.gridScale[xy];
                     if (xy === "x") {
@@ -247,7 +247,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             };
         }
         else {
-            throw `Error setting plot data: Unrecognised data signature ${JSON.stringify(data)}.`;
+            throw `Error setting plot data: Unrecognised data signature ${data}.`;
         }
         setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
         this._updatePlottingData();

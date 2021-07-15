@@ -75,9 +75,9 @@ export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot
         this.setBackground(context => {
             const drawGridSet = (majorOrMinor: "major" | "minor", xy: "x" | "y", ticksOrGridlines: "Ticks" | "Gridlines", width: number, lineStart: number, lineEnd: number) => {
                 const offset = width % 2 === 0 ? 0 : 0.5;
-                const intervalSize = (this as {[prop: string]: any})[`${majorOrMinor + (ticksOrGridlines === "Ticks" ? "TickSize" : "GridSize")}`][xy];
+                const intervalSize = (this.properties as {[prop: string]: any})[`${majorOrMinor + (ticksOrGridlines === "Ticks" ? "TickSize" : "GridSize")}`][xy];
                 context.lineWidth = width;
-                if ((this as {[prop: string]: any})[`${majorOrMinor}${ticksOrGridlines}`][xy]) {
+                if ((this.properties as {[prop: string]: any})[`${majorOrMinor}${ticksOrGridlines}`][xy]) {
                     context.beginPath();
                     let currentValue = -Math.floor(this.properties.origin[xy] / (intervalSize * this.properties.gridScale[xy])) * intervalSize * this.properties.gridScale[xy];
                     if (xy === "x") {
@@ -306,7 +306,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot
                 }
             };
         } else {
-            throw `Error setting plot data: Unrecognised data signature ${JSON.stringify(data)}.`;
+            throw `Error setting plot data: Unrecognised data signature ${data}.`;
         }
         setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
         this._updatePlottingData();
