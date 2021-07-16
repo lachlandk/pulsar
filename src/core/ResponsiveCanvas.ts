@@ -59,6 +59,11 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
     constructor(id: string, options: Partial<ResponsiveCanvasOptions> = {}) {
         // TODO: add child objects to options to allow more options
         this.setID(id);
+
+        if (options.origin === "centre") {
+            this.setOrigin("centre");
+            delete options.origin;
+        }
         setupProperties(this, "ResponsiveCanvas", options);
         this._displayData.backgroundCanvas.style.position = "absolute";
         this._displayData.backgroundCanvas.style.left = "0";
