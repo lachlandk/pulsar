@@ -56,6 +56,7 @@ suite("ResponsiveCanvas", function() {
 
 	test("_updateCanvasDimensions() calls _updateBackground() and _updateForeground()", function() {
 		const testCanvas = new ResponsiveCanvas("_updateCanvasDimensionsTest");
+		testCanvas._displayData.containerElement = document.createElement("div");
 		const _updateBackgroundSpy = sinon.spy(testCanvas, "_updateBackground");
 		const _updateForegroundSpy = sinon.spy(testCanvas, "_updateForeground");
 		const backgroundTranslateSpy = sinon.spy(testCanvas._displayData.background, "translate");
@@ -71,22 +72,16 @@ suite("ResponsiveCanvas", function() {
 
 	test("_updateBackground() calls the background drawing function once with the background canvas context and the current time value", function() {
 		const testCanvas = new ResponsiveCanvas("_updateBackgroundTest");
-		const clearRectSpy = sinon.spy(testCanvas._displayData.foreground, "clearRect");
 		const backgroundFunctionSpy = sinon.spy(testCanvas._displayData, "backgroundFunction");
 		testCanvas._updateBackground();
-		expect(clearRectSpy.calledOnce).to.equal(true);
-		expect(clearRectSpy.calledWith(testCanvas.properties.origin.x, testCanvas.properties.origin.y, testCanvas._displayData.width, testCanvas._displayData.height)).to.equal(true);
 		expect(backgroundFunctionSpy.calledOnce).to.equal(true);
 		expect(backgroundFunctionSpy.calledWith(testCanvas._displayData.background, testCanvas._timeEvolutionData.currentTimeValue)).to.equal(true);
 	});
 
 	test("_updateForeground() calls the foreground drawing function once with the foreground canvas context and the current time value", function() {
 		const testCanvas = new ResponsiveCanvas("_updateForegroundTest");
-		const clearRectSpy = sinon.spy(testCanvas._displayData.foreground, "clearRect");
 		const foregroundFunctionSpy = sinon.spy(testCanvas._displayData, "foregroundFunction");
 		testCanvas._updateForeground();
-		expect(clearRectSpy.calledOnce).to.equal(true);
-		expect(clearRectSpy.calledWith(testCanvas.properties.origin.x, testCanvas.properties.origin.y, testCanvas._displayData.width, testCanvas._displayData.height)).to.equal(true);
 		expect(foregroundFunctionSpy.calledOnce).to.equal(true);
 		expect(foregroundFunctionSpy.calledWith(testCanvas._displayData.foreground, testCanvas._timeEvolutionData.currentTimeValue)).to.equal(true);
 	});
@@ -102,7 +97,7 @@ suite("ResponsiveCanvas", function() {
 	test("setForeground() changes the foreground drawing function and calls _updateForeground()", function() {
 		const testCanvas = new ResponsiveCanvas("setForegroundTest");
 		const spy = sinon.spy(testCanvas, "_updateForeground");
-		testCanvas.setBackground(() => "test");
+		testCanvas.setForeground(() => "test");
 		expect(testCanvas._displayData.foregroundFunction()).to.equal("test");
 		expect(spy.calledOnce).to.equal(true);
 	});
