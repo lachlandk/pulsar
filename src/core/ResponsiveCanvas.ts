@@ -154,14 +154,17 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
 
     stopTime() {
         this._timeEvolutionData.timeEvolutionActive = false;
-        this._timeEvolutionData.currentTimeValue = 0;
+        this._timeEvolutionData.startTimestampMS = 0;
         this._timeEvolutionData.offsetTimestampMS = 0;
+        this._timeEvolutionData.currentTimeValue = 0;
+        this._updateBackground();
         this._updateForeground();
     }
 
     protected _updateTime(currentTimestamp: number) {
         if (this._timeEvolutionData.timeEvolutionActive) {
             this._timeEvolutionData.currentTimeValue = (this._timeEvolutionData.offsetTimestampMS + currentTimestamp - this._timeEvolutionData.startTimestampMS) / 1000;
+            this._updateBackground();
             this._updateForeground();
             window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
         }
