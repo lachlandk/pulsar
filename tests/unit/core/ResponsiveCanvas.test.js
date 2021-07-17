@@ -11,6 +11,8 @@ suite("ResponsiveCanvas", function() {
 		global.window = new JSDOM().window;
 		global.document = window.document;
 		global.performance = window.performance;
+		global.Element = window.Element;
+		global.Event = window.Event;
 		window.requestAnimationFrame = () => {};
 		sinon.stub(window, "requestAnimationFrame")
 			.onFirstCall().callsFake(callback => callback())
@@ -192,7 +194,7 @@ suite("ResponsiveCanvas", function() {
 			.returns(testElement);
 		testCanvas.connectElementAttribute("testElement", "input", "value", "a", testTransform);
 		testElement.dispatchEvent(new Event("input"));
-		expect(testCanvas.constants.a).to.equal(testTransform);
+		expect(testCanvas.constants.a).to.equal(testTransform(testValue));
 	});
 
 	test("connectElementAttribute() accepts an element by reference, and adds an event listener to the specified event for the specified attribute which sets the attribute value to the specified constant after calling the transform", function() {
@@ -203,7 +205,7 @@ suite("ResponsiveCanvas", function() {
 		testElement.value = `${testValue}`;
 		testCanvas.connectElementAttribute(testElement, "input", "value", "a", testTransform);
 		testElement.dispatchEvent(new Event("input"));
-		expect(testCanvas.constants.a).to.equal(testTransform);
+		expect(testCanvas.constants.a).to.equal(testTransform(testValue));
 	});
 
 	test("connectElementAttribute() throws an error if the specified element could not be found or was not valid", function() {
