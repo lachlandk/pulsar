@@ -12,6 +12,7 @@ suite("ResponsiveCanvas", function() {
 		global.document = window.document;
 		global.performance = window.performance;
 		global.Element = window.Element;
+		global.HTMLElement = window.HTMLElement;
 		global.Event = window.Event;
 		window.requestAnimationFrame = () => {};
 		sinon.stub(window, "requestAnimationFrame")
