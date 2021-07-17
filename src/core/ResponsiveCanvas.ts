@@ -128,6 +128,7 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
 
     setID(id: string) {
         if (activeCanvases[id] === undefined) {
+            delete activeCanvases[this.id];
             this.id = id;
             activeCanvases[this.id] = this;
         } else {

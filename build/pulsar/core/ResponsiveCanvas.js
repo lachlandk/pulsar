@@ -95,6 +95,7 @@ export class ResponsiveCanvas {
     }
     setID(id) {
         if (activeCanvases[id] === undefined) {
+            delete activeCanvases[this.id];
             this.id = id;
             activeCanvases[this.id] = this;
         }
