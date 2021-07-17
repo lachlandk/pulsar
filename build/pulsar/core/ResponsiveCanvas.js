@@ -156,7 +156,12 @@ export class ResponsiveCanvas {
         }
     }
     show(element) {
-        this._displayData.containerElement = document.querySelector(element);
+        if (element instanceof HTMLElement) {
+            this._displayData.containerElement = element;
+        }
+        else {
+            this._displayData.containerElement = document.querySelector(element);
+        }
         if (this._displayData.containerElement !== null) {
             this._displayData.containerElement.style.position = "relative";
             this._displayData.containerElement.appendChild(this._displayData.backgroundCanvas);
@@ -167,7 +172,7 @@ export class ResponsiveCanvas {
             this.setOrigin(...this._displayData.originArgCache);
         }
         else {
-            throw `Element with querySelector "${element}" could not be found.`;
+            throw `HTMLElement with querySelector "${element}" could not be found.`;
         }
     }
 }

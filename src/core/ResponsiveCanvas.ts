@@ -21,7 +21,7 @@ export interface ResponsiveCanvasObject {
     stopTime: () => void
     setConstant: (name: string, value: any) => void
     connectElementAttribute: (element: string | Element, event: string, attribute: string, constant: string, transform: (x: any) => any) => void
-    show: (element: string) => void
+    show: (element: string | HTMLElement) => void
 }
 
 export class ResponsiveCanvas implements ResponsiveCanvasObject {
@@ -193,8 +193,12 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
         }
     }
 
-    show(element: string) {
-        this._displayData.containerElement = document.querySelector(element);
+    show(element: string | HTMLElement) {
+        if (element instanceof HTMLElement) {
+            this._displayData.containerElement = element;
+        } else {
+            this._displayData.containerElement = document.querySelector(element);
+        }
         if (this._displayData.containerElement !== null) {
             this._displayData.containerElement.style.position = "relative";
             this._displayData.containerElement.appendChild(this._displayData.backgroundCanvas);
@@ -204,7 +208,7 @@ export class ResponsiveCanvas implements ResponsiveCanvasObject {
             this._displayData.resizeObserver.observe(this._displayData.containerElement);
             this.setOrigin(...this._displayData.originArgCache);
         } else {
-            throw `Element with querySelector "${element}" could not be found.`;
+            throw `HTMLElement with querySelector "${element}" could not be found.`;
         }
     }
 }

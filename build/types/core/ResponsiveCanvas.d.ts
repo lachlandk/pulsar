@@ -19,7 +19,7 @@ export interface ResponsiveCanvasObject {
     stopTime: () => void;
     setConstant: (name: string, value: any) => void;
     connectElementAttribute: (element: string | Element, event: string, attribute: string, constant: string, transform: (x: any) => any) => void;
-    show: (element: string) => void;
+    show: (element: string | HTMLElement) => void;
 }
 export declare class ResponsiveCanvas implements ResponsiveCanvasObject {
     id: string;
@@ -59,5 +59,5 @@ export declare class ResponsiveCanvas implements ResponsiveCanvasObject {
     protected _updateTime(currentTimestamp: number): void;
     setConstant(name: string, value: any): void;
     connectElementAttribute(element: string | Element, event: string, attribute: string, constant: string, transform?: (x: any) => any): void;
-    show(element: string): void;
+    show(element: string | HTMLElement): void;
 }
