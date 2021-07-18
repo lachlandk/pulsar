@@ -1,4 +1,4 @@
-import { propertyDefaults, propertyDefaultsType } from "../core/index.js";
+import { propertyDefaults, propertyDefaultsType } from "../core/defaults.js";
 
 type indexableObject = {[name: string]: any};
 
