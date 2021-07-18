@@ -142,8 +142,9 @@ suite("ResponsivePlot2D", function() {
 			origin: [250, 250],
 			gridScale: [10, 20]
 		});
-		testPlot._displayProperties.width = 500;
-		testPlot._displayProperties.height = 500;
+		testPlot._displayData.width = 500;
+		testPlot._displayData.height = 500;
+		testPlot._updateLimits();
 		expect(testPlot.properties.xLims).to.deep.equal([-250 / 10, (500 - 250) / 10]);
 		expect(testPlot.properties.yLims).to.deep.equal([-250 / 20, (500 - 250) / 20]);
 	});
