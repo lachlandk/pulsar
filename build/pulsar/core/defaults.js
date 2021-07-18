@@ -13,8 +13,8 @@ export const optionsObjects = {
         majorGridSize: { x: 5, y: 5 },
         minorGridSize: { x: 1, y: 1 },
         gridScale: { x: 50, y: 50 },
-        xLims: [0, 0],
-        yLims: [0, 0]
+        xLims: [-0, 0],
+        yLims: [-0, 0]
     },
     ResponsivePlot2DTrace: {
         traceColour: "blue",

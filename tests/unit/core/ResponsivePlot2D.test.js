@@ -22,7 +22,9 @@ suite("ResponsivePlot2D", function() {
 	test("Default properties are set correctly when no options are specified", function() {
 		const testPlot = new ResponsivePlot2D("defaultTest");
 		for (const property of Object.keys(testPlot.properties)) {
-			expect(testPlot.properties[property]).to.deep.equal(optionsObjects.ResponsivePlot2D[property]);
+			if (Object.keys(optionsObjects.ResponsivePlot2D).includes(property)) {
+				expect(testPlot.properties[property]).to.deep.equal(optionsObjects.ResponsivePlot2D[property]);
+			}
 		}
 	});
 
@@ -119,7 +121,7 @@ suite("ResponsivePlot2D", function() {
 			gridScale: [100, 200]
 		});
 		expect(testPlot.properties.gridScale).to.deep.equal({x: 100, y: 200});
-		const testPlot2 = new ResponsivePlot2D("gridScaleTest", {
+		const testPlot2 = new ResponsivePlot2D("gridScaleTest2", {
 			gridScale: 500
 		});
 		expect(testPlot2.properties.gridScale).to.deep.equal({x: 500, y: 500});
@@ -127,12 +129,12 @@ suite("ResponsivePlot2D", function() {
 
 	test("'xLims' property is set correctly", function() {
 		const testPlot = new ResponsivePlot2D("xLimsTest");
-		expect(testPlot.properties.xLims).to.deep.equal([0, 0]);
+		expect(testPlot.properties.xLims).to.deep.equal([-0, 0]);
 	});
 
 	test("'yLims' property is set correctly", function() {
 		const testPlot = new ResponsivePlot2D("yLimsTest");
-		expect(testPlot.properties.yLims).to.deep.equal([0, 0]);
+		expect(testPlot.properties.yLims).to.deep.equal([-0, 0]);
 	});
 
 	test("_updateLimits()", function() {
