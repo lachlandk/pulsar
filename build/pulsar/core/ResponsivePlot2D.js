@@ -6,6 +6,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
         super(id, options);
         this.properties = Object.assign(Object.assign({}, optionsObjects.ResponsiveCanvas), optionsObjects.ResponsivePlot2D);
         this.plotData = {};
+        setupProperties(this, "ResponsiveCanvas", options);
         setupProperties(this, "ResponsivePlot2D", options); // TODO: remove gridScale from possible options
         this._updateLimits();
         this.setBackground(context => {
@@ -258,7 +259,9 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
     }
     setOrigin(...point) {
         super.setOrigin(...point);
-        this._updateLimits();
+        if (this.properties.xLims !== undefined && this.properties.yLims !== undefined) {
+            this._updateLimits();
+        }
     }
     setMajorTicks(...choices) {
         propertySetters.setAxesProperty(this, "majorTicks", "boolean", ...choices);

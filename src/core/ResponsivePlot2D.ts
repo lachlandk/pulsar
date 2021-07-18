@@ -70,6 +70,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot
 
     constructor(id: string, options: Partial<ResponsivePlot2DOptions> = {}) {
         super(id, options);
+        setupProperties(this, "ResponsiveCanvas", options);
         setupProperties(this, "ResponsivePlot2D", options); // TODO: remove gridScale from possible options
         this._updateLimits();
         this.setBackground(context => {
@@ -319,7 +320,9 @@ export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot
 
     setOrigin(...point: ("centre" | number)[]) {
         super.setOrigin(...point);
-        this._updateLimits();
+        if (this.properties.xLims !== undefined && this.properties.yLims !== undefined) {
+            this._updateLimits();
+        }
     }
 
     setMajorTicks(...choices: [boolean] | [boolean, boolean]) {

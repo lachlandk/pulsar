@@ -1,4 +1,4 @@
-import { propertyDefaults } from "../core/index.js";
+import { propertyDefaults } from "../core/defaults.js";
 export function setupProperties(instance, prototype, options) {
     const propertySet = propertyDefaults[prototype];
     for (const key of Object.keys(propertySet)) {

@@ -1,4 +1,4 @@
-import { propertySetters } from "../helpers/index.js";
+import { propertySetters } from "../helpers/propertySetters.js";
 export declare type AxesPropertyType<Type> = [Type, Type] | Type;
 export declare const optionsObjects: {
     ResponsiveCanvas: {
