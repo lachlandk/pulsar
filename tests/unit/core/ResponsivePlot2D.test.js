@@ -20,7 +20,7 @@ suite("ResponsivePlot2D", function() {
 	});
 
 	test("Default properties are set correctly when no options are specified", function() {
-		const testPlot = new ResponsivePlot2D("defaultTest");
+		const testPlot = new ResponsivePlot2D("plotDefaultTest");
 		for (const property of Object.keys(testPlot.properties)) {
 			if (Object.keys(optionsObjects.ResponsivePlot2D).includes(property)) {
 				expect(testPlot.properties[property]).to.deep.equal(optionsObjects.ResponsivePlot2D[property]);
@@ -235,7 +235,7 @@ suite("ResponsivePlot2D", function() {
 	});
 
 	test("plot() sets the default properties of the data trace correctly when no options are specified", function() {
-		const testPlot = new ResponsivePlot2D("plotDefaultTest");
+		const testPlot = new ResponsivePlot2D("plotTraceDefaultTest");
 		testPlot.plot("test", x => x);
 		for (const property of Object.keys(testPlot.plotData.test.properties)) {
 			expect(testPlot.plotData.test.properties[property]).to.deep.equal(optionsObjects.ResponsivePlot2DTrace[property]);
@@ -316,8 +316,8 @@ suite("ResponsivePlot2D", function() {
 	});
 
 	test("setOrigin() calls _updateLimits()", function() {
-		const testPlot = new ResponsivePlot2D("setOriginTest");
-		const _updateLimitsSpy = sinon.spy(testPlot, "setForeground");
+		const testPlot = new ResponsivePlot2D("setOriginOverloadTest");
+		const _updateLimitsSpy = sinon.spy(testPlot, "_updateLimits");
 		testPlot.setOrigin("centre");
 		expect(_updateLimitsSpy.calledOnce).to.equal(true);
 	});
@@ -468,7 +468,7 @@ suite("ResponsivePlot2D", function() {
 	test("setParameterRange() sets property correctly on the correct trace", function() {
 		const testPlot = new ResponsivePlot2D("setParameterRangeTest");
 		testPlot.plot("test", x => x);
-		testPlot.setParameterRange("test", [0, 2*Math.PI]);
+		testPlot.setParameterRange("test", 0, 2*Math.PI);
 		expect(testPlot.plotData.test.properties.parameterRange).to.deep.equal([0, 2*Math.PI]);
 	});
 

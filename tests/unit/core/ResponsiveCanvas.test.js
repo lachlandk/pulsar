@@ -28,7 +28,7 @@ suite("ResponsiveCanvas", function() {
 	});
 
 	test("Default properties are set correctly when no options are provided.", function() {
-		const testCanvas = new ResponsiveCanvas("defaultTest");
+		const testCanvas = new ResponsiveCanvas("canvasDefaultTest");
 		for (const property of Object.keys(testCanvas.properties)) {
 			expect(testCanvas.properties[property]).to.deep.equal(optionsObjects.ResponsiveCanvas[property]);
 		}
