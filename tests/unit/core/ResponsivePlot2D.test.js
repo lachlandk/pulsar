@@ -212,7 +212,7 @@ suite("ResponsivePlot2D", function() {
 		]);
 		expect(_updatePlottingDataSpy.calledOnce).to.equal(true);
 		const generator = testPlot.plotData.test.data(0, [0, 3], [0, 6], 0, [0, 0]);
-		let index = 1;
+		let index = 0;
 		for (const point of generator) {
 			expect(point).to.deep.equal([index, index+3]);
 			index++;
@@ -224,10 +224,8 @@ suite("ResponsivePlot2D", function() {
 	test("plot() throws an error if an unsupported signature is passed for the data", function() {
 		const testPlot = new ResponsivePlot2D("plotTest5");
 		expect(() => testPlot.plot("test", "")).to.throw();
-		expect(() => testPlot.plot("test", 0)).to.throw();
 		expect(() => testPlot.plot("test", undefined)).to.throw();
-		expect(() => testPlot.plot("test", [0])).to.throw();
-		expect(() => testPlot.plot("test", [[], []])).to.throw();
+		expect(() => testPlot.plot("test", [])).to.throw();
 	});
 
 	test("plot() throws an error if the trace ID passed matches an already existing one on the current plot", function() {
