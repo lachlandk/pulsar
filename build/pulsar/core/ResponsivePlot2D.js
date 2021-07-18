@@ -149,106 +149,114 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
         });
     }
     plot(id, data, options = {}) {
-        if (Array.isArray(data) && data.length === 2) {
-            if (Array.isArray(data[0])) {
-                if (Array.isArray(data[1])) {
-                    if (data[0].length !== data[1].length) {
-                        throw "Error setting plot data: Lengths of data arrays are not equal.";
-                    }
-                    for (let i = 0; i < data[0].length; i++) {
-                        const xValue = typeof data[0][i] === "function" ? data[0][i](0) : data[0][i];
-                        const yValue = typeof data[1][i] === "function" ? data[1][i](0, 0) : data[1][i];
-                        if (typeof xValue !== "number" || typeof yValue !== "number") {
-                            throw "Error setting plot data: Data arrays contain types which are not numbers.";
+        if (this.plotData[id] === undefined) {
+            if (Array.isArray(data) && data.length === 2) {
+                if (Array.isArray(data[0])) {
+                    if (Array.isArray(data[1])) { // discrete points
+                        if (data[0].length !== data[1].length) {
+                            throw "Error setting plot data: Lengths of data arrays are not equal.";
                         }
-                    }
-                    this.plotData[id] = {
-                        properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
-                        data: function* (t) {
-                            // TODO: add support for NaN
-                            for (let i = 0; i < data[0].length; i++) {
-                                const xValue = typeof data[0][i] === "function" ? data[0][i](t) : data[0][i];
-                                const yValue = typeof data[1][i] === "function" ? data[1][i](xValue, t) : data[1][i];
-                                yield [xValue, yValue];
+                        for (let i = 0; i < data[0].length; i++) {
+                            const xValue = typeof data[0][i] === "function" ? data[0][i](0) : data[0][i];
+                            const yValue = typeof data[1][i] === "function" ? data[1][i](0, 0) : data[1][i];
+                            if (typeof xValue !== "number" || typeof yValue !== "number") {
+                                throw "Error setting plot data: Data arrays contain types which are not numbers.";
                             }
                         }
-                    };
+                        this.plotData[id] = {
+                            properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
+                            data: function* (t) {
+                                // TODO: add support for NaN
+                                for (let i = 0; i < data[0].length; i++) {
+                                    const xValue = typeof data[0][i] === "function" ? data[0][i](t) : data[0][i];
+                                    const yValue = typeof data[1][i] === "function" ? data[1][i](xValue, t) : data[1][i];
+                                    yield [xValue, yValue];
+                                }
+                            }
+                        };
+                    }
+                    else if (typeof data[1] === "function") { // discrete map
+                        if (typeof data[1](0, 0) !== "number") {
+                            throw "Error setting plot data: Plot function does not return numbers.";
+                        }
+                        for (let i = 0; i < data[0].length; i++) {
+                            if (typeof data[0][i] !== "number") {
+                                throw "Error setting plot data: Data array contains types which are not numbers.";
+                            }
+                        }
+                        this.plotData[id] = {
+                            properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
+                            data: function* (t) {
+                                // TODO: add support for NaN
+                                for (const x of data[0]) {
+                                    yield [x, data[1](x, t)];
+                                }
+                            }
+                        };
+                    }
                 }
-                else if (typeof data[1] === "function") {
-                    if (typeof data[1](0, 0) !== "number") {
+                else if (typeof data[0] === "function" && typeof data[1] === "function") { // parametric function
+                    if (typeof data[0](0, 0) !== "number" || typeof data[1](0, 0) !== "number") {
                         throw "Error setting plot data: Plot function does not return numbers.";
                     }
-                    for (let i = 0; i < data[0].length; i++) {
-                        if (typeof data[0][i] !== "number") {
-                            throw "Error setting plot data: Data array contains types which are not numbers.";
-                        }
-                    }
                     this.plotData[id] = {
+                        // TODO: add support for NaN
                         properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
-                        data: function* (t) {
-                            // TODO: add support for NaN
-                            for (const x of data[0]) {
-                                yield [x, data[1](x, t)];
+                        data: function* (t, xLims, yLims, step, paramLims) {
+                            let x = (p) => data[0](p, t);
+                            let y = (p) => data[1](p, t);
+                            let p = paramLims[0];
+                            while (p <= paramLims[1]) {
+                                yield [x(p), y(p)];
+                                p += step;
                             }
+                            yield [x(p), y(p)];
                         }
                     };
                 }
             }
-            else if (typeof data[0] === "function" && typeof data[1] === "function") {
+            else if (typeof data === "function") { // continuous function
+                if (typeof data(0, 0) !== "number") {
+                    throw "Error setting plot data: Plot function does not return numbers.";
+                }
                 this.plotData[id] = {
-                    // TODO: add support for NaN
                     properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
-                    data: function* (t, xLims, yLims, step, paramLims) {
-                        let x = (p) => data[0](p, t);
-                        let y = (p) => data[1](p, t);
-                        let p = paramLims[0];
-                        while (p <= paramLims[1]) {
-                            yield [x(p), y(p)];
-                            p += step;
+                    data: function* (t, xLims, yLims, step) {
+                        // TODO: discontinuities
+                        let x = xLims[0];
+                        let y = (x) => data(x, t);
+                        while (x <= xLims[1]) {
+                            while (true) { // while y is out of range or undefined
+                                if (x > xLims[1]) { // if x is out of range, break without yielding previous point2D
+                                    break;
+                                }
+                                else if (y(x) <= yLims[1] && y(x) >= yLims[0] && !Number.isNaN(y(x))) { // if y is in range, yield the previous point2D and break
+                                    yield [x - step, y(x - step)];
+                                    break;
+                                }
+                                else { // else increment x
+                                    x += step;
+                                }
+                            }
+                            while (true) { // while y in in range and defined
+                                yield [x, y(x)];
+                                if (x > xLims[1] || y(x) > yLims[1] || y(x) < yLims[0] || Number.isNaN(y(x))) { // if x or y is out of range, yield current point2D and break
+                                    break;
+                                }
+                                else { // else increment x
+                                    x += step;
+                                }
+                            }
                         }
-                        yield [x(p), y(p)];
                     }
                 };
             }
-        }
-        else if (typeof data === "function") {
-            if (typeof data(0, 0) !== "number") {
-                throw "Error setting plot data: Plot function does not return numbers.";
+            else {
+                throw `Error setting plot data: Unrecognised data signature ${data}.`;
             }
-            this.plotData[id] = {
-                properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
-                data: function* (t, xLims, yLims, step) {
-                    // TODO: discontinuities
-                    let x = xLims[0];
-                    let y = (x) => data(x, t);
-                    while (x <= xLims[1]) {
-                        while (true) { // while y is out of range or undefined
-                            if (x > xLims[1]) { // if x is out of range, break without yielding previous point2D
-                                break;
-                            }
-                            else if (y(x) <= yLims[1] && y(x) >= yLims[0] && !Number.isNaN(y(x))) { // if y is in range, yield the previous point2D and break
-                                yield [x - step, y(x - step)];
-                                break;
-                            }
-                            else { // else increment x
-                                x += step;
-                            }
-                        }
-                        while (true) { // while y in in range and defined
-                            yield [x, y(x)];
-                            if (x > xLims[1] || y(x) > yLims[1] || y(x) < yLims[0] || Number.isNaN(y(x))) { // if x or y is out of range, yield current point2D and break
-                                break;
-                            }
-                            else { // else increment x
-                                x += step;
-                            }
-                        }
-                    }
-                }
-            };
         }
         else {
-            throw `Error setting plot data: Unrecognised data signature ${data}.`;
+            throw `Error setting plot data: trace with ID ${id} already exists on current plot, call removeData() to remove.`;
         }
         setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
         this._updatePlottingData();
