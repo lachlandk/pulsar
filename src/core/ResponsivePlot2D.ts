@@ -394,7 +394,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas implements ResponsivePlot
 
     setYLims(min: number, max: number) {
         if (max >= min) {
-            propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
+            propertySetters.setArrayProperty(this, "yLims", "number", [min, max], 2);
             this.properties.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
             super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.properties.gridScale.y);
             this._updateBackground();
