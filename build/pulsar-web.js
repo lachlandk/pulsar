@@ -278,7 +278,8 @@ var Pulsar = (function (exports) {
         }
         _updateTime(currentTimestamp) {
             if (this._timeEvolutionData.timeEvolutionActive) {
-                this._timeEvolutionData.currentTimeValue = (this._timeEvolutionData.offsetTimestampMS + currentTimestamp - this._timeEvolutionData.startTimestampMS) / 1000;
+                const currentTime = this._timeEvolutionData.offsetTimestampMS + currentTimestamp - this._timeEvolutionData.startTimestampMS;
+                this._timeEvolutionData.currentTimeValue = currentTime < 0 ? 0 : currentTime / 1000;
                 this._updateBackground();
                 this._updateForeground();
                 window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
@@ -291,6 +292,7 @@ var Pulsar = (function (exports) {
             if (element instanceof Element) {
                 element.addEventListener(event, () => {
                     this.setConstant(constant, transform(element[attribute]));
+                    this._updateForeground();
                 });
                 this.setConstant(constant, transform(element[attribute]));
             }
@@ -299,6 +301,7 @@ var Pulsar = (function (exports) {
                 if (target instanceof Element) {
                     target.addEventListener(event, () => {
                         this.setConstant(constant, transform(target[attribute]));
+                        this._updateForeground();
                     });
                     this.setConstant(constant, transform(target[attribute]));
                 }
@@ -322,6 +325,7 @@ var Pulsar = (function (exports) {
                 this._displayData.height = this._displayData.containerElement.clientHeight;
                 this._displayData.resizeObserver.observe(this._displayData.containerElement);
                 this.setOrigin(...this._displayData.originArgCache);
+                this.setBackgroundCSS(this.properties.backgroundCSS);
             }
             else {
                 throw `HTMLElement with querySelector "${element}" could not be found.`;
