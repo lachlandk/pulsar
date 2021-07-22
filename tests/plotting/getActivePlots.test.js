@@ -2,8 +2,8 @@ import { suite, test, before } from "mocha";
 import { JSDOM } from "jsdom";
 import { expect } from "chai";
 
-import { getActivePlots, Plot } from "../../../build/pulsar/pulsar.js";
-import { ResponsiveCanvas } from "../../../build/pulsar/core/index.js";
+import { getActivePlots, Plot } from "../../build/pulsar/pulsar.js";
+import { ResponsiveCanvas } from "../../build/pulsar/core/index.js";
 
 suite("ResponsivePlot2D", function() {
 

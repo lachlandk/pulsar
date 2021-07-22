@@ -3,7 +3,7 @@ import { JSDOM } from "jsdom";
 import { expect } from "chai";
 import sinon from "sinon";
 
-import { ResponsiveCanvas, optionsObjects, activeCanvases } from "../../../build/pulsar/core/index.js";
+import { ResponsiveCanvas, optionsObjects, activeCanvases } from "../../build/pulsar/core/index.js";
 
 suite("ResponsiveCanvas", function() {
 

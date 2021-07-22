@@ -1,7 +1,7 @@
 import { suite, test } from "mocha";
 import { expect } from "chai";
 
-import { propertySetters } from "../../../build/pulsar/helpers/index.js";
+import { propertySetters } from "../../build/pulsar/helpers/index.js";
 
 suite("Property setters", function() {
 	const testObject = {

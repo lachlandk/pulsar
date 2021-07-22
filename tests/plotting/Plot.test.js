@@ -2,7 +2,7 @@ import { suite, test, before } from "mocha";
 import { JSDOM } from "jsdom";
 import { expect } from "chai";
 
-import { Plot } from "../../../build/pulsar/pulsar.js";
+import { Plot } from "../../build/pulsar/pulsar.js";
 
 suite("ResponsivePlot2D", function() {
 

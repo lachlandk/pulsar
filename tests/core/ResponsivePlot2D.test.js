@@ -3,7 +3,7 @@ import { JSDOM } from "jsdom";
 import { expect } from "chai";
 import sinon from "sinon";
 
-import { ResponsivePlot2D, optionsObjects } from "../../../build/pulsar/core/index.js";
+import { ResponsivePlot2D, optionsObjects } from "../../build/pulsar/core/index.js";
 
 suite("ResponsivePlot2D", function() {
 
