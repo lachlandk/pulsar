@@ -11,6 +11,7 @@ gulpfile.js
 
 # Testing
 /tests
+/coverage
 
 # Docs
 /docs

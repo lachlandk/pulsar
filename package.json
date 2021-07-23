@@ -7,6 +7,7 @@
 	"types": "dist/types/pulsar.d.ts",
 	"type": "module",
 	"devDependencies": {
+		"c8": "^7.7.3",
 		"canvas": "^2.8.0",
 		"chai": "^4.3.4",
 		"del": "^6.0.0",
@@ -26,7 +27,13 @@
 		"typescript": "^4.3.5"
 	},
 	"scripts": {
-		"test": "mocha \"./tests/**/*.js\""
+		"test": "c8 mocha \"./tests/**/*.js\""
+	},
+	"c8": {
+		"all": true,
+		"include": [
+			"build/pulsar/**"
+		]
 	},
 	"repository": {
 		"type": "git",
