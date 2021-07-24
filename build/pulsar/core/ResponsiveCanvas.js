@@ -1,10 +1,40 @@
-import { optionsObjects } from "./defaults.js";
 import { setupProperties, propertySetters } from "../helpers/index.js";
 import { activeCanvases } from "./activeCanvases.js";
+/**
+ * Class representing the base canvas object which all other Pulsar canvas objects inherit from.
+ * This class is not meant to be instantiated directly by a user, mainly because it is not very useful by itself.
+ * However, it does provide a lot of useful functionality which is used by subclasses.
+ * A `ResponsiveCanvas` instance has two drawing surfaces, a background and a foreground.
+ * These drawing surfaces can be added to the HTML page as canvas elements by calling `show`.
+ * These canvases will then fill the container element, and even change their size when the container element is resized.
+ * The coordinate origin of a ResponsiveCanvas can be changed with `setOrigin`, and it can be drawn on and animated
+ * by passing a drawing function to `setBackground` or `setForeground`. Read-only properties and methods beginning with
+ * an underscore should not be changed/called, otherwise they may cause unpredictable behaviour.
+ */
 export class ResponsiveCanvas {
+    /**
+     * @param id The ID of the canvas object.
+     * @param options  Optional parameters.
+     */
     constructor(id, options = {}) {
+        /**
+         * The unique ID for the canvas object.
+         */
         this.id = "";
-        this.properties = Object.assign({}, optionsObjects.ResponsiveCanvas);
+        /**
+         *
+         */
+        this.properties = {
+            origin: { x: 0, y: 0 },
+            backgroundCSS: ""
+        };
+        /**
+         * Object containing key-value pairs of (normally - but not necessarily - numerical) constants for the drawing environment.
+         * Constants can be set with the {@link ResponsiveCanvas.setConstant `setConstant()`} method, and they can be connected up
+         * to an input element on the HTML page with the {@link ResponsiveCanvas.connectElementAttribute `connectElementAttribute()`} method.
+         * They do not provide much functionality by themselves, but other classes which extend `ResponsiveCanvas`
+         * make use of them for display and interactivity purposes.
+         */
         this.constants = {};
         this._timeEvolutionData = {
             currentTimeValue: 0,
@@ -66,7 +96,7 @@ export class ResponsiveCanvas {
     _updateBackground() {
         if (this._displayData.background !== null) {
             this._displayData.background.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
-            this._displayData.backgroundFunction(this._displayData.background, this._timeEvolutionData.currentTimeValue);
+            this._displayData.backgroundFunction(this._displayData.background);
         }
     }
     _updateForeground() {
@@ -75,14 +105,38 @@ export class ResponsiveCanvas {
             this._displayData.foregroundFunction(this._displayData.foreground, this._timeEvolutionData.currentTimeValue);
         }
     }
+    /**
+     * Sets the drawing function for the background canvas to `drawingFunction` and updates the canvas.
+     * The argument `drawingFunction` should be a function which takes one or two arguments of its own, the first being the
+     * {@link https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D `CanvasRenderingContext2D`} for the background,
+     * and the second (which is optional) being the current time evolution value for the canvas object (in seconds).
+     * @param drawingFunction The function which draws the background.
+     */
     setBackground(drawingFunction) {
         this._displayData.backgroundFunction = drawingFunction;
         this._updateBackground();
     }
+    /**
+     * Sets the drawing function for the foreground canvas to `drawingFunction` and updates the canvas.
+     * The argument `drawingFunction` should be a function which takes one or two arguments of its own, the first being the
+     * {@link https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D `CanvasRenderingContext2D`} for the background,
+     * and the second (which is optional) being the current time evolution value for the canvas object (in seconds).
+     * The second argument need only specified if the drawing function contains animations which depend on the current
+     * time value.
+     * @param drawingFunction The function which draws the foreground.
+     */
     setForeground(drawingFunction) {
         this._displayData.foregroundFunction = drawingFunction;
         this._updateForeground();
     }
+    /**
+     * Sets the origin of both canvases to the point2D specified (in pixels).
+     * Two values may be passed for `x` then `y`, or one value may be passed to set the origins of both axes to the same value.
+     * The string `"centre"` may also be passed to conveniently set the origin to the middle of the canvas.
+     * Note that for the HTML5 canvas the origin is in the top-left corner by default and the x-axis points rightwards,
+     * while the y-axis points downwards.
+     * @param point
+     */
     setOrigin(...point) {
         if (point.length === 1 && point[0] === "centre") {
             propertySetters.setAxesProperty(this, "origin", "number", Math.round(this._displayData.width / 2), Math.round(this._displayData.height / 2));
@@ -93,6 +147,12 @@ export class ResponsiveCanvas {
         this._displayData.originArgCache = point;
         this._updateCanvasDimensions();
     }
+    /**
+     * Sets the ID of the canvas object to the value specified,
+     * which cannot be the same as another existing canvas object.
+     * If the canvas object is active on an HTML page, all of its elements will have their `ID`s updated.
+     * @param id New ID for the canvas object.
+     */
     setID(id) {
         if (activeCanvases[id] === undefined) {
             delete activeCanvases[this.id];
@@ -103,39 +163,65 @@ export class ResponsiveCanvas {
             throw `Error creating ResponsiveCanvas object: Object with ID "${id}" already exists.`;
         }
     }
+    /**
+     * Sets the `background` CSS property of the background canvas to the string passed in.
+     * This can be used to set the background for the canvas object to a plain colour, gradient pattern or image
+     * (by default the background is transparent).
+     * @param cssString A valid string for the CSS {@link https://developer.mozilla.org/en-US/docs/Web/CSS/background `background`} property.
+     */
     setBackgroundCSS(cssString) {
         propertySetters.setSingleProperty(this, "backgroundCSS", "string", cssString);
         this._displayData.backgroundCanvas.style.background = cssString;
     }
+    /**
+     * Starts or resumes the time evolution of the foreground.
+     */
     startTime() {
         this._timeEvolutionData.timeEvolutionActive = true;
         this._timeEvolutionData.startTimestampMS = performance.now();
         window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
     }
+    /**
+     * Pauses the time evolution of the foreground.
+     */
     pauseTime() {
         this._timeEvolutionData.timeEvolutionActive = false;
         this._timeEvolutionData.offsetTimestampMS = performance.now() - this._timeEvolutionData.startTimestampMS;
     }
+    /**
+     * Stops the time evolution of the foreground and resets the current timestamp to 0.
+     */
     stopTime() {
         this._timeEvolutionData.timeEvolutionActive = false;
         this._timeEvolutionData.startTimestampMS = 0;
         this._timeEvolutionData.offsetTimestampMS = 0;
         this._timeEvolutionData.currentTimeValue = 0;
-        this._updateBackground();
         this._updateForeground();
     }
     _updateTime(currentTimestamp) {
         if (this._timeEvolutionData.timeEvolutionActive) {
             const currentTime = this._timeEvolutionData.offsetTimestampMS + currentTimestamp - this._timeEvolutionData.startTimestampMS;
             this._timeEvolutionData.currentTimeValue = currentTime < 0 ? 0 : currentTime / 1000;
-            this._updateBackground();
             this._updateForeground();
             window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
         }
     }
+    /**
+     * Sets the value of a constant.
+     * @param name The name of the constant. This will be the key in the {@link ResponsiveCanvas.constants `constants`} object.
+     * @param value The value of the constant.
+     */
     setConstant(name, value) {
         this.constants[name] = value;
     }
+    /**
+     * Connects an event listener on an element with the value of a constant.
+     * @param element
+     * @param event
+     * @param attribute
+     * @param constant
+     * @param transform
+     */
     connectElementAttribute(element, event, attribute, constant, transform = (x) => x) {
         if (element instanceof Element) {
             element.addEventListener(event, () => {
@@ -158,6 +244,10 @@ export class ResponsiveCanvas {
             }
         }
     }
+    /**
+     * Display the canvas object in an HTML element.
+     * @param element
+     */
     show(element) {
         if (element instanceof HTMLElement) {
             this._displayData.containerElement = element;

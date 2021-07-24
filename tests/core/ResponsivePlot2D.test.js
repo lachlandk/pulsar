@@ -3,7 +3,7 @@ import { JSDOM } from "jsdom";
 import { expect } from "chai";
 import sinon from "sinon";
 
-import { ResponsivePlot2D, optionsObjects } from "../../build/pulsar/core/index.js";
+import { ResponsivePlot2D } from "../../build/pulsar/core/index.js";
 
 suite("ResponsivePlot2D", function() {
 
@@ -19,14 +19,8 @@ suite("ResponsivePlot2D", function() {
 		sinon.restore();
 	});
 
-	test("Default properties are set correctly when no options are specified", function() {
-		const testPlot = new ResponsivePlot2D("plotDefaultTest");
-		for (const property of Object.keys(testPlot.properties)) {
-			if (Object.keys(optionsObjects.ResponsivePlot2D).includes(property)) {
-				expect(testPlot.properties[property]).to.deep.equal(optionsObjects.ResponsivePlot2D[property]);
-			}
-		}
-	});
+	// test("Default properties are set correctly when no options are specified", function() {
+	// });
 
 	test("When 'majorTicks' option is provided the property is set correctly", function() {
 		const testPlot = new ResponsivePlot2D("majorTicksTest", {
@@ -234,13 +228,8 @@ suite("ResponsivePlot2D", function() {
 		expect(() => testPlot.plot("test", x => 2*x)).to.throw();
 	});
 
-	test("plot() sets the default properties of the data trace correctly when no options are specified", function() {
-		const testPlot = new ResponsivePlot2D("plotTraceDefaultTest");
-		testPlot.plot("test", x => x);
-		for (const property of Object.keys(testPlot.plotData.test.properties)) {
-			expect(testPlot.plotData.test.properties[property]).to.deep.equal(optionsObjects.ResponsivePlot2DTrace[property]);
-		}
-	});
+	// test("plot() sets the default properties of the data trace correctly when no options are specified", function() {
+	// });
 
 	test("When 'traceColour' option is provided to plot() the property is set correctly", function() {
 		const testPlot = new ResponsivePlot2D("traceColourTest");

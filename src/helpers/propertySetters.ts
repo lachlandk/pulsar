@@ -1,8 +1,8 @@
-import { propertyDefaults, propertyDefaultsType } from "../core/defaults.js";
+import { propertyDefaults } from "../core/defaults.js";
 
 type indexableObject = {[name: string]: any};
 
-export function setupProperties(instance: indexableObject, prototype: keyof propertyDefaultsType, options: indexableObject) {
+export function setupProperties(instance: indexableObject, prototype: keyof typeof propertyDefaults, options: indexableObject) {
     const propertySet = propertyDefaults[prototype];
     for (const key of Object.keys(propertySet) as string[]) {
         const propertyDefault = propertySet[key];

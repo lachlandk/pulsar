@@ -1,32 +1,3 @@
-export const optionsObjects = {
-    ResponsiveCanvas: {
-        origin: { x: 0, y: 0 },
-        backgroundCSS: ""
-    },
-    ResponsivePlot2D: {
-        majorTicks: { x: true, y: true },
-        minorTicks: { x: false, y: false },
-        majorTickSize: { x: 5, y: 5 },
-        minorTickSize: { x: 1, y: 1 },
-        majorGridlines: { x: true, y: true },
-        minorGridlines: { x: false, y: false },
-        majorGridSize: { x: 5, y: 5 },
-        minorGridSize: { x: 1, y: 1 },
-        gridScale: { x: 50, y: 50 },
-        xLims: [-0, 0],
-        yLims: [-0, 0]
-    },
-    ResponsivePlot2DTrace: {
-        traceColour: "blue",
-        traceStyle: "solid",
-        traceWidth: 3,
-        markerColour: "blue",
-        markerStyle: "none",
-        markerSize: 1,
-        visibility: true,
-        parameterRange: [0, 1]
-    }
-};
 export const propertyDefaults = {
     ResponsiveCanvas: {
         origin: { value: [0, 0], type: "number", setter: "setAxesProperty", multi: true },

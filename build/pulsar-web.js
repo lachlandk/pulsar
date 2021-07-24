@@ -1,35 +1,6 @@
 var Pulsar = (function (exports) {
     'use strict';
 
-    const optionsObjects = {
-        ResponsiveCanvas: {
-            origin: { x: 0, y: 0 },
-            backgroundCSS: ""
-        },
-        ResponsivePlot2D: {
-            majorTicks: { x: true, y: true },
-            minorTicks: { x: false, y: false },
-            majorTickSize: { x: 5, y: 5 },
-            minorTickSize: { x: 1, y: 1 },
-            majorGridlines: { x: true, y: true },
-            minorGridlines: { x: false, y: false },
-            majorGridSize: { x: 5, y: 5 },
-            minorGridSize: { x: 1, y: 1 },
-            gridScale: { x: 50, y: 50 },
-            xLims: [-0, 0],
-            yLims: [-0, 0]
-        },
-        ResponsivePlot2DTrace: {
-            traceColour: "blue",
-            traceStyle: "solid",
-            traceWidth: 3,
-            markerColour: "blue",
-            markerStyle: "none",
-            markerSize: 1,
-            visibility: true,
-            parameterRange: [0, 1]
-        }
-    };
     const propertyDefaults = {
         ResponsiveCanvas: {
             origin: { value: [0, 0], type: "number", setter: "setAxesProperty", multi: true },
@@ -151,12 +122,47 @@ var Pulsar = (function (exports) {
         }
     };
 
+    /**
+     * Object containing the active canvas objects with their ID as the keys. It is used
+     * internally by other functions such as {@link getActivePlots `getActivePlots()`}.
+     */
     const activeCanvases = {};
 
+    /**
+     * Class representing the base canvas object which all other Pulsar canvas objects inherit from.
+     * This class is not meant to be instantiated directly by a user, mainly because it is not very useful by itself.
+     * However, it does provide a lot of useful functionality which is used by subclasses.
+     * A `ResponsiveCanvas` instance has two drawing surfaces, a background and a foreground.
+     * These drawing surfaces can be added to the HTML page as canvas elements by calling `show`.
+     * These canvases will then fill the container element, and even change their size when the container element is resized.
+     * The coordinate origin of a ResponsiveCanvas can be changed with `setOrigin`, and it can be drawn on and animated
+     * by passing a drawing function to `setBackground` or `setForeground`. Read-only properties and methods beginning with
+     * an underscore should not be changed/called, otherwise they may cause unpredictable behaviour.
+     */
     class ResponsiveCanvas {
+        /**
+         * @param id The ID of the canvas object.
+         * @param options  Optional parameters.
+         */
         constructor(id, options = {}) {
+            /**
+             * The unique ID for the canvas object.
+             */
             this.id = "";
-            this.properties = Object.assign({}, optionsObjects.ResponsiveCanvas);
+            /**
+             *
+             */
+            this.properties = {
+                origin: { x: 0, y: 0 },
+                backgroundCSS: ""
+            };
+            /**
+             * Object containing key-value pairs of (normally - but not necessarily - numerical) constants for the drawing environment.
+             * Constants can be set with the {@link ResponsiveCanvas.setConstant `setConstant()`} method, and they can be connected up
+             * to an input element on the HTML page with the {@link ResponsiveCanvas.connectElementAttribute `connectElementAttribute()`} method.
+             * They do not provide much functionality by themselves, but other classes which extend `ResponsiveCanvas`
+             * make use of them for display and interactivity purposes.
+             */
             this.constants = {};
             this._timeEvolutionData = {
                 currentTimeValue: 0,
@@ -218,7 +224,7 @@ var Pulsar = (function (exports) {
         _updateBackground() {
             if (this._displayData.background !== null) {
                 this._displayData.background.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
-                this._displayData.backgroundFunction(this._displayData.background, this._timeEvolutionData.currentTimeValue);
+                this._displayData.backgroundFunction(this._displayData.background);
             }
         }
         _updateForeground() {
@@ -227,14 +233,38 @@ var Pulsar = (function (exports) {
                 this._displayData.foregroundFunction(this._displayData.foreground, this._timeEvolutionData.currentTimeValue);
             }
         }
+        /**
+         * Sets the drawing function for the background canvas to `drawingFunction` and updates the canvas.
+         * The argument `drawingFunction` should be a function which takes one or two arguments of its own, the first being the
+         * {@link https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D `CanvasRenderingContext2D`} for the background,
+         * and the second (which is optional) being the current time evolution value for the canvas object (in seconds).
+         * @param drawingFunction The function which draws the background.
+         */
         setBackground(drawingFunction) {
             this._displayData.backgroundFunction = drawingFunction;
             this._updateBackground();
         }
+        /**
+         * Sets the drawing function for the foreground canvas to `drawingFunction` and updates the canvas.
+         * The argument `drawingFunction` should be a function which takes one or two arguments of its own, the first being the
+         * {@link https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D `CanvasRenderingContext2D`} for the background,
+         * and the second (which is optional) being the current time evolution value for the canvas object (in seconds).
+         * The second argument need only specified if the drawing function contains animations which depend on the current
+         * time value.
+         * @param drawingFunction The function which draws the foreground.
+         */
         setForeground(drawingFunction) {
             this._displayData.foregroundFunction = drawingFunction;
             this._updateForeground();
         }
+        /**
+         * Sets the origin of both canvases to the point2D specified (in pixels).
+         * Two values may be passed for `x` then `y`, or one value may be passed to set the origins of both axes to the same value.
+         * The string `"centre"` may also be passed to conveniently set the origin to the middle of the canvas.
+         * Note that for the HTML5 canvas the origin is in the top-left corner by default and the x-axis points rightwards,
+         * while the y-axis points downwards.
+         * @param point
+         */
         setOrigin(...point) {
             if (point.length === 1 && point[0] === "centre") {
                 propertySetters.setAxesProperty(this, "origin", "number", Math.round(this._displayData.width / 2), Math.round(this._displayData.height / 2));
@@ -245,6 +275,12 @@ var Pulsar = (function (exports) {
             this._displayData.originArgCache = point;
             this._updateCanvasDimensions();
         }
+        /**
+         * Sets the ID of the canvas object to the value specified,
+         * which cannot be the same as another existing canvas object.
+         * If the canvas object is active on an HTML page, all of its elements will have their `ID`s updated.
+         * @param id New ID for the canvas object.
+         */
         setID(id) {
             if (activeCanvases[id] === undefined) {
                 delete activeCanvases[this.id];
@@ -255,39 +291,65 @@ var Pulsar = (function (exports) {
                 throw `Error creating ResponsiveCanvas object: Object with ID "${id}" already exists.`;
             }
         }
+        /**
+         * Sets the `background` CSS property of the background canvas to the string passed in.
+         * This can be used to set the background for the canvas object to a plain colour, gradient pattern or image
+         * (by default the background is transparent).
+         * @param cssString A valid string for the CSS {@link https://developer.mozilla.org/en-US/docs/Web/CSS/background `background`} property.
+         */
         setBackgroundCSS(cssString) {
             propertySetters.setSingleProperty(this, "backgroundCSS", "string", cssString);
             this._displayData.backgroundCanvas.style.background = cssString;
         }
+        /**
+         * Starts or resumes the time evolution of the foreground.
+         */
         startTime() {
             this._timeEvolutionData.timeEvolutionActive = true;
             this._timeEvolutionData.startTimestampMS = performance.now();
             window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
         }
+        /**
+         * Pauses the time evolution of the foreground.
+         */
         pauseTime() {
             this._timeEvolutionData.timeEvolutionActive = false;
             this._timeEvolutionData.offsetTimestampMS = performance.now() - this._timeEvolutionData.startTimestampMS;
         }
+        /**
+         * Stops the time evolution of the foreground and resets the current timestamp to 0.
+         */
         stopTime() {
             this._timeEvolutionData.timeEvolutionActive = false;
             this._timeEvolutionData.startTimestampMS = 0;
             this._timeEvolutionData.offsetTimestampMS = 0;
             this._timeEvolutionData.currentTimeValue = 0;
-            this._updateBackground();
             this._updateForeground();
         }
         _updateTime(currentTimestamp) {
             if (this._timeEvolutionData.timeEvolutionActive) {
                 const currentTime = this._timeEvolutionData.offsetTimestampMS + currentTimestamp - this._timeEvolutionData.startTimestampMS;
                 this._timeEvolutionData.currentTimeValue = currentTime < 0 ? 0 : currentTime / 1000;
-                this._updateBackground();
                 this._updateForeground();
                 window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
             }
         }
+        /**
+         * Sets the value of a constant.
+         * @param name The name of the constant. This will be the key in the {@link ResponsiveCanvas.constants `constants`} object.
+         * @param value The value of the constant.
+         */
         setConstant(name, value) {
             this.constants[name] = value;
         }
+        /**
+         * Connects an event listener on an element with the value of a constant.
+         * @param element
+         * @param event
+         * @param attribute
+         * @param constant
+         * @param transform
+         */
         connectElementAttribute(element, event, attribute, constant, transform = (x) => x) {
             if (element instanceof Element) {
                 element.addEventListener(event, () => {
@@ -310,6 +372,10 @@ var Pulsar = (function (exports) {
                 }
             }
         }
+        /**
+         * Display the canvas object in an HTML element.
+         * @param element
+         */
         show(element) {
             if (element instanceof HTMLElement) {
                 this._displayData.containerElement = element;
@@ -333,10 +399,44 @@ var Pulsar = (function (exports) {
         }
     }
 
+    /**
+     * This class is the base class for all Pulsar plot objects. It extends {@link ResponsiveCanvas `ResponsiveCanvas`}.
+     * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
+     * {@link Plot `Plot`} class. `ResponsivePlot2D` objects behave similarly to a `ResponsiveCanvas`.
+     * They have a background, which contains the axes and gridlines, and a foreground, which contains the plot data.
+     * The ticks and gridlines can be toggled and the intervals between them can be changed. The size of a unit on the grid
+     * is determined by the grid scale which, by default, is 50 pixels for both `x` and `y`, meaning that a step of one unit in both directions on
+     * the grid would be 50 pixels on the screen. This can be changed with the {@link ResponsivePlot2D.setGridScale `setGridScale()`} method.
+     * Data is added to the plot using the {@link ResponsivePlot2D.plot `plot()`} method.
+     * Read-only properties and methods beginning with an underscore should not be changed/called, otherwise they
+     * may cause unpredictable behaviour.
+     */
     class ResponsivePlot2D extends ResponsiveCanvas {
+        /**
+         * @param id The unique ID of the plot object.
+         * @param options Optional parameters.
+         */
         constructor(id, options = {}) {
             super(id, options);
-            this.properties = Object.assign(Object.assign({}, optionsObjects.ResponsiveCanvas), optionsObjects.ResponsivePlot2D);
+            this.properties = {
+                origin: { x: 0, y: 0 },
+                backgroundCSS: "",
+                majorTicks: { x: true, y: true },
+                minorTicks: { x: false, y: false },
+                majorTickSize: { x: 5, y: 5 },
+                minorTickSize: { x: 1, y: 1 },
+                majorGridlines: { x: true, y: true },
+                minorGridlines: { x: false, y: false },
+                majorGridSize: { x: 5, y: 5 },
+                minorGridSize: { x: 1, y: 1 },
+                gridScale: { x: 50, y: 50 },
+                xLims: [-0, 0],
+                yLims: [-0, 0]
+            };
+            /**
+             * Contains the data trace objects for the plot instance.
+             * The objects can be accessed using the trace ID as the key.
+             */
             this.plotData = {};
             setupProperties(this, "ResponsiveCanvas", options);
             setupProperties(this, "ResponsivePlot2D", options); // TODO: remove gridScale from possible options
@@ -480,6 +580,15 @@ var Pulsar = (function (exports) {
                 }
             });
         }
+        /**
+         * Adds a data trace to the plot. The trace must be given a unique ID, so that it can be added to the
+         * {@link ResponsivePlot2D.plotData `plotData`} property of the plot object.
+         * There are several ways that data can be added, which can be divided into **continuous** and **discrete** data.
+         * These different methods are described by what to pass for the `data` argument.
+         * @param id Unique ID for the trace.
+         * @param data Data to be plotted.
+         * @param options Optional parameters.
+         */
         plot(id, data, options = {}) {
             if (this.plotData[id] === undefined) {
                 if (Array.isArray(data) && data.length === 2) {
@@ -496,7 +605,16 @@ var Pulsar = (function (exports) {
                                 }
                             }
                             this.plotData[id] = {
-                                properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
+                                properties: {
+                                    traceColour: "blue",
+                                    traceStyle: "solid",
+                                    traceWidth: 3,
+                                    markerColour: "blue",
+                                    markerStyle: "none",
+                                    markerSize: 1,
+                                    visibility: true,
+                                    parameterRange: [0, 1]
+                                },
                                 data: function* (t) {
                                     // TODO: add support for NaN
                                     for (let i = 0; i < data[0].length; i++) {
@@ -517,7 +635,16 @@ var Pulsar = (function (exports) {
                                 }
                             }
                             this.plotData[id] = {
-                                properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
+                                properties: {
+                                    traceColour: "blue",
+                                    traceStyle: "solid",
+                                    traceWidth: 3,
+                                    markerColour: "blue",
+                                    markerStyle: "none",
+                                    markerSize: 1,
+                                    visibility: true,
+                                    parameterRange: [0, 1]
+                                },
                                 data: function* (t) {
                                     // TODO: add support for NaN
                                     for (const x of data[0]) {
@@ -533,7 +660,16 @@ var Pulsar = (function (exports) {
                         }
                         this.plotData[id] = {
                             // TODO: add support for NaN
-                            properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
+                            properties: {
+                                traceColour: "blue",
+                                traceStyle: "solid",
+                                traceWidth: 3,
+                                markerColour: "blue",
+                                markerStyle: "none",
+                                markerSize: 1,
+                                visibility: true,
+                                parameterRange: [0, 1]
+                            },
                             data: function* (t, xLims, yLims, step, paramLims) {
                                 let x = (p) => data[0](p, t);
                                 let y = (p) => data[1](p, t);
@@ -552,7 +688,16 @@ var Pulsar = (function (exports) {
                         throw "Error setting plot data: Plot function does not return numbers.";
                     }
                     this.plotData[id] = {
-                        properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
+                        properties: {
+                            traceColour: "blue",
+                            traceStyle: "solid",
+                            traceWidth: 3,
+                            markerColour: "blue",
+                            markerStyle: "none",
+                            markerSize: 1,
+                            visibility: true,
+                            parameterRange: [0, 1]
+                        },
                         data: function* (t, xLims, yLims, step) {
                             // TODO: discontinuities
                             let x = xLims[0];
@@ -593,6 +738,10 @@ var Pulsar = (function (exports) {
             setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
             this._updatePlottingData();
         }
+        /**
+         * Removes a trace from the plot.
+         * @param trace ID of the trace to be removed.
+         */
         removeData(trace) {
             delete this.plotData[trace];
             this._updatePlottingData();
@@ -603,44 +752,84 @@ var Pulsar = (function (exports) {
                 this._updateLimits();
             }
         }
+        /**
+         * Toggles the major ticks. Two values may be passed for `x` then `y`, or just a single value for both axes.
+         * @param choices Either one or two booleans.
+         */
         setMajorTicks(...choices) {
             propertySetters.setAxesProperty(this, "majorTicks", "boolean", ...choices);
             this._updateBackground();
         }
+        /**
+         * Toggles the minor ticks. Two values may be passed for `x` then `y`, or just a single value for both axes.
+         * @param choices Either one or two booleans.
+         */
         setMinorTicks(...choices) {
             propertySetters.setAxesProperty(this, "minorTicks", "boolean", ...choices);
             this._updateBackground();
         }
+        /**
+         * Sets the spacing of the major ticks (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
+         * @param sizes Either one or two numbers.
+         */
         setMajorTickSize(...sizes) {
             propertySetters.setAxesProperty(this, "majorTickSize", "number", ...sizes);
             this._updateBackground();
         }
+        /**
+         * Sets the spacing of the minor ticks (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
+         * @param sizes Either one or two numbers.
+         */
         setMinorTickSize(...sizes) {
             propertySetters.setAxesProperty(this, "minorTickSize", "number", ...sizes);
             this._updateBackground();
         }
+        /**
+         * Toggles the major gridlines. Two values may be passed for `x` then `y`, or just a single value for both axes.
+         * @param choices Either one or two booleans.
+         */
         setMajorGridlines(...choices) {
             propertySetters.setAxesProperty(this, "majorGridlines", "boolean", ...choices);
             this._updateBackground();
         }
+        /**
+         * Toggles the minor gridlines. Two values may be passed for `x` then `y`, or just a single value for both axes.
+         * @param choices Either one or two booleans.
+         */
         setMinorGridlines(...choices) {
             propertySetters.setAxesProperty(this, "minorGridlines", "boolean", ...choices);
             this._updateBackground();
         }
+        /**
+         * Sets the spacing of the major gridlines (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
+         * @param sizes Either one or two numbers.
+         */
         setMajorGridSize(...sizes) {
             propertySetters.setAxesProperty(this, "majorGridSize", "number", ...sizes);
             this._updateBackground();
         }
+        /**
+         * Sets the spacing of the minor gridlines (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
+         * @param sizes Either one or two numbers.
+         */
         setMinorGridSize(...sizes) {
             propertySetters.setAxesProperty(this, "minorGridSize", "number", ...sizes);
             this._updateBackground();
         }
+        /**
+         * Sets the size of 1 grid unit in pixels. Two values may be passed for `x` then `y`, or just a single value for both axes.
+         * @param sizes Either one or two numbers.
+         */
         setGridScale(...sizes) {
             propertySetters.setAxesProperty(this, "gridScale", "number", ...sizes);
             this._updateLimits();
-            this._updateForeground();
             this._updateBackground();
         }
+        /**
+         * Changes the range of `x` values to be shown on the plot by moving the origin and altering the grid scale.
+         * @param min The minimum value of `x`.
+         * @param max The maximum value of `x`.
+         */
         setXLims(min, max) {
             if (max >= min) {
                 propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
@@ -653,6 +842,11 @@ var Pulsar = (function (exports) {
                 throw `Error setting xLims: Lower limit cannot be higher than or equal to higher limit.`;
             }
         }
+        /**
+         * Changes the range of `y` values to be shown on the plot by moving the origin and altering the grid scale.
+         * @param min The minimum value of `y`.
+         * @param max The maximum value of `y`.
+         */
         setYLims(min, max) {
             if (max >= min) {
                 propertySetters.setArrayProperty(this, "yLims", "number", [min, max], 2);
@@ -665,34 +859,76 @@ var Pulsar = (function (exports) {
                 throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
             }
         }
+        /**
+         * Sets the colour of the specified trace. The specified colour must be one of the browser-recognised colours.
+         * @param trace The ID of the trace to be updated.
+         * @param colour The name of the colour.
+         */
         setTraceColour(trace, colour) {
             propertySetters.setPlotDataProperty(this, trace, "traceColour", colour);
             this._updatePlottingData();
         }
+        /**
+         * Sets the style of the specified trace. Possible styles are: `solid`, `dotted`, `dashed`, `dashdot`, or `none`.
+         * @param trace The ID of the trace to be updated.
+         * @param style The name of the style.
+         */
         setTraceStyle(trace, style) {
             propertySetters.setPlotDataProperty(this, trace, "traceStyle", style);
             this._updatePlottingData();
         }
+        /**
+         * Sets the width of the specified trace (in pixels).
+         * @param trace The ID of the trace to be updated.
+         * @param width The width of the trace in pixels.
+         */
         setTraceWidth(trace, width) {
             propertySetters.setPlotDataProperty(this, trace, "traceWidth", width);
             this._updatePlottingData();
         }
+        /**
+         * Sets the colour of the markers on the specified trace. The specified colour must be one of the browser-recognised colours.
+         * @param trace The ID of the trace to be updated.
+         * @param colour The name of the colour.
+         */
         setMarkerColour(trace, colour) {
             propertySetters.setPlotDataProperty(this, trace, "markerColour", colour);
             this._updatePlottingData();
         }
+        /**
+         * Sets the style of the markers the specified trace. Possible styles are: `circle`, `plus`, `cross`, `arrow`, or `none`.
+         * @param trace The ID of the trace to be updated.
+         * @param style The name of the style.
+         */
         setMarkerStyle(trace, style) {
             propertySetters.setPlotDataProperty(this, trace, "markerStyle", style);
             this._updatePlottingData();
         }
+        /**
+         * Sets the width of the markers on the specified trace (in pixels).
+         * @param trace The ID of the trace to be updated.
+         * @param size The size of the markers in pixels.
+         */
         setMarkerSize(trace, size) {
             propertySetters.setPlotDataProperty(this, trace, "markerSize", size);
             this._updatePlottingData();
         }
+        /**
+         * Toggles the visibility of the specified trace.
+         * @param trace The ID of the trace to be updated.
+         * @param value Set to `true` for the trace to be visible, `false` for it to be hidden.
+         */
         setVisibility(trace, value) {
             propertySetters.setPlotDataProperty(this, trace, "visibility", value);
             this._updatePlottingData();
         }
+        /**
+         * Sets the range of values over which a parameter should be plotted.
+         * This property has no effect at all if the function plotted does not have a free parameter.
+         * @param trace The ID of the trace to be updated.
+         * @param min The minimum value of the free parameter.
+         * @param max The maximum value of the free parameter.
+         */
         setParameterRange(trace, min, max) {
             if (max >= min) {
                 propertySetters.setPlotDataProperty(this, trace, "parameterRange", [min, max]);
@@ -704,7 +940,23 @@ var Pulsar = (function (exports) {
         }
     }
 
+    var index = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        ResponsiveCanvas: ResponsiveCanvas,
+        ResponsivePlot2D: ResponsivePlot2D,
+        activeCanvases: activeCanvases,
+        propertyDefaults: propertyDefaults
+    });
+
     class Plot extends ResponsivePlot2D {
+        /**
+         * @param id - The ID of the plot object. Must be unique.
+         * @param data - The data to be plotted. The structure of the object follows the exact same pattern as the signature of {@link ResponsivePlot2D.plot `plot()`}.
+         * @param data.id - The ID for the trace. This ID will be the key for the relevant entry in the {@link ResponsivePlot2D.plotData `plotData`} property of the plot object.
+         * @param data.data - The data to be plotted. See the {@link ResponsivePlot2D.plot `plot()`} method documentation for more details.
+         * @param data.object - The options for the data. See the {@link ResponsivePlot2D.plot `plot()`} method documentation for more details.
+         * @param options - Options for the plot.
+         */
         constructor(id, data, options = {}) {
             super(id, options);
             if (data !== undefined) {
@@ -713,6 +965,9 @@ var Pulsar = (function (exports) {
         }
     }
 
+    /**
+     * Returns an object containing the active instances of {@link Plot `Plot`}.
+     */
     function getActivePlots() {
         const activePlots = {};
         for (const canvasID of Object.keys(activeCanvases)) {
@@ -723,14 +978,8 @@ var Pulsar = (function (exports) {
         return activePlots;
     }
 
-    const core = {
-        ResponsiveCanvas: ResponsiveCanvas,
-        ResponsivePlot2D: ResponsivePlot2D,
-        activeCanvases: activeCanvases
-    };
-
     exports.Plot = Plot;
-    exports.core = core;
+    exports.core = index;
     exports.getActivePlots = getActivePlots;
 
     Object.defineProperty(exports, '__esModule', { value: true });

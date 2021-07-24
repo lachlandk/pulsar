@@ -1,10 +1,43 @@
 import { ResponsiveCanvas } from "./ResponsiveCanvas.js";
 import { propertySetters, setupProperties } from "../helpers/index.js";
-import { optionsObjects } from "./defaults.js";
+/**
+ * This class is the base class for all Pulsar plot objects. It extends {@link ResponsiveCanvas `ResponsiveCanvas`}.
+ * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
+ * {@link Plot `Plot`} class. `ResponsivePlot2D` objects behave similarly to a `ResponsiveCanvas`.
+ * They have a background, which contains the axes and gridlines, and a foreground, which contains the plot data.
+ * The ticks and gridlines can be toggled and the intervals between them can be changed. The size of a unit on the grid
+ * is determined by the grid scale which, by default, is 50 pixels for both `x` and `y`, meaning that a step of one unit in both directions on
+ * the grid would be 50 pixels on the screen. This can be changed with the {@link ResponsivePlot2D.setGridScale `setGridScale()`} method.
+ * Data is added to the plot using the {@link ResponsivePlot2D.plot `plot()`} method.
+ * Read-only properties and methods beginning with an underscore should not be changed/called, otherwise they
+ * may cause unpredictable behaviour.
+ */
 export class ResponsivePlot2D extends ResponsiveCanvas {
+    /**
+     * @param id The unique ID of the plot object.
+     * @param options Optional parameters.
+     */
     constructor(id, options = {}) {
         super(id, options);
-        this.properties = Object.assign(Object.assign({}, optionsObjects.ResponsiveCanvas), optionsObjects.ResponsivePlot2D);
+        this.properties = {
+            origin: { x: 0, y: 0 },
+            backgroundCSS: "",
+            majorTicks: { x: true, y: true },
+            minorTicks: { x: false, y: false },
+            majorTickSize: { x: 5, y: 5 },
+            minorTickSize: { x: 1, y: 1 },
+            majorGridlines: { x: true, y: true },
+            minorGridlines: { x: false, y: false },
+            majorGridSize: { x: 5, y: 5 },
+            minorGridSize: { x: 1, y: 1 },
+            gridScale: { x: 50, y: 50 },
+            xLims: [-0, 0],
+            yLims: [-0, 0]
+        };
+        /**
+         * Contains the data trace objects for the plot instance.
+         * The objects can be accessed using the trace ID as the key.
+         */
         this.plotData = {};
         setupProperties(this, "ResponsiveCanvas", options);
         setupProperties(this, "ResponsivePlot2D", options); // TODO: remove gridScale from possible options
@@ -148,6 +181,15 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             }
         });
     }
+    /**
+     * Adds a data trace to the plot. The trace must be given a unique ID, so that it can be added to the
+     * {@link ResponsivePlot2D.plotData `plotData`} property of the plot object.
+     * There are several ways that data can be added, which can be divided into **continuous** and **discrete** data.
+     * These different methods are described by what to pass for the `data` argument.
+     * @param id Unique ID for the trace.
+     * @param data Data to be plotted.
+     * @param options Optional parameters.
+     */
     plot(id, data, options = {}) {
         if (this.plotData[id] === undefined) {
             if (Array.isArray(data) && data.length === 2) {
@@ -164,7 +206,16 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                             }
                         }
                         this.plotData[id] = {
-                            properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
+                            properties: {
+                                traceColour: "blue",
+                                traceStyle: "solid",
+                                traceWidth: 3,
+                                markerColour: "blue",
+                                markerStyle: "none",
+                                markerSize: 1,
+                                visibility: true,
+                                parameterRange: [0, 1]
+                            },
                             data: function* (t) {
                                 // TODO: add support for NaN
                                 for (let i = 0; i < data[0].length; i++) {
@@ -185,7 +236,16 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                             }
                         }
                         this.plotData[id] = {
-                            properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
+                            properties: {
+                                traceColour: "blue",
+                                traceStyle: "solid",
+                                traceWidth: 3,
+                                markerColour: "blue",
+                                markerStyle: "none",
+                                markerSize: 1,
+                                visibility: true,
+                                parameterRange: [0, 1]
+                            },
                             data: function* (t) {
                                 // TODO: add support for NaN
                                 for (const x of data[0]) {
@@ -201,7 +261,16 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                     }
                     this.plotData[id] = {
                         // TODO: add support for NaN
-                        properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
+                        properties: {
+                            traceColour: "blue",
+                            traceStyle: "solid",
+                            traceWidth: 3,
+                            markerColour: "blue",
+                            markerStyle: "none",
+                            markerSize: 1,
+                            visibility: true,
+                            parameterRange: [0, 1]
+                        },
                         data: function* (t, xLims, yLims, step, paramLims) {
                             let x = (p) => data[0](p, t);
                             let y = (p) => data[1](p, t);
@@ -220,7 +289,16 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                     throw "Error setting plot data: Plot function does not return numbers.";
                 }
                 this.plotData[id] = {
-                    properties: Object.assign({}, optionsObjects.ResponsivePlot2DTrace),
+                    properties: {
+                        traceColour: "blue",
+                        traceStyle: "solid",
+                        traceWidth: 3,
+                        markerColour: "blue",
+                        markerStyle: "none",
+                        markerSize: 1,
+                        visibility: true,
+                        parameterRange: [0, 1]
+                    },
                     data: function* (t, xLims, yLims, step) {
                         // TODO: discontinuities
                         let x = xLims[0];
@@ -261,6 +339,10 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
         setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
         this._updatePlottingData();
     }
+    /**
+     * Removes a trace from the plot.
+     * @param trace ID of the trace to be removed.
+     */
     removeData(trace) {
         delete this.plotData[trace];
         this._updatePlottingData();
@@ -271,44 +353,84 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             this._updateLimits();
         }
     }
+    /**
+     * Toggles the major ticks. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param choices Either one or two booleans.
+     */
     setMajorTicks(...choices) {
         propertySetters.setAxesProperty(this, "majorTicks", "boolean", ...choices);
         this._updateBackground();
     }
+    /**
+     * Toggles the minor ticks. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param choices Either one or two booleans.
+     */
     setMinorTicks(...choices) {
         propertySetters.setAxesProperty(this, "minorTicks", "boolean", ...choices);
         this._updateBackground();
     }
+    /**
+     * Sets the spacing of the major ticks (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param sizes Either one or two numbers.
+     */
     setMajorTickSize(...sizes) {
         propertySetters.setAxesProperty(this, "majorTickSize", "number", ...sizes);
         this._updateBackground();
     }
+    /**
+     * Sets the spacing of the minor ticks (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param sizes Either one or two numbers.
+     */
     setMinorTickSize(...sizes) {
         propertySetters.setAxesProperty(this, "minorTickSize", "number", ...sizes);
         this._updateBackground();
     }
+    /**
+     * Toggles the major gridlines. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param choices Either one or two booleans.
+     */
     setMajorGridlines(...choices) {
         propertySetters.setAxesProperty(this, "majorGridlines", "boolean", ...choices);
         this._updateBackground();
     }
+    /**
+     * Toggles the minor gridlines. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param choices Either one or two booleans.
+     */
     setMinorGridlines(...choices) {
         propertySetters.setAxesProperty(this, "minorGridlines", "boolean", ...choices);
         this._updateBackground();
     }
+    /**
+     * Sets the spacing of the major gridlines (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param sizes Either one or two numbers.
+     */
     setMajorGridSize(...sizes) {
         propertySetters.setAxesProperty(this, "majorGridSize", "number", ...sizes);
         this._updateBackground();
     }
+    /**
+     * Sets the spacing of the minor gridlines (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param sizes Either one or two numbers.
+     */
     setMinorGridSize(...sizes) {
         propertySetters.setAxesProperty(this, "minorGridSize", "number", ...sizes);
         this._updateBackground();
     }
+    /**
+     * Sets the size of 1 grid unit in pixels. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param sizes Either one or two numbers.
+     */
     setGridScale(...sizes) {
         propertySetters.setAxesProperty(this, "gridScale", "number", ...sizes);
         this._updateLimits();
-        this._updateForeground();
         this._updateBackground();
     }
+    /**
+     * Changes the range of `x` values to be shown on the plot by moving the origin and altering the grid scale.
+     * @param min The minimum value of `x`.
+     * @param max The maximum value of `x`.
+     */
     setXLims(min, max) {
         if (max >= min) {
             propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
@@ -321,6 +443,11 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             throw `Error setting xLims: Lower limit cannot be higher than or equal to higher limit.`;
         }
     }
+    /**
+     * Changes the range of `y` values to be shown on the plot by moving the origin and altering the grid scale.
+     * @param min The minimum value of `y`.
+     * @param max The maximum value of `y`.
+     */
     setYLims(min, max) {
         if (max >= min) {
             propertySetters.setArrayProperty(this, "yLims", "number", [min, max], 2);
@@ -333,34 +460,76 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
         }
     }
+    /**
+     * Sets the colour of the specified trace. The specified colour must be one of the browser-recognised colours.
+     * @param trace The ID of the trace to be updated.
+     * @param colour The name of the colour.
+     */
     setTraceColour(trace, colour) {
         propertySetters.setPlotDataProperty(this, trace, "traceColour", colour);
         this._updatePlottingData();
     }
+    /**
+     * Sets the style of the specified trace. Possible styles are: `solid`, `dotted`, `dashed`, `dashdot`, or `none`.
+     * @param trace The ID of the trace to be updated.
+     * @param style The name of the style.
+     */
     setTraceStyle(trace, style) {
         propertySetters.setPlotDataProperty(this, trace, "traceStyle", style);
         this._updatePlottingData();
     }
+    /**
+     * Sets the width of the specified trace (in pixels).
+     * @param trace The ID of the trace to be updated.
+     * @param width The width of the trace in pixels.
+     */
     setTraceWidth(trace, width) {
         propertySetters.setPlotDataProperty(this, trace, "traceWidth", width);
         this._updatePlottingData();
     }
+    /**
+     * Sets the colour of the markers on the specified trace. The specified colour must be one of the browser-recognised colours.
+     * @param trace The ID of the trace to be updated.
+     * @param colour The name of the colour.
+     */
     setMarkerColour(trace, colour) {
         propertySetters.setPlotDataProperty(this, trace, "markerColour", colour);
         this._updatePlottingData();
     }
+    /**
+     * Sets the style of the markers the specified trace. Possible styles are: `circle`, `plus`, `cross`, `arrow`, or `none`.
+     * @param trace The ID of the trace to be updated.
+     * @param style The name of the style.
+     */
     setMarkerStyle(trace, style) {
         propertySetters.setPlotDataProperty(this, trace, "markerStyle", style);
         this._updatePlottingData();
     }
+    /**
+     * Sets the width of the markers on the specified trace (in pixels).
+     * @param trace The ID of the trace to be updated.
+     * @param size The size of the markers in pixels.
+     */
     setMarkerSize(trace, size) {
         propertySetters.setPlotDataProperty(this, trace, "markerSize", size);
         this._updatePlottingData();
     }
+    /**
+     * Toggles the visibility of the specified trace.
+     * @param trace The ID of the trace to be updated.
+     * @param value Set to `true` for the trace to be visible, `false` for it to be hidden.
+     */
     setVisibility(trace, value) {
         propertySetters.setPlotDataProperty(this, trace, "visibility", value);
         this._updatePlottingData();
     }
+    /**
+     * Sets the range of values over which a parameter should be plotted.
+     * This property has no effect at all if the function plotted does not have a free parameter.
+     * @param trace The ID of the trace to be updated.
+     * @param min The minimum value of the free parameter.
+     * @param max The maximum value of the free parameter.
+     */
     setParameterRange(trace, min, max) {
         if (max >= min) {
             propertySetters.setPlotDataProperty(this, trace, "parameterRange", [min, max]);
