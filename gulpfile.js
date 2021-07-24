@@ -5,11 +5,11 @@ import typescriptRollup from "rollup-plugin-typescript2";
 import { rollup } from "rollup";
 import merge from "merge2";
 import typedoc from "gulp-typedoc";
-// const strip = require("gulp-strip-comments");
-// const rename = require("gulp-rename");
-// const terser = require("gulp-terser");
+import strip from "gulp-strip-comments";
+import terser from "gulp-terser";
+import rename from "gulp-rename";
 
-function clean() {
+function cleanBuild() {
 	return del(["build/**"]);
 }
 
@@ -45,15 +45,40 @@ function buildIIFE() {
 	}));
 }
 
-export const build = gulp.series(clean, buildES, buildIIFE);
+export const build = gulp.series(cleanBuild, buildES, buildIIFE);
 
 export function watch() {
 	return gulp.watch("src/**/*.ts", build);
 }
 
-// export function dist() {
-//
-// }
+function cleanDist() {
+	return del(["dist/**"]);
+}
+
+function distES() {
+	return gulp.src("build/pulsar/**/*.js")
+		.pipe(gulp.dest("dist/pulsar"));
+}
+
+function distTypes() {
+	return gulp.src("build/types/**/*.d.ts")
+		.pipe(gulp.dest("dist/types"));
+}
+
+function distIIFE() {
+	return gulp.src("build/pulsar-web.js")
+		.pipe(strip({
+			safe: true
+		}))
+		.pipe(gulp.dest("dist"))
+		.pipe(terser())
+		.pipe(rename({
+			extname: ".min.js"
+		}))
+		.pipe(gulp.dest("dist"));
+}
+
+export const dist = gulp.series(cleanDist, distES, distTypes, distIIFE);
 
 export function docs() {
 	return gulp.src("src/pulsar.ts")
