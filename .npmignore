@@ -3,7 +3,6 @@
 
 # Development
 .jshintrc
-jsdoc.json
 tsconfig.json
 gulpfile.js
 /src
