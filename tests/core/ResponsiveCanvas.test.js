@@ -73,7 +73,7 @@ suite("ResponsiveCanvas", function() {
 		const backgroundFunctionSpy = sinon.spy(testCanvas._displayData, "backgroundFunction");
 		testCanvas._updateBackground();
 		expect(backgroundFunctionSpy.calledOnce).to.equal(true);
-		expect(backgroundFunctionSpy.calledWith(testCanvas._displayData.background, testCanvas._timeEvolutionData.currentTimeValue)).to.equal(true);
+		expect(backgroundFunctionSpy.calledWith(testCanvas._displayData.background)).to.equal(true);
 	});
 
 	test("_updateForeground() calls the foreground drawing function once with the foreground canvas context and the current time value", function() {
@@ -141,15 +141,13 @@ suite("ResponsiveCanvas", function() {
 		expect(testCanvas._timeEvolutionData.startTimestampMS).to.not.equal(0);
 	});
 
-	test("_updateTime() sets currentTimeValue in seconds, calls background and foreground update functions and calls requestAnimationFrame again", function() {
+	test("_updateTime() sets currentTimeValue in seconds, calls _updateForeground() and calls requestAnimationFrame again", function() {
 		const testCanvas = new ResponsiveCanvas("_updateTimeTest");
-		const _updateBackgroundSpy = sinon.spy(testCanvas, "_updateBackground");
 		const _updateForegroundSpy = sinon.spy(testCanvas, "_updateForeground");
 		testCanvas._timeEvolutionData.timeEvolutionActive = true;
 		testCanvas._timeEvolutionData.offsetTimestampMS = 1000;
 		testCanvas._updateTime(2000);
 		expect(testCanvas._timeEvolutionData.currentTimeValue).to.equal(3);
-		expect(_updateBackgroundSpy.calledOnce).to.equal(true);
 		expect(_updateForegroundSpy.calledOnce).to.equal(true);
 	});
 
@@ -161,9 +159,8 @@ suite("ResponsiveCanvas", function() {
 		expect(testCanvas._timeEvolutionData.offsetTimestampMS).to.not.equal(0);
 	});
 
-	test("stopTime() sets timeEvolutionActive to false, resets all timestamps to 0 and calls background and foreground update functions", function() {
+	test("stopTime() sets timeEvolutionActive to false, resets all timestamps to 0 and calls _updateForeground()", function() {
 		const testCanvas = new ResponsiveCanvas("stopTimeTest");
-		const _updateBackgroundSpy = sinon.spy(testCanvas, "_updateBackground");
 		const _updateForegroundSpy = sinon.spy(testCanvas, "_updateForeground");
 		testCanvas._timeEvolutionData.timeEvolutionActive = true;
 		testCanvas.stopTime();
@@ -171,7 +168,6 @@ suite("ResponsiveCanvas", function() {
 		expect(testCanvas._timeEvolutionData.startTimestampMS).to.equal(0);
 		expect(testCanvas._timeEvolutionData.offsetTimestampMS).to.equal(0);
 		expect(testCanvas._timeEvolutionData.currentTimeValue).to.equal(0);
-		expect(_updateBackgroundSpy.calledOnce).to.equal(true);
 		expect(_updateForegroundSpy.calledOnce).to.equal(true);
 	});
 
