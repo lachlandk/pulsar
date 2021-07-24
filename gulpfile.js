@@ -4,6 +4,7 @@ import typescriptGulp from "gulp-typescript";
 import typescriptRollup from "rollup-plugin-typescript2";
 import { rollup } from "rollup";
 import merge from "merge2";
+import typedoc from "gulp-typedoc";
 // const strip = require("gulp-strip-comments");
 // const rename = require("gulp-rename");
 // const terser = require("gulp-terser");
@@ -54,6 +55,13 @@ export function watch() {
 //
 // }
 
-// export function docs() {
-//
-// }
+export function docs() {
+	return gulp.src("src/pulsar.ts")
+		.pipe(typedoc({
+			name: "Pulsar",
+			out: "docs/typedoc",
+			json: "docs/typedoc.json",
+			sort: ["static-first", "source-order"],
+			excludeProtected: true
+		}));
+}
