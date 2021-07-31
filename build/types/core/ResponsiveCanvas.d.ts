@@ -28,16 +28,6 @@ export declare class ResponsiveCanvas {
         };
         backgroundCSS: string;
     };
-    /**
-     * Object containing key-value pairs of (normally - but not necessarily - numerical) constants for the drawing environment.
-     * Constants can be set with the {@link ResponsiveCanvas.setConstant `setConstant()`} method, and they can be connected up
-     * to an input element on the HTML page with the {@link ResponsiveCanvas.connectElementAttribute `connectElementAttribute()`} method.
-     * They do not provide much functionality by themselves, but other classes which extend `ResponsiveCanvas`
-     * make use of them for display and interactivity purposes.
-     */
-    constants: {
-        [name: string]: any;
-    };
     protected _timeEvolutionData: {
         currentTimeValue: number;
         startTimestampMS: number;
@@ -125,21 +115,6 @@ export declare class ResponsiveCanvas {
      */
     stopTime(): void;
     protected _updateTime(currentTimestamp: number): void;
-    /**
-     * Sets the value of a constant.
-     * @param name The name of the constant. This will be the key in the {@link ResponsiveCanvas.constants `constants`} object.
-     * @param value The value of the constant.
-     */
-    setConstant(name: string, value: any): void;
-    /**
-     * Connects an event listener on an element with the value of a constant.
-     * @param element
-     * @param event
-     * @param attribute
-     * @param constant
-     * @param transform
-     */
-    connectElementAttribute(element: string | Element, event: string, attribute: string, constant: string, transform?: (x: any) => any): void;
     /**
      * Display the canvas object in an HTML element.
      * @param element

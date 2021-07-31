@@ -28,14 +28,6 @@ export class ResponsiveCanvas {
             origin: { x: 0, y: 0 },
             backgroundCSS: ""
         };
-        /**
-         * Object containing key-value pairs of (normally - but not necessarily - numerical) constants for the drawing environment.
-         * Constants can be set with the {@link ResponsiveCanvas.setConstant `setConstant()`} method, and they can be connected up
-         * to an input element on the HTML page with the {@link ResponsiveCanvas.connectElementAttribute `connectElementAttribute()`} method.
-         * They do not provide much functionality by themselves, but other classes which extend `ResponsiveCanvas`
-         * make use of them for display and interactivity purposes.
-         */
-        this.constants = {};
         this._timeEvolutionData = {
             currentTimeValue: 0,
             startTimestampMS: 0,
@@ -207,44 +199,6 @@ export class ResponsiveCanvas {
             this._timeEvolutionData.currentTimeValue = currentTime < 0 ? 0 : currentTime / 1000;
             this.updateForeground();
             window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
-        }
-    }
-    /**
-     * Sets the value of a constant.
-     * @param name The name of the constant. This will be the key in the {@link ResponsiveCanvas.constants `constants`} object.
-     * @param value The value of the constant.
-     */
-    setConstant(name, value) {
-        this.constants[name] = value;
-    }
-    /**
-     * Connects an event listener on an element with the value of a constant.
-     * @param element
-     * @param event
-     * @param attribute
-     * @param constant
-     * @param transform
-     */
-    connectElementAttribute(element, event, attribute, constant, transform = (x) => x) {
-        if (element instanceof Element) {
-            element.addEventListener(event, () => {
-                this.setConstant(constant, transform(element[attribute]));
-                this.updateForeground();
-            });
-            this.setConstant(constant, transform(element[attribute]));
-        }
-        else {
-            const target = document.querySelector(element);
-            if (target instanceof Element) {
-                target.addEventListener(event, () => {
-                    this.setConstant(constant, transform(target[attribute]));
-                    this.updateForeground();
-                });
-                this.setConstant(constant, transform(target[attribute]));
-            }
-            else {
-                throw `Element with ID "${element}" could not be found.`;
-            }
         }
     }
     /**
