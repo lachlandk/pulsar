@@ -90,7 +90,10 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
         this.properties.xLims = [-this.properties.origin.x / this.properties.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.properties.gridScale.x];
         this.properties.yLims = [-this.properties.origin.y / this.properties.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.properties.gridScale.y];
     }
-    _updatePlottingData() {
+    /**
+      * Updates the foreground function.
+      */
+    updatePlottingData() {
         this.setForeground((context, timeValue) => {
             for (const datasetID of Object.keys(this.plotData)) {
                 if (this.plotData[datasetID].properties.visibility) {
@@ -337,7 +340,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             throw `Error setting plot data: trace with ID ${id} already exists on current plot, call removeData() to remove.`;
         }
         setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
     /**
      * Removes a trace from the plot.
@@ -345,7 +348,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     removeData(trace) {
         delete this.plotData[trace];
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
     setOrigin(...point) {
         super.setOrigin(...point);
@@ -437,7 +440,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             this.properties.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
             super.setOrigin(-this.properties.xLims[0] * this.properties.gridScale.x, this.properties.origin.y);
             this.updateBackground();
-            this._updatePlottingData();
+            this.updatePlottingData();
         }
         else {
             throw `Error setting xLims: Lower limit cannot be higher than or equal to higher limit.`;
@@ -454,7 +457,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             this.properties.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
             super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.properties.gridScale.y);
             this.updateBackground();
-            this._updatePlottingData();
+            this.updatePlottingData();
         }
         else {
             throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
@@ -467,7 +470,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setTraceColour(trace, colour) {
         propertySetters.setPlotDataProperty(this, trace, "traceColour", colour);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
     /**
      * Sets the style of the specified trace. Possible styles are: `solid`, `dotted`, `dashed`, `dashdot`, or `none`.
@@ -476,7 +479,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setTraceStyle(trace, style) {
         propertySetters.setPlotDataProperty(this, trace, "traceStyle", style);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
     /**
      * Sets the width of the specified trace (in pixels).
@@ -485,7 +488,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setTraceWidth(trace, width) {
         propertySetters.setPlotDataProperty(this, trace, "traceWidth", width);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
     /**
      * Sets the colour of the markers on the specified trace. The specified colour must be one of the browser-recognised colours.
@@ -494,7 +497,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMarkerColour(trace, colour) {
         propertySetters.setPlotDataProperty(this, trace, "markerColour", colour);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
     /**
      * Sets the style of the markers the specified trace. Possible styles are: `circle`, `plus`, `cross`, `arrow`, or `none`.
@@ -503,7 +506,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMarkerStyle(trace, style) {
         propertySetters.setPlotDataProperty(this, trace, "markerStyle", style);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
     /**
      * Sets the width of the markers on the specified trace (in pixels).
@@ -512,7 +515,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMarkerSize(trace, size) {
         propertySetters.setPlotDataProperty(this, trace, "markerSize", size);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
     /**
      * Toggles the visibility of the specified trace.
@@ -521,7 +524,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setVisibility(trace, value) {
         propertySetters.setPlotDataProperty(this, trace, "visibility", value);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
     /**
      * Sets the range of values over which a parameter should be plotted.
@@ -533,7 +536,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
     setParameterRange(trace, min, max) {
         if (max >= min) {
             propertySetters.setPlotDataProperty(this, trace, "parameterRange", [min, max]);
-            this._updatePlottingData();
+            this.updatePlottingData();
         }
         else {
             throw `Error setting parameterRange: Lower limit cannot be higher than or equal to higher limit.`;

@@ -114,7 +114,10 @@ export declare class ResponsivePlot2D extends ResponsiveCanvas {
      */
     constructor(id: string, options?: ResponsivePlot2DOptions);
     protected _updateLimits(): void;
-    protected _updatePlottingData(): void;
+    /**
+      * Updates the foreground function.
+      */
+    updatePlottingData(): void;
     /**
      * Adds a data trace to the plot. The trace must be given a unique ID, so that it can be added to the
      * {@link ResponsivePlot2D.plotData `plotData`} property of the plot object.

@@ -137,7 +137,10 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
         this.properties.yLims = [-this.properties.origin.y / this.properties.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.properties.gridScale.y];
     }
 
-    protected _updatePlottingData() {
+    /**
+      * Updates the foreground function.
+      */
+    updatePlottingData() {
         this.setForeground((context, timeValue) => {
             for (const datasetID of Object.keys(this.plotData)) {
                 if (this.plotData[datasetID].properties.visibility) {
@@ -377,7 +380,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             throw `Error setting plot data: trace with ID ${id} already exists on current plot, call removeData() to remove.`;
         }
         setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
 
     /**
@@ -386,7 +389,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     removeData(trace: string) {
         delete this.plotData[trace];
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
 
     setOrigin(...point: ("centre" | number)[]) {
@@ -489,7 +492,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             this.properties.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
             super.setOrigin(-this.properties.xLims[0] * this.properties.gridScale.x, this.properties.origin.y);
             this.updateBackground();
-            this._updatePlottingData();
+            this.updatePlottingData();
         } else {
             throw `Error setting xLims: Lower limit cannot be higher than or equal to higher limit.`;
         }
@@ -507,7 +510,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             this.properties.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
             super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.properties.gridScale.y);
             this.updateBackground();
-            this._updatePlottingData();
+            this.updatePlottingData();
         } else {
             throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
         }
@@ -520,7 +523,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setTraceColour(trace: string, colour: string) {
         propertySetters.setPlotDataProperty(this, trace, "traceColour", colour);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
 
     /**
@@ -530,7 +533,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setTraceStyle(trace: string, style: string) {
         propertySetters.setPlotDataProperty(this, trace, "traceStyle", style);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
 
     /**
@@ -540,7 +543,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setTraceWidth(trace: string, width: number) {
         propertySetters.setPlotDataProperty(this, trace, "traceWidth", width);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
 
     /**
@@ -550,7 +553,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMarkerColour(trace: string, colour: string) {
         propertySetters.setPlotDataProperty(this, trace, "markerColour", colour);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
 
     /**
@@ -560,7 +563,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMarkerStyle(trace: string, style: string) {
         propertySetters.setPlotDataProperty(this, trace, "markerStyle", style);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
 
     /**
@@ -570,7 +573,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMarkerSize(trace: string, size: number) {
         propertySetters.setPlotDataProperty(this, trace, "markerSize", size);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
 
     /**
@@ -580,7 +583,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setVisibility(trace: string, value: boolean) {
         propertySetters.setPlotDataProperty(this, trace, "visibility", value);
-        this._updatePlottingData();
+        this.updatePlottingData();
     }
 
     /**
@@ -593,7 +596,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
     setParameterRange(trace: string, min: number, max: number) {
         if (max >= min) {
             propertySetters.setPlotDataProperty(this, trace, "parameterRange", [min, max]);
-            this._updatePlottingData();
+            this.updatePlottingData();
         } else {
             throw `Error setting parameterRange: Lower limit cannot be higher than or equal to higher limit.`;
         }
