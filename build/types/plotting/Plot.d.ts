@@ -11,6 +11,6 @@ export declare class Plot extends ResponsivePlot2D {
     constructor(id: string, data: {
         id: string;
         data: ResponsivePlot2DTraceDataType;
-        options: ResponsivePlot2DTraceOptions;
+        options?: ResponsivePlot2DTraceOptions;
     }, options?: ResponsivePlot2DOptions);
 }

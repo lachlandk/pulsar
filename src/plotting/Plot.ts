@@ -9,7 +9,7 @@ export class Plot extends ResponsivePlot2D {
      * @param data.object - The options for the data. See the {@link ResponsivePlot2D.plot `plot()`} method documentation for more details.
      * @param options - Options for the plot.
      */
-    constructor(id: string, data: {id: string, data: ResponsivePlot2DTraceDataType, options: ResponsivePlot2DTraceOptions}, options: ResponsivePlot2DOptions = {}) {
+    constructor(id: string, data: {id: string, data: ResponsivePlot2DTraceDataType, options?: ResponsivePlot2DTraceOptions}, options: ResponsivePlot2DOptions = {}) {
         super(id, options);
         if (data !== undefined) {
             this.plot(data.id, data.data, data.options);

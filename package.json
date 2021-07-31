@@ -6,6 +6,7 @@
 	"module": "dist/pulsar/pulsar.js",
 	"types": "dist/types/pulsar.d.ts",
 	"type": "module",
+	"sideEffects": false,
 	"devDependencies": {
 		"c8": "^7.7.3",
 		"canvas": "^2.8.0",

@@ -402,7 +402,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMajorTicks(...choices: [boolean] | [boolean, boolean]) {
         propertySetters.setAxesProperty(this,"majorTicks", "boolean", ...choices);
-        this._updateBackground();
+        this.updateBackground();
     }
 
     /**
@@ -411,7 +411,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMinorTicks(...choices: [boolean] | [boolean, boolean]) {
         propertySetters.setAxesProperty(this,"minorTicks", "boolean", ...choices);
-        this._updateBackground();
+        this.updateBackground();
     }
 
     /**
@@ -420,7 +420,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMajorTickSize(...sizes: [number] | [number, number]) {
         propertySetters.setAxesProperty(this,"majorTickSize", "number", ...sizes);
-        this._updateBackground();
+        this.updateBackground();
     }
 
     /**
@@ -429,7 +429,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMinorTickSize(...sizes: [number] | [number, number]) {
         propertySetters.setAxesProperty(this,"minorTickSize", "number", ...sizes);
-        this._updateBackground();
+        this.updateBackground();
     }
 
     /**
@@ -438,7 +438,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMajorGridlines(...choices: [boolean] | [boolean, boolean]) {
         propertySetters.setAxesProperty(this,"majorGridlines", "boolean", ...choices);
-        this._updateBackground();
+        this.updateBackground();
     }
 
     /**
@@ -447,7 +447,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMinorGridlines(...choices: [boolean] | [boolean, boolean]) {
         propertySetters.setAxesProperty(this,"minorGridlines", "boolean", ...choices);
-        this._updateBackground();
+        this.updateBackground();
     }
 
     /**
@@ -456,7 +456,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMajorGridSize(...sizes: [number] | [number, number]) {
         propertySetters.setAxesProperty(this,"majorGridSize", "number", ...sizes);
-        this._updateBackground();
+        this.updateBackground();
     }
 
     /**
@@ -465,7 +465,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     setMinorGridSize(...sizes: [number] | [number, number]) {
         propertySetters.setAxesProperty(this,"minorGridSize", "number", ...sizes);
-        this._updateBackground();
+        this.updateBackground();
     }
 
     /**
@@ -475,7 +475,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
     setGridScale(...sizes: [number] | [number, number]) {
         propertySetters.setAxesProperty(this,"gridScale", "number", ...sizes);
         this._updateLimits();
-        this._updateBackground();
+        this.updateBackground();
     }
 
     /**
@@ -488,7 +488,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
             this.properties.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
             super.setOrigin(-this.properties.xLims[0] * this.properties.gridScale.x, this.properties.origin.y);
-            this._updateBackground();
+            this.updateBackground();
             this._updatePlottingData();
         } else {
             throw `Error setting xLims: Lower limit cannot be higher than or equal to higher limit.`;
@@ -506,7 +506,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             propertySetters.setArrayProperty(this, "yLims", "number", [min, max], 2);
             this.properties.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
             super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.properties.gridScale.y);
-            this._updateBackground();
+            this.updateBackground();
             this._updatePlottingData();
         } else {
             throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;

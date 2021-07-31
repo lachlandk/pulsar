@@ -170,25 +170,6 @@ var Pulsar = (function (exports) {
                 offsetTimestampMS: 0,
                 timeEvolutionActive: false
             };
-            this._displayData = {
-                width: 0,
-                height: 0,
-                originArgCache: [0],
-                containerElement: null,
-                resizeObserver: new ResizeObserver(entries => {
-                    for (const entry of entries) {
-                        this._displayData.width = entry.target.clientWidth;
-                        this._displayData.height = entry.target.clientHeight;
-                        this._updateCanvasDimensions();
-                    }
-                }),
-                backgroundCanvas: document.createElement("canvas"),
-                foregroundCanvas: document.createElement("canvas"),
-                background: null,
-                foreground: null,
-                backgroundFunction: (() => { }),
-                foregroundFunction: (() => { })
-            };
             // TODO: add child objects to options to allow more options
             this.setID(id);
             if (options.origin === "centre") {
@@ -196,42 +177,59 @@ var Pulsar = (function (exports) {
                 delete options.origin;
             }
             setupProperties(this, "ResponsiveCanvas", options);
-            this._displayData.backgroundCanvas.style.position = "absolute";
-            this._displayData.backgroundCanvas.style.left = "0";
-            this._displayData.backgroundCanvas.style.top = "0";
-            this._displayData.backgroundCanvas.id = `${this.id}-background-canvas`;
-            this._displayData.background = this._displayData.backgroundCanvas.getContext("2d");
-            this._displayData.foregroundCanvas.style.position = "absolute";
-            this._displayData.foregroundCanvas.style.left = "0";
-            this._displayData.foregroundCanvas.style.top = "0";
-            this._displayData.foregroundCanvas.id = `${this.id}-foreground-canvas`;
-            this._displayData.foreground = this._displayData.foregroundCanvas.getContext("2d");
+            const canvasContainer = document.createElement("div");
+            canvasContainer.style.display = "grid";
+            canvasContainer.style.width = "100%";
+            canvasContainer.style.height = "100%";
+            const backgroundCanvas = document.createElement("canvas");
+            backgroundCanvas.style.gridArea = "1 / 1";
+            const foregroundCanvas = document.createElement("canvas");
+            foregroundCanvas.style.gridArea = "1 / 1";
+            canvasContainer.appendChild(backgroundCanvas);
+            canvasContainer.appendChild(foregroundCanvas);
+            const resizeObserver = new ResizeObserver(entries => {
+                for (const entry of entries) {
+                    this._displayData.width = entry.target.clientWidth;
+                    this._displayData.height = entry.target.clientHeight;
+                    this._displayData.backgroundCanvas.width = this._displayData.width;
+                    this._displayData.backgroundCanvas.height = this._displayData.height;
+                    this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
+                    this.updateBackground();
+                    this._displayData.foregroundCanvas.width = this._displayData.width;
+                    this._displayData.foregroundCanvas.height = this._displayData.height;
+                    this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
+                    this.updateForeground();
+                }
+            });
+            resizeObserver.observe(canvasContainer);
+            this._displayData = {
+                width: 0,
+                height: 0,
+                originArgCache: [0],
+                parentElement: null,
+                resizeObserver: resizeObserver,
+                canvasContainer: canvasContainer,
+                backgroundCanvas: backgroundCanvas,
+                foregroundCanvas: foregroundCanvas,
+                background: backgroundCanvas.getContext("2d"),
+                foreground: foregroundCanvas.getContext("2d"),
+                backgroundFunction: () => { },
+                foregroundFunction: () => { }
+            };
         }
-        _updateCanvasDimensions() {
-            if (this._displayData.containerElement !== null) {
-                this._displayData.containerElement.style.width = `${this._displayData.width}px`;
-                this._displayData.containerElement.style.height = `${this._displayData.height}px`;
-                this._displayData.backgroundCanvas.width = this._displayData.width;
-                this._displayData.backgroundCanvas.height = this._displayData.height;
-                this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
-                this._updateBackground();
-                this._displayData.foregroundCanvas.width = this._displayData.width;
-                this._displayData.foregroundCanvas.height = this._displayData.height;
-                this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
-                this._updateForeground();
-            }
+        /**
+          * Updates the background.
+          */
+        updateBackground() {
+            this._displayData.background.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
+            this._displayData.backgroundFunction(this._displayData.background);
         }
-        _updateBackground() {
-            if (this._displayData.background !== null) {
-                this._displayData.background.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
-                this._displayData.backgroundFunction(this._displayData.background);
-            }
-        }
-        _updateForeground() {
-            if (this._displayData.foreground !== null) {
-                this._displayData.foreground.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
-                this._displayData.foregroundFunction(this._displayData.foreground, this._timeEvolutionData.currentTimeValue);
-            }
+        /**
+          * Updates the foreground.
+          */
+        updateForeground() {
+            this._displayData.foreground.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
+            this._displayData.foregroundFunction(this._displayData.foreground, this._timeEvolutionData.currentTimeValue);
         }
         /**
          * Sets the drawing function for the background canvas to `drawingFunction` and updates the canvas.
@@ -242,7 +240,7 @@ var Pulsar = (function (exports) {
          */
         setBackground(drawingFunction) {
             this._displayData.backgroundFunction = drawingFunction;
-            this._updateBackground();
+            this.updateBackground();
         }
         /**
          * Sets the drawing function for the foreground canvas to `drawingFunction` and updates the canvas.
@@ -255,7 +253,7 @@ var Pulsar = (function (exports) {
          */
         setForeground(drawingFunction) {
             this._displayData.foregroundFunction = drawingFunction;
-            this._updateForeground();
+            this.updateForeground();
         }
         /**
          * Sets the origin of both canvases to the point2D specified (in pixels).
@@ -273,7 +271,12 @@ var Pulsar = (function (exports) {
                 propertySetters.setAxesProperty(this, "origin", "number", ...point);
             }
             this._displayData.originArgCache = point;
-            this._updateCanvasDimensions();
+            if (this._displayData.background !== null && this._displayData.foreground !== null) {
+                this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y); // TODO: this introduces a bug with changing the origin multiple times
+                this.updateBackground();
+                this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
+                this.updateForeground();
+            }
         }
         /**
          * Sets the ID of the canvas object to the value specified,
@@ -324,13 +327,13 @@ var Pulsar = (function (exports) {
             this._timeEvolutionData.startTimestampMS = 0;
             this._timeEvolutionData.offsetTimestampMS = 0;
             this._timeEvolutionData.currentTimeValue = 0;
-            this._updateForeground();
+            this.updateForeground();
         }
         _updateTime(currentTimestamp) {
             if (this._timeEvolutionData.timeEvolutionActive) {
                 const currentTime = this._timeEvolutionData.offsetTimestampMS + currentTimestamp - this._timeEvolutionData.startTimestampMS;
                 this._timeEvolutionData.currentTimeValue = currentTime < 0 ? 0 : currentTime / 1000;
-                this._updateForeground();
+                this.updateForeground();
                 window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
             }
         }
@@ -354,7 +357,7 @@ var Pulsar = (function (exports) {
             if (element instanceof Element) {
                 element.addEventListener(event, () => {
                     this.setConstant(constant, transform(element[attribute]));
-                    this._updateForeground();
+                    this.updateForeground();
                 });
                 this.setConstant(constant, transform(element[attribute]));
             }
@@ -363,7 +366,7 @@ var Pulsar = (function (exports) {
                 if (target instanceof Element) {
                     target.addEventListener(event, () => {
                         this.setConstant(constant, transform(target[attribute]));
-                        this._updateForeground();
+                        this.updateForeground();
                     });
                     this.setConstant(constant, transform(target[attribute]));
                 }
@@ -377,21 +380,16 @@ var Pulsar = (function (exports) {
          * @param element
          */
         show(element) {
-            if (element instanceof HTMLElement) {
-                this._displayData.containerElement = element;
+            if (element instanceof Element) {
+                this._displayData.parentElement = element;
             }
             else {
-                this._displayData.containerElement = document.querySelector(element);
+                this._displayData.parentElement = document.querySelector(element);
             }
-            if (this._displayData.containerElement !== null) {
-                this._displayData.containerElement.style.position = "relative";
-                this._displayData.containerElement.appendChild(this._displayData.backgroundCanvas);
-                this._displayData.containerElement.appendChild(this._displayData.foregroundCanvas);
-                this._displayData.width = this._displayData.containerElement.clientWidth;
-                this._displayData.height = this._displayData.containerElement.clientHeight;
-                this._displayData.resizeObserver.observe(this._displayData.containerElement);
+            if (this._displayData.parentElement !== null) {
+                this._displayData.parentElement.appendChild(this._displayData.canvasContainer);
                 this.setOrigin(...this._displayData.originArgCache);
-                this.setBackgroundCSS(this.properties.backgroundCSS);
+                this.setBackgroundCSS(this.properties.backgroundCSS); // TODO: shouldn't have to call this again
             }
             else {
                 throw `HTMLElement with querySelector "${element}" could not be found.`;
@@ -758,7 +756,7 @@ var Pulsar = (function (exports) {
          */
         setMajorTicks(...choices) {
             propertySetters.setAxesProperty(this, "majorTicks", "boolean", ...choices);
-            this._updateBackground();
+            this.updateBackground();
         }
         /**
          * Toggles the minor ticks. Two values may be passed for `x` then `y`, or just a single value for both axes.
@@ -766,7 +764,7 @@ var Pulsar = (function (exports) {
          */
         setMinorTicks(...choices) {
             propertySetters.setAxesProperty(this, "minorTicks", "boolean", ...choices);
-            this._updateBackground();
+            this.updateBackground();
         }
         /**
          * Sets the spacing of the major ticks (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
@@ -774,7 +772,7 @@ var Pulsar = (function (exports) {
          */
         setMajorTickSize(...sizes) {
             propertySetters.setAxesProperty(this, "majorTickSize", "number", ...sizes);
-            this._updateBackground();
+            this.updateBackground();
         }
         /**
          * Sets the spacing of the minor ticks (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
@@ -782,7 +780,7 @@ var Pulsar = (function (exports) {
          */
         setMinorTickSize(...sizes) {
             propertySetters.setAxesProperty(this, "minorTickSize", "number", ...sizes);
-            this._updateBackground();
+            this.updateBackground();
         }
         /**
          * Toggles the major gridlines. Two values may be passed for `x` then `y`, or just a single value for both axes.
@@ -790,7 +788,7 @@ var Pulsar = (function (exports) {
          */
         setMajorGridlines(...choices) {
             propertySetters.setAxesProperty(this, "majorGridlines", "boolean", ...choices);
-            this._updateBackground();
+            this.updateBackground();
         }
         /**
          * Toggles the minor gridlines. Two values may be passed for `x` then `y`, or just a single value for both axes.
@@ -798,7 +796,7 @@ var Pulsar = (function (exports) {
          */
         setMinorGridlines(...choices) {
             propertySetters.setAxesProperty(this, "minorGridlines", "boolean", ...choices);
-            this._updateBackground();
+            this.updateBackground();
         }
         /**
          * Sets the spacing of the major gridlines (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
@@ -806,7 +804,7 @@ var Pulsar = (function (exports) {
          */
         setMajorGridSize(...sizes) {
             propertySetters.setAxesProperty(this, "majorGridSize", "number", ...sizes);
-            this._updateBackground();
+            this.updateBackground();
         }
         /**
          * Sets the spacing of the minor gridlines (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
@@ -814,7 +812,7 @@ var Pulsar = (function (exports) {
          */
         setMinorGridSize(...sizes) {
             propertySetters.setAxesProperty(this, "minorGridSize", "number", ...sizes);
-            this._updateBackground();
+            this.updateBackground();
         }
         /**
          * Sets the size of 1 grid unit in pixels. Two values may be passed for `x` then `y`, or just a single value for both axes.
@@ -823,7 +821,7 @@ var Pulsar = (function (exports) {
         setGridScale(...sizes) {
             propertySetters.setAxesProperty(this, "gridScale", "number", ...sizes);
             this._updateLimits();
-            this._updateBackground();
+            this.updateBackground();
         }
         /**
          * Changes the range of `x` values to be shown on the plot by moving the origin and altering the grid scale.
@@ -835,7 +833,7 @@ var Pulsar = (function (exports) {
                 propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
                 this.properties.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
                 super.setOrigin(-this.properties.xLims[0] * this.properties.gridScale.x, this.properties.origin.y);
-                this._updateBackground();
+                this.updateBackground();
                 this._updatePlottingData();
             }
             else {
@@ -852,7 +850,7 @@ var Pulsar = (function (exports) {
                 propertySetters.setArrayProperty(this, "yLims", "number", [min, max], 2);
                 this.properties.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
                 super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.properties.gridScale.y);
-                this._updateBackground();
+                this.updateBackground();
                 this._updatePlottingData();
             }
             else {

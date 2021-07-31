@@ -48,12 +48,13 @@ export declare class ResponsiveCanvas {
         width: number;
         height: number;
         originArgCache: (number | "centre")[];
-        containerElement: HTMLElement | null;
+        parentElement: Element | null;
         resizeObserver: ResizeObserver;
+        canvasContainer: HTMLDivElement;
         backgroundCanvas: HTMLCanvasElement;
         foregroundCanvas: HTMLCanvasElement;
-        background: CanvasRenderingContext2D | null;
-        foreground: CanvasRenderingContext2D | null;
+        background: CanvasRenderingContext2D;
+        foreground: CanvasRenderingContext2D;
         backgroundFunction: (context: CanvasRenderingContext2D) => void;
         foregroundFunction: (context: CanvasRenderingContext2D, timeValue: number) => void;
     };
@@ -62,9 +63,14 @@ export declare class ResponsiveCanvas {
      * @param options  Optional parameters.
      */
     constructor(id: string, options?: ResponsiveCanvasOptions);
-    protected _updateCanvasDimensions(): void;
-    protected _updateBackground(): void;
-    protected _updateForeground(): void;
+    /**
+      * Updates the background.
+      */
+    updateBackground(): void;
+    /**
+      * Updates the foreground.
+      */
+    updateForeground(): void;
     /**
      * Sets the drawing function for the background canvas to `drawingFunction` and updates the canvas.
      * The argument `drawingFunction` should be a function which takes one or two arguments of its own, the first being the
@@ -138,5 +144,5 @@ export declare class ResponsiveCanvas {
      * Display the canvas object in an HTML element.
      * @param element
      */
-    show(element: string | HTMLElement): void;
+    show(element: string | Element): void;
 }

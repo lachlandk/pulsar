@@ -26,7 +26,7 @@ async function buildES() {
 
 function buildIIFE() {
 	return rollup({
-		input: "src/pulsar.ts",
+		input: "src/index.ts",
 		plugins: [
 			typescriptRollup({
 				tsconfig: "tsconfig.json",

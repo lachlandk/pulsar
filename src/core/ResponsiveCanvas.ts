@@ -45,24 +45,19 @@ export class ResponsiveCanvas {
         offsetTimestampMS: 0,
         timeEvolutionActive: false
     }
-    protected _displayData = {
-        width: 0,
-        height: 0,
-        originArgCache: [0] as (number | "centre")[],
-        containerElement: null as HTMLElement | null,
-        resizeObserver: new ResizeObserver(entries => {
-            for (const entry of entries) {
-                this._displayData.width = entry.target.clientWidth;
-                this._displayData.height = entry.target.clientHeight;
-                this._updateCanvasDimensions();
-            }
-        }),
-        backgroundCanvas: document.createElement("canvas"),
-        foregroundCanvas: document.createElement("canvas"),
-        background: null as CanvasRenderingContext2D | null,
-        foreground: null as CanvasRenderingContext2D | null,
-        backgroundFunction: (() => {}) as (context: CanvasRenderingContext2D) => void,
-        foregroundFunction: (() => {}) as (context: CanvasRenderingContext2D, timeValue: number) => void
+    protected _displayData: {
+      width: number,
+      height: number,
+      originArgCache: (number | "centre")[],
+      parentElement: Element | null,
+      resizeObserver: ResizeObserver,
+      canvasContainer: HTMLDivElement
+      backgroundCanvas: HTMLCanvasElement,
+      foregroundCanvas: HTMLCanvasElement,
+      background: CanvasRenderingContext2D,
+      foreground: CanvasRenderingContext2D,
+      backgroundFunction: (context: CanvasRenderingContext2D) => void,
+      foregroundFunction: (context: CanvasRenderingContext2D, timeValue: number) => void
     }
 
     /**
@@ -77,45 +72,61 @@ export class ResponsiveCanvas {
             delete options.origin;
         }
         setupProperties(this, "ResponsiveCanvas", options);
-        this._displayData.backgroundCanvas.style.position = "absolute";
-        this._displayData.backgroundCanvas.style.left = "0";
-        this._displayData.backgroundCanvas.style.top = "0";
-        this._displayData.backgroundCanvas.id = `${this.id}-background-canvas`;
-        this._displayData.background = this._displayData.backgroundCanvas.getContext("2d");
-        this._displayData.foregroundCanvas.style.position = "absolute";
-        this._displayData.foregroundCanvas.style.left = "0";
-        this._displayData.foregroundCanvas.style.top = "0";
-        this._displayData.foregroundCanvas.id = `${this.id}-foreground-canvas`;
-        this._displayData.foreground = this._displayData.foregroundCanvas.getContext("2d");
+        const canvasContainer = document.createElement("div");
+        canvasContainer.style.display = "grid";
+        canvasContainer.style.width = "100%";
+        canvasContainer.style.height = "100%";
+        const backgroundCanvas = document.createElement("canvas");
+        backgroundCanvas.style.gridArea = "1 / 1";
+        const foregroundCanvas = document.createElement("canvas");
+        foregroundCanvas.style.gridArea = "1 / 1";
+        canvasContainer.appendChild(backgroundCanvas);
+        canvasContainer.appendChild(foregroundCanvas);
+        const resizeObserver = new ResizeObserver(entries => {
+            for (const entry of entries) {
+                this._displayData.width = entry.target.clientWidth;
+                this._displayData.height = entry.target.clientHeight;
+                this._displayData.backgroundCanvas.width = this._displayData.width;
+                this._displayData.backgroundCanvas.height = this._displayData.height;
+                this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
+                this.updateBackground();
+                this._displayData.foregroundCanvas.width = this._displayData.width;
+                this._displayData.foregroundCanvas.height = this._displayData.height;
+                this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
+                this.updateForeground();
+            }
+        });
+        resizeObserver.observe(canvasContainer);
+        this._displayData = {
+            width: 0,
+            height: 0,
+            originArgCache: [0],
+            parentElement: null,
+            resizeObserver: resizeObserver,
+            canvasContainer: canvasContainer,
+            backgroundCanvas: backgroundCanvas,
+            foregroundCanvas: foregroundCanvas,
+            background: backgroundCanvas.getContext("2d") as CanvasRenderingContext2D,
+            foreground: foregroundCanvas.getContext("2d") as CanvasRenderingContext2D,
+            backgroundFunction: () => {},
+            foregroundFunction: () => {}
+        };
     }
 
-    protected _updateCanvasDimensions() {
-        if (this._displayData.containerElement !== null) {
-            this._displayData.containerElement.style.width = `${this._displayData.width}px`;
-            this._displayData.containerElement.style.height = `${this._displayData.height}px`;
-            this._displayData.backgroundCanvas.width = this._displayData.width;
-            this._displayData.backgroundCanvas.height = this._displayData.height;
-            this._displayData.background!.translate(this.properties.origin.x, this.properties.origin.y);
-            this._updateBackground();
-            this._displayData.foregroundCanvas.width = this._displayData.width;
-            this._displayData.foregroundCanvas.height = this._displayData.height;
-            this._displayData.foreground!.translate(this.properties.origin.x, this.properties.origin.y);
-            this._updateForeground();
-        }
+    /**
+      * Updates the background.
+      */
+    updateBackground() {
+        this._displayData.background.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
+        this._displayData.backgroundFunction(this._displayData.background);
     }
 
-    protected _updateBackground() {
-        if (this._displayData.background !== null) {
-            this._displayData.background.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
-            this._displayData.backgroundFunction(this._displayData.background);
-        }
-    }
-
-    protected _updateForeground() {
-        if (this._displayData.foreground !== null) {
-            this._displayData.foreground.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
-            this._displayData.foregroundFunction(this._displayData.foreground, this._timeEvolutionData.currentTimeValue);
-        }
+    /**
+      * Updates the foreground.
+      */
+    updateForeground() {
+        this._displayData.foreground.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
+        this._displayData.foregroundFunction(this._displayData.foreground, this._timeEvolutionData.currentTimeValue);
     }
 
     /**
@@ -127,7 +138,7 @@ export class ResponsiveCanvas {
      */
     setBackground(drawingFunction: (context: CanvasRenderingContext2D) => void) {
         this._displayData.backgroundFunction = drawingFunction;
-        this._updateBackground();
+        this.updateBackground();
     }
 
     /**
@@ -141,7 +152,7 @@ export class ResponsiveCanvas {
      */
     setForeground(drawingFunction: (context: CanvasRenderingContext2D, timeValue: number) => void) {
         this._displayData.foregroundFunction = drawingFunction;
-        this._updateForeground();
+        this.updateForeground();
     }
 
     /**
@@ -159,7 +170,12 @@ export class ResponsiveCanvas {
             propertySetters.setAxesProperty(this,"origin", "number", ...point);
         }
         this._displayData.originArgCache = point;
-        this._updateCanvasDimensions();
+        if (this._displayData.background !== null && this._displayData.foreground !== null ) {
+          this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y); // TODO: this introduces a bug with changing the origin multiple times
+          this.updateBackground();
+          this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
+          this.updateForeground();
+        }
     }
 
     /**
@@ -214,14 +230,14 @@ export class ResponsiveCanvas {
         this._timeEvolutionData.startTimestampMS = 0;
         this._timeEvolutionData.offsetTimestampMS = 0;
         this._timeEvolutionData.currentTimeValue = 0;
-        this._updateForeground();
+        this.updateForeground();
     }
 
     protected _updateTime(currentTimestamp: number) {
         if (this._timeEvolutionData.timeEvolutionActive) {
             const currentTime = this._timeEvolutionData.offsetTimestampMS + currentTimestamp - this._timeEvolutionData.startTimestampMS;
             this._timeEvolutionData.currentTimeValue = currentTime < 0 ? 0 : currentTime / 1000;
-            this._updateForeground();
+            this.updateForeground();
             window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
         }
     }
@@ -247,7 +263,7 @@ export class ResponsiveCanvas {
         if (element instanceof Element) {
             element.addEventListener(event, () => {
                 this.setConstant(constant, transform((element as {[attribute: string]: any})[attribute]));
-                this._updateForeground();
+                this.updateForeground();
             });
             this.setConstant(constant, transform((element as {[attribute: string]: any})[attribute]));
         } else {
@@ -255,7 +271,7 @@ export class ResponsiveCanvas {
             if (target instanceof Element) {
                 target.addEventListener(event, () => {
                     this.setConstant(constant, transform((target as {[attribute: string]: any})[attribute]));
-                    this._updateForeground();
+                    this.updateForeground();
                 });
                 this.setConstant(constant, transform((target as {[attribute: string]: any})[attribute]));
             } else {
@@ -268,21 +284,16 @@ export class ResponsiveCanvas {
      * Display the canvas object in an HTML element.
      * @param element
      */
-    show(element: string | HTMLElement) {
-        if (element instanceof HTMLElement) {
-            this._displayData.containerElement = element;
+    show(element: string | Element) {
+        if (element instanceof Element) {
+            this._displayData.parentElement = element;
         } else {
-            this._displayData.containerElement = document.querySelector(element);
+            this._displayData.parentElement = document.querySelector(element);
         }
-        if (this._displayData.containerElement !== null) {
-            this._displayData.containerElement.style.position = "relative";
-            this._displayData.containerElement.appendChild(this._displayData.backgroundCanvas);
-            this._displayData.containerElement.appendChild(this._displayData.foregroundCanvas);
-            this._displayData.width = this._displayData.containerElement.clientWidth;
-            this._displayData.height = this._displayData.containerElement.clientHeight;
-            this._displayData.resizeObserver.observe(this._displayData.containerElement);
+        if (this._displayData.parentElement !== null) {
+            this._displayData.parentElement.appendChild(this._displayData.canvasContainer);
             this.setOrigin(...this._displayData.originArgCache);
-            this.setBackgroundCSS(this.properties.backgroundCSS);
+            this.setBackgroundCSS(this.properties.backgroundCSS); // TODO: shouldn't have to call this again
         } else {
             throw `HTMLElement with querySelector "${element}" could not be found.`;
         }
