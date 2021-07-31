@@ -17,4 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 export * as core from "./core/index.js";
-export { Plot, getActivePlots } from "./plotting/index.js";
+export * as plotting from "./plotting/index.js";
+export * from "./Plot.js";
+export * from "./getActivePlots.js";

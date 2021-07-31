@@ -1,4 +1,5 @@
-import { ResponsivePlot2D } from "../core/index.js";
+import { ResponsivePlot2D, ResponsivePlot2DOptions, ResponsivePlot2DTraceOptions, ResponsivePlot2DTraceDataType } from "./plotting/index.js";
+
 export class Plot extends ResponsivePlot2D {
     /**
      * @param id - The ID of the plot object. Must be unique.
@@ -8,7 +9,7 @@ export class Plot extends ResponsivePlot2D {
      * @param data.object - The options for the data. See the {@link ResponsivePlot2D.plot `plot()`} method documentation for more details.
      * @param options - Options for the plot.
      */
-    constructor(id, data, options = {}) {
+    constructor(id: string, data: {id: string, data: ResponsivePlot2DTraceDataType, options?: ResponsivePlot2DTraceOptions}, options: ResponsivePlot2DOptions = {}) {
         super(id, options);
         if (data !== undefined) {
             this.plot(data.id, data.data, data.options);

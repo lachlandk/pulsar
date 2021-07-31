@@ -1,4 +1,4 @@
-import { ResponsiveCanvasOptions, ResponsiveCanvas } from "./ResponsiveCanvas.js";
+import { ResponsiveCanvasOptions, ResponsiveCanvas } from "../core/ResponsiveCanvas.js";
 export interface ResponsivePlot2DOptions extends ResponsiveCanvasOptions {
     majorTicks?: [boolean, boolean] | boolean;
     minorTicks?: [boolean, boolean] | boolean;

@@ -1,2 +1,1 @@
-export * from "./Plot.js";
-export * from "./getActivePlots.js";
+export * from "./ResponsivePlot2D";

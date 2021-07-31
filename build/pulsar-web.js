@@ -351,6 +351,13 @@ var Pulsar = (function (exports) {
         }
     }
 
+    var index$1 = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        ResponsiveCanvas: ResponsiveCanvas,
+        activeCanvases: activeCanvases,
+        propertyDefaults: propertyDefaults
+    });
+
     /**
      * This class is the base class for all Pulsar plot objects. It extends {@link ResponsiveCanvas `ResponsiveCanvas`}.
      * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
@@ -897,10 +904,7 @@ var Pulsar = (function (exports) {
 
     var index = /*#__PURE__*/Object.freeze({
         __proto__: null,
-        ResponsiveCanvas: ResponsiveCanvas,
-        ResponsivePlot2D: ResponsivePlot2D,
-        activeCanvases: activeCanvases,
-        propertyDefaults: propertyDefaults
+        ResponsivePlot2D: ResponsivePlot2D
     });
 
     class Plot extends ResponsivePlot2D {
@@ -934,8 +938,9 @@ var Pulsar = (function (exports) {
     }
 
     exports.Plot = Plot;
-    exports.core = index;
+    exports.core = index$1;
     exports.getActivePlots = getActivePlots;
+    exports.plotting = index;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

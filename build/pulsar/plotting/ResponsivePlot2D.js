@@ -1,48 +1,5 @@
-import { ResponsiveCanvasOptions, ResponsiveCanvas } from "./ResponsiveCanvas.js"
+import { ResponsiveCanvas } from "../core/ResponsiveCanvas.js";
 import { propertySetters, setupProperties } from "../helpers/index.js";
-
-export interface ResponsivePlot2DOptions extends ResponsiveCanvasOptions {
-    majorTicks?: [boolean, boolean] | boolean
-    minorTicks?: [boolean, boolean] | boolean
-    majorTickSize?: [number, number] | number
-    minorTickSize?: [number, number] | number
-    majorGridlines?: [boolean, boolean] | boolean
-    minorGridlines?: [boolean, boolean] | boolean
-    majorGridSize?: [number, number] | number
-    minorGridSize?: [number, number] | number
-    gridScale?: [number, number] | number
-}
-
-export interface ResponsivePlot2DTraceOptions {
-    traceColour?: string
-    traceStyle?: "solid" | "dotted" | "dashed" | "dashdot" | "none"
-    traceWidth?: number
-    markerColour?: string
-    markerStyle?: "circle" | "plus" | "cross" | "arrow" | "none"
-    markerSize?: number
-    visibility?: boolean
-    parameterRange?: [number, number]
-}
-
-interface ResponsivePlot2DTraceObject {
-    data: (t: number, xLims: [number, number], yLims: [number, number], step: number, paramLims: [number, number]) => Generator<[number, number]>
-    properties: {
-        traceColour: string
-        traceStyle: "solid" | "dotted" | "dashed" | "dashdot" | "none"
-        traceWidth: number
-        markerColour: string
-        markerStyle: "circle" | "plus" | "cross" | "arrow" | "none"
-        markerSize: number
-        visibility: boolean
-        parameterRange: [number, number]
-    }
-}
-
-export type ResponsivePlot2DTraceDataType = (x: number, t: number) => number |
-        [(p: number, t: number) => number, (p: number, t: number) => number] |
-        [number[], (x: number, t: number) => number] |
-        [(number | ((t: number) => number))[], (number | ((x: number, t: number) => number))[]]
-
 /**
  * This class is the base class for all Pulsar plot objects. It extends {@link ResponsiveCanvas `ResponsiveCanvas`}.
  * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
@@ -56,44 +13,41 @@ export type ResponsivePlot2DTraceDataType = (x: number, t: number) => number |
  * may cause unpredictable behaviour.
  */
 export class ResponsivePlot2D extends ResponsiveCanvas {
-    properties = { // TODO: introduction of defaults class would make this more DRY
-        origin: {x: 0, y: 0},
-        backgroundCSS: "",
-        majorTicks: {x: true, y: true},
-        minorTicks: {x: false, y: false},
-        majorTickSize: {x: 5, y: 5},
-        minorTickSize: {x: 1, y: 1},
-        majorGridlines: {x: true, y: true},
-        minorGridlines: {x: false, y: false},
-        majorGridSize: {x: 5, y: 5},
-        minorGridSize: {x: 1, y: 1},
-        gridScale: {x: 50, y: 50},
-        xLims: [-0, 0] as [number, number],
-        yLims: [-0, 0] as [number, number]
-    }
-    /**
-     * Contains the data trace objects for the plot instance.
-     * The objects can be accessed using the trace ID as the key.
-     */
-    plotData: {
-        [trace: string]: ResponsivePlot2DTraceObject
-    } = {}
-
     /**
      * @param id The unique ID of the plot object.
      * @param options Optional parameters.
      */
-    constructor(id: string, options: ResponsivePlot2DOptions = {}) {
+    constructor(id, options = {}) {
         super(id, options);
+        this.properties = {
+            origin: { x: 0, y: 0 },
+            backgroundCSS: "",
+            majorTicks: { x: true, y: true },
+            minorTicks: { x: false, y: false },
+            majorTickSize: { x: 5, y: 5 },
+            minorTickSize: { x: 1, y: 1 },
+            majorGridlines: { x: true, y: true },
+            minorGridlines: { x: false, y: false },
+            majorGridSize: { x: 5, y: 5 },
+            minorGridSize: { x: 1, y: 1 },
+            gridScale: { x: 50, y: 50 },
+            xLims: [-0, 0],
+            yLims: [-0, 0]
+        };
+        /**
+         * Contains the data trace objects for the plot instance.
+         * The objects can be accessed using the trace ID as the key.
+         */
+        this.plotData = {};
         setupProperties(this, "ResponsiveCanvas", options);
         setupProperties(this, "ResponsivePlot2D", options); // TODO: remove gridScale from possible options
         this._updateLimits();
         this.setBackground(context => {
-            const drawGridSet = (majorOrMinor: "major" | "minor", xy: "x" | "y", ticksOrGridlines: "Ticks" | "Gridlines", width: number, lineStart: number, lineEnd: number) => {
+            const drawGridSet = (majorOrMinor, xy, ticksOrGridlines, width, lineStart, lineEnd) => {
                 const offset = width % 2 === 0 ? 0 : 0.5;
-                const intervalSize = (this.properties as {[prop: string]: any})[`${majorOrMinor + (ticksOrGridlines === "Ticks" ? "TickSize" : "GridSize")}`][xy];
+                const intervalSize = this.properties[`${majorOrMinor + (ticksOrGridlines === "Ticks" ? "TickSize" : "GridSize")}`][xy];
                 context.lineWidth = width;
-                if ((this.properties as {[prop: string]: any})[`${majorOrMinor}${ticksOrGridlines}`][xy]) {
+                if (this.properties[`${majorOrMinor}${ticksOrGridlines}`][xy]) {
                     context.beginPath();
                     let currentValue = -Math.floor(this.properties.origin[xy] / (intervalSize * this.properties.gridScale[xy])) * intervalSize * this.properties.gridScale[xy];
                     if (xy === "x") {
@@ -102,7 +56,8 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                             context.lineTo(currentValue + offset, lineEnd);
                             currentValue += this.properties.gridScale.x * intervalSize;
                         }
-                    } else if (xy === "y") {
+                    }
+                    else if (xy === "y") {
                         while (currentValue < this._displayData.height - this.properties.origin.y) {
                             context.moveTo(lineStart, currentValue + offset);
                             context.lineTo(lineEnd, currentValue + offset);
@@ -131,12 +86,10 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             context.stroke();
         });
     }
-
-    protected _updateLimits() {
+    _updateLimits() {
         this.properties.xLims = [-this.properties.origin.x / this.properties.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.properties.gridScale.x];
         this.properties.yLims = [-this.properties.origin.y / this.properties.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.properties.gridScale.y];
     }
-
     /**
       * Updates the foreground function.
       */
@@ -181,12 +134,12 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                         const drawMarker = (() => {
                             switch (dataset.properties.markerStyle) {
                                 case "circle":
-                                    return (context: CanvasRenderingContext2D, x: number, y: number) => {
+                                    return (context, x, y) => {
                                         context.arc(x, y, 5 * markerSize, 0, 2 * Math.PI);
                                         context.fill();
                                     };
                                 case "plus":
-                                    return (context: CanvasRenderingContext2D, x: number, y: number) => {
+                                    return (context, x, y) => {
                                         context.moveTo(x, y + 5 * markerSize);
                                         context.lineTo(x, y - 5 * markerSize);
                                         context.moveTo(x + 5 * markerSize, y);
@@ -194,7 +147,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                                         context.stroke();
                                     };
                                 case "cross":
-                                    return (context: CanvasRenderingContext2D, x: number, y: number) => {
+                                    return (context, x, y) => {
                                         context.moveTo(x + 5 * markerSize, y + 5 * markerSize);
                                         context.lineTo(x - 5 * markerSize, y - 5 * markerSize);
                                         context.moveTo(x - 5 * markerSize, y + 5 * markerSize);
@@ -202,16 +155,16 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                                         context.stroke();
                                     };
                                 case "arrow":
-                                    return (context: CanvasRenderingContext2D, x: number, y: number, theta: number) => {
+                                    return (context, x, y, theta) => {
                                         if (!isNaN(theta)) {
                                             context.translate(x, y);
-                                            context.rotate(-theta - Math.PI/2);
+                                            context.rotate(-theta - Math.PI / 2);
                                             context.moveTo(0, -7 * markerSize);
                                             context.lineTo(-5 * markerSize, 7 * markerSize);
                                             context.lineTo(5 * markerSize, 7 * markerSize);
                                             context.lineTo(0, -7 * markerSize);
                                             context.fill();
-                                            context.rotate(theta + Math.PI/2);
+                                            context.rotate(theta + Math.PI / 2);
                                             context.translate(-x, -y);
                                         }
                                     };
@@ -221,7 +174,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                         let lastPoint = [NaN, NaN];
                         for (const currentPoint of dataGenerator) {
                             context.beginPath();
-                            const point: [number, number] = [currentPoint[0] * this.properties.gridScale.x, -currentPoint[1] * this.properties.gridScale.y];
+                            const point = [currentPoint[0] * this.properties.gridScale.x, -currentPoint[1] * this.properties.gridScale.y];
                             const angle = Math.atan2(point[1] - lastPoint[1], -point[0] + lastPoint[0]);
                             drawMarker(context, ...point, angle);
                             lastPoint = point;
@@ -231,7 +184,6 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             }
         });
     }
-
     /**
      * Adds a data trace to the plot. The trace must be given a unique ID, so that it can be added to the
      * {@link ResponsivePlot2D.plotData `plotData`} property of the plot object.
@@ -241,7 +193,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      * @param data Data to be plotted.
      * @param options Optional parameters.
      */
-    plot(id: string, data: ResponsivePlot2DTraceDataType, options: Partial<ResponsivePlot2DTraceOptions> = {}) {
+    plot(id, data, options = {}) {
         if (this.plotData[id] === undefined) {
             if (Array.isArray(data) && data.length === 2) {
                 if (Array.isArray(data[0])) {
@@ -259,13 +211,13 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                         this.plotData[id] = {
                             properties: {
                                 traceColour: "blue",
-                                traceStyle: "solid" as "solid" | "dotted" | "dashed" | "dashdot" | "none",
+                                traceStyle: "solid",
                                 traceWidth: 3,
                                 markerColour: "blue",
-                                markerStyle: "none" as "circle" | "plus" | "cross" | "arrow" | "none",
+                                markerStyle: "none",
                                 markerSize: 1,
                                 visibility: true,
-                                parameterRange: [0, 1] as [number, number]
+                                parameterRange: [0, 1]
                             },
                             data: function* (t) {
                                 // TODO: add support for NaN
@@ -276,7 +228,8 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                                 }
                             }
                         };
-                    } else if (typeof data[1] === "function") { // discrete map
+                    }
+                    else if (typeof data[1] === "function") { // discrete map
                         if (typeof data[1](0, 0) !== "number") {
                             throw "Error setting plot data: Plot function does not return numbers.";
                         }
@@ -288,13 +241,13 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                         this.plotData[id] = {
                             properties: {
                                 traceColour: "blue",
-                                traceStyle: "solid" as "solid" | "dotted" | "dashed" | "dashdot" | "none",
+                                traceStyle: "solid",
                                 traceWidth: 3,
                                 markerColour: "blue",
-                                markerStyle: "none" as "circle" | "plus" | "cross" | "arrow" | "none",
+                                markerStyle: "none",
                                 markerSize: 1,
                                 visibility: true,
-                                parameterRange: [0, 1] as [number, number]
+                                parameterRange: [0, 1]
                             },
                             data: function* (t) {
                                 // TODO: add support for NaN
@@ -304,7 +257,8 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                             }
                         };
                     }
-                } else if (typeof data[0] === "function" && typeof data[1] === "function") { // parametric function
+                }
+                else if (typeof data[0] === "function" && typeof data[1] === "function") { // parametric function
                     if (typeof data[0](0, 0) !== "number" || typeof data[1](0, 0) !== "number") {
                         throw "Error setting plot data: Plot function does not return numbers.";
                     }
@@ -312,17 +266,17 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                         // TODO: add support for NaN
                         properties: {
                             traceColour: "blue",
-                            traceStyle: "solid" as "solid" | "dotted" | "dashed" | "dashdot" | "none",
+                            traceStyle: "solid",
                             traceWidth: 3,
                             markerColour: "blue",
-                            markerStyle: "none" as "circle" | "plus" | "cross" | "arrow" | "none",
+                            markerStyle: "none",
                             markerSize: 1,
                             visibility: true,
-                            parameterRange: [0, 1] as [number, number]
+                            parameterRange: [0, 1]
                         },
                         data: function* (t, xLims, yLims, step, paramLims) {
-                            let x = (p: number) => data[0](p, t);
-                            let y = (p: number) => data[1](p, t);
+                            let x = (p) => data[0](p, t);
+                            let y = (p) => data[1](p, t);
                             let p = paramLims[0];
                             while (p <= paramLims[1]) {
                                 yield [x(p), y(p)];
@@ -332,33 +286,36 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                         }
                     };
                 }
-            } else if (typeof data === "function") { // continuous function
+            }
+            else if (typeof data === "function") { // continuous function
                 if (typeof data(0, 0) !== "number") {
                     throw "Error setting plot data: Plot function does not return numbers.";
                 }
                 this.plotData[id] = {
                     properties: {
                         traceColour: "blue",
-                        traceStyle: "solid" as "solid" | "dotted" | "dashed" | "dashdot" | "none",
+                        traceStyle: "solid",
                         traceWidth: 3,
                         markerColour: "blue",
-                        markerStyle: "none" as "circle" | "plus" | "cross" | "arrow" | "none",
+                        markerStyle: "none",
                         markerSize: 1,
                         visibility: true,
-                        parameterRange: [0, 1] as [number, number]
+                        parameterRange: [0, 1]
                     },
                     data: function* (t, xLims, yLims, step) {
                         // TODO: discontinuities
                         let x = xLims[0];
-                        let y = (x: number) => data(x, t) as number;
+                        let y = (x) => data(x, t);
                         while (x <= xLims[1]) {
                             while (true) { // while y is out of range or undefined
                                 if (x > xLims[1]) { // if x is out of range, break without yielding previous point2D
                                     break;
-                                } else if (y(x) <= yLims[1] && y(x) >= yLims[0] && !Number.isNaN(y(x))) { // if y is in range, yield the previous point2D and break
+                                }
+                                else if (y(x) <= yLims[1] && y(x) >= yLims[0] && !Number.isNaN(y(x))) { // if y is in range, yield the previous point2D and break
                                     yield [x - step, y(x - step)];
                                     break;
-                                } else { // else increment x
+                                }
+                                else { // else increment x
                                     x += step;
                                 }
                             }
@@ -366,226 +323,209 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                                 yield [x, y(x)];
                                 if (x > xLims[1] || y(x) > yLims[1] || y(x) < yLims[0] || Number.isNaN(y(x))) { // if x or y is out of range, yield current point2D and break
                                     break;
-                                } else { // else increment x
+                                }
+                                else { // else increment x
                                     x += step;
                                 }
                             }
                         }
                     }
                 };
-            } else {
+            }
+            else {
                 throw `Error setting plot data: Unrecognised data signature ${data}.`;
             }
-        } else {
+        }
+        else {
             throw `Error setting plot data: trace with ID ${id} already exists on current plot, call removeData() to remove.`;
         }
         setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
         this.updatePlottingData();
     }
-
     /**
      * Removes a trace from the plot.
      * @param trace ID of the trace to be removed.
      */
-    removeData(trace: string) {
+    removeData(trace) {
         delete this.plotData[trace];
         this.updatePlottingData();
     }
-
-    setOrigin(...point: ("centre" | number)[]) {
+    setOrigin(...point) {
         super.setOrigin(...point);
         if (this.properties.xLims !== undefined && this.properties.yLims !== undefined) {
             this._updateLimits();
         }
     }
-
     /**
      * Toggles the major ticks. Two values may be passed for `x` then `y`, or just a single value for both axes.
      * @param choices Either one or two booleans.
      */
-    setMajorTicks(...choices: [boolean] | [boolean, boolean]) {
-        propertySetters.setAxesProperty(this,"majorTicks", "boolean", ...choices);
+    setMajorTicks(...choices) {
+        propertySetters.setAxesProperty(this, "majorTicks", "boolean", ...choices);
         this.updateBackground();
     }
-
     /**
      * Toggles the minor ticks. Two values may be passed for `x` then `y`, or just a single value for both axes.
      * @param choices Either one or two booleans.
      */
-    setMinorTicks(...choices: [boolean] | [boolean, boolean]) {
-        propertySetters.setAxesProperty(this,"minorTicks", "boolean", ...choices);
+    setMinorTicks(...choices) {
+        propertySetters.setAxesProperty(this, "minorTicks", "boolean", ...choices);
         this.updateBackground();
     }
-
     /**
      * Sets the spacing of the major ticks (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
      * @param sizes Either one or two numbers.
      */
-    setMajorTickSize(...sizes: [number] | [number, number]) {
-        propertySetters.setAxesProperty(this,"majorTickSize", "number", ...sizes);
+    setMajorTickSize(...sizes) {
+        propertySetters.setAxesProperty(this, "majorTickSize", "number", ...sizes);
         this.updateBackground();
     }
-
     /**
      * Sets the spacing of the minor ticks (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
      * @param sizes Either one or two numbers.
      */
-    setMinorTickSize(...sizes: [number] | [number, number]) {
-        propertySetters.setAxesProperty(this,"minorTickSize", "number", ...sizes);
+    setMinorTickSize(...sizes) {
+        propertySetters.setAxesProperty(this, "minorTickSize", "number", ...sizes);
         this.updateBackground();
     }
-
     /**
      * Toggles the major gridlines. Two values may be passed for `x` then `y`, or just a single value for both axes.
      * @param choices Either one or two booleans.
      */
-    setMajorGridlines(...choices: [boolean] | [boolean, boolean]) {
-        propertySetters.setAxesProperty(this,"majorGridlines", "boolean", ...choices);
+    setMajorGridlines(...choices) {
+        propertySetters.setAxesProperty(this, "majorGridlines", "boolean", ...choices);
         this.updateBackground();
     }
-
     /**
      * Toggles the minor gridlines. Two values may be passed for `x` then `y`, or just a single value for both axes.
      * @param choices Either one or two booleans.
      */
-    setMinorGridlines(...choices: [boolean] | [boolean, boolean]) {
-        propertySetters.setAxesProperty(this,"minorGridlines", "boolean", ...choices);
+    setMinorGridlines(...choices) {
+        propertySetters.setAxesProperty(this, "minorGridlines", "boolean", ...choices);
         this.updateBackground();
     }
-
     /**
      * Sets the spacing of the major gridlines (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
      * @param sizes Either one or two numbers.
      */
-    setMajorGridSize(...sizes: [number] | [number, number]) {
-        propertySetters.setAxesProperty(this,"majorGridSize", "number", ...sizes);
+    setMajorGridSize(...sizes) {
+        propertySetters.setAxesProperty(this, "majorGridSize", "number", ...sizes);
         this.updateBackground();
     }
-
     /**
      * Sets the spacing of the minor gridlines (in grid units). Two values may be passed for `x` then `y`, or just a single value for both axes.
      * @param sizes Either one or two numbers.
      */
-    setMinorGridSize(...sizes: [number] | [number, number]) {
-        propertySetters.setAxesProperty(this,"minorGridSize", "number", ...sizes);
+    setMinorGridSize(...sizes) {
+        propertySetters.setAxesProperty(this, "minorGridSize", "number", ...sizes);
         this.updateBackground();
     }
-
     /**
      * Sets the size of 1 grid unit in pixels. Two values may be passed for `x` then `y`, or just a single value for both axes.
      * @param sizes Either one or two numbers.
      */
-    setGridScale(...sizes: [number] | [number, number]) {
-        propertySetters.setAxesProperty(this,"gridScale", "number", ...sizes);
+    setGridScale(...sizes) {
+        propertySetters.setAxesProperty(this, "gridScale", "number", ...sizes);
         this._updateLimits();
         this.updateBackground();
     }
-
     /**
      * Changes the range of `x` values to be shown on the plot by moving the origin and altering the grid scale.
      * @param min The minimum value of `x`.
      * @param max The maximum value of `x`.
      */
-    setXLims(min: number, max: number) {
+    setXLims(min, max) {
         if (max >= min) {
             propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
             this.properties.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
             super.setOrigin(-this.properties.xLims[0] * this.properties.gridScale.x, this.properties.origin.y);
             this.updateBackground();
             this.updatePlottingData();
-        } else {
+        }
+        else {
             throw `Error setting xLims: Lower limit cannot be higher than or equal to higher limit.`;
         }
-
     }
-
     /**
      * Changes the range of `y` values to be shown on the plot by moving the origin and altering the grid scale.
      * @param min The minimum value of `y`.
      * @param max The maximum value of `y`.
      */
-    setYLims(min: number, max: number) {
+    setYLims(min, max) {
         if (max >= min) {
             propertySetters.setArrayProperty(this, "yLims", "number", [min, max], 2);
             this.properties.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
             super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.properties.gridScale.y);
             this.updateBackground();
             this.updatePlottingData();
-        } else {
+        }
+        else {
             throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
         }
     }
-
     /**
      * Sets the colour of the specified trace. The specified colour must be one of the browser-recognised colours.
      * @param trace The ID of the trace to be updated.
      * @param colour The name of the colour.
      */
-    setTraceColour(trace: string, colour: string) {
+    setTraceColour(trace, colour) {
         propertySetters.setPlotDataProperty(this, trace, "traceColour", colour);
         this.updatePlottingData();
     }
-
     /**
      * Sets the style of the specified trace. Possible styles are: `solid`, `dotted`, `dashed`, `dashdot`, or `none`.
      * @param trace The ID of the trace to be updated.
      * @param style The name of the style.
      */
-    setTraceStyle(trace: string, style: string) {
+    setTraceStyle(trace, style) {
         propertySetters.setPlotDataProperty(this, trace, "traceStyle", style);
         this.updatePlottingData();
     }
-
     /**
      * Sets the width of the specified trace (in pixels).
      * @param trace The ID of the trace to be updated.
      * @param width The width of the trace in pixels.
      */
-    setTraceWidth(trace: string, width: number) {
+    setTraceWidth(trace, width) {
         propertySetters.setPlotDataProperty(this, trace, "traceWidth", width);
         this.updatePlottingData();
     }
-
     /**
      * Sets the colour of the markers on the specified trace. The specified colour must be one of the browser-recognised colours.
      * @param trace The ID of the trace to be updated.
      * @param colour The name of the colour.
      */
-    setMarkerColour(trace: string, colour: string) {
+    setMarkerColour(trace, colour) {
         propertySetters.setPlotDataProperty(this, trace, "markerColour", colour);
         this.updatePlottingData();
     }
-
     /**
      * Sets the style of the markers the specified trace. Possible styles are: `circle`, `plus`, `cross`, `arrow`, or `none`.
      * @param trace The ID of the trace to be updated.
      * @param style The name of the style.
      */
-    setMarkerStyle(trace: string, style: string) {
+    setMarkerStyle(trace, style) {
         propertySetters.setPlotDataProperty(this, trace, "markerStyle", style);
         this.updatePlottingData();
     }
-
     /**
      * Sets the width of the markers on the specified trace (in pixels).
      * @param trace The ID of the trace to be updated.
      * @param size The size of the markers in pixels.
      */
-    setMarkerSize(trace: string, size: number) {
+    setMarkerSize(trace, size) {
         propertySetters.setPlotDataProperty(this, trace, "markerSize", size);
         this.updatePlottingData();
     }
-
     /**
      * Toggles the visibility of the specified trace.
      * @param trace The ID of the trace to be updated.
      * @param value Set to `true` for the trace to be visible, `false` for it to be hidden.
      */
-    setVisibility(trace: string, value: boolean) {
+    setVisibility(trace, value) {
         propertySetters.setPlotDataProperty(this, trace, "visibility", value);
         this.updatePlottingData();
     }
-
     /**
      * Sets the range of values over which a parameter should be plotted.
      * This property has no effect at all if the function plotted does not have a free parameter.
@@ -593,11 +533,12 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      * @param min The minimum value of the free parameter.
      * @param max The maximum value of the free parameter.
      */
-    setParameterRange(trace: string, min: number, max: number) {
+    setParameterRange(trace, min, max) {
         if (max >= min) {
             propertySetters.setPlotDataProperty(this, trace, "parameterRange", [min, max]);
             this.updatePlottingData();
-        } else {
+        }
+        else {
             throw `Error setting parameterRange: Lower limit cannot be higher than or equal to higher limit.`;
         }
     }
