@@ -1,3 +1,4 @@
+// TODO: this module needs tests
 import { propertySetters, setupProperties, discreteFunctionGenerator, discreteMapGenerator, parametricFunctionGenerator, continuousFunctionGenerator } from "../helpers/index.js";
 /**
  *  This plot represents a trace on a {@link ResponsivePlot2D `ResponsivePlot2D`}.

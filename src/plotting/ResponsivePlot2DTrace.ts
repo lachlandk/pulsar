@@ -1,3 +1,5 @@
+// TODO: this module needs tests
+
 import { propertySetters, setupProperties, discreteFunctionGenerator, discreteMapGenerator, parametricFunctionGenerator, continuousFunctionGenerator } from "../helpers/index.js";
 import { ResponsivePlot2D } from "./ResponsivePlot2D.js";
 

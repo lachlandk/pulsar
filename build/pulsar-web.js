@@ -15,7 +15,8 @@ var Pulsar = (function (exports) {
             minorGridlines: { value: [false, false], type: "boolean", setter: "setAxesProperty", multi: true },
             majorGridSize: { value: [5, 5], type: "number", setter: "setAxesProperty", multi: true },
             minorGridSize: { value: [1, 1], type: "number", setter: "setAxesProperty", multi: true },
-            gridScale: { value: [50, 50], type: "number", setter: "setAxesProperty", multi: true }
+            xLims: { value: [-0, 0], type: "number", setter: "setArrayProperty", extra: 2 },
+            yLims: { value: [-0, 0], type: "number", setter: "setArrayProperty", extra: 2 }
         },
         ResponsivePlot2DTrace: {
             traceColour: { value: "blue", type: "string", setter: "setSingleProperty" },
@@ -408,6 +409,7 @@ var Pulsar = (function (exports) {
         propertyDefaults: propertyDefaults
     });
 
+    // TODO: this module needs tests
     /**
      *  This plot represents a trace on a {@link ResponsivePlot2D `ResponsivePlot2D`}.
      */
@@ -563,7 +565,7 @@ var Pulsar = (function (exports) {
      * The ticks and gridlines can be toggled and the intervals between them can be changed. The size of a unit on the grid
      * is determined by the grid scale which, by default, is 50 pixels for both `x` and `y`, meaning that a step of one unit in both directions on
      * the grid would be 50 pixels on the screen. This can be changed with the {@link ResponsivePlot2D.setGridScale `setGridScale()`} method.
-     * Data is added to the plot using the {@link ResponsivePlot2D.plot `plot()`} method.
+     * Data is added to the plot using the {@link ResponsivePlot2D.addData `addData()`} method.
      * Read-only properties and methods beginning with an underscore should not be changed/called, otherwise they
      * may cause unpredictable behaviour.
      */
@@ -585,18 +587,23 @@ var Pulsar = (function (exports) {
                 minorGridlines: { x: false, y: false },
                 majorGridSize: { x: 5, y: 5 },
                 minorGridSize: { x: 1, y: 1 },
-                gridScale: { x: 50, y: 50 },
                 xLims: [-0, 0],
                 yLims: [-0, 0]
             };
+            this.gridScale = { x: 50, y: 50 };
             /**
              * Contains the data trace objects for the plot instance.
              * The objects can be accessed using the trace ID as the key.
              */
             this.data = {};
             setupProperties(this, "ResponsiveCanvas", options);
-            setupProperties(this, "ResponsivePlot2D", options); // TODO: remove gridScale from possible options
-            this._updateLimits();
+            setupProperties(this, "ResponsivePlot2D", options);
+            if (options.xLims === undefined) {
+                this.properties.xLims = [-this.properties.origin.x / this.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.gridScale.x];
+            }
+            if (options.yLims === undefined) {
+                this.properties.yLims = [-this.properties.origin.y / this.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.gridScale.y];
+            }
             this.setBackground(context => {
                 const drawGridSet = (majorOrMinor, xy, ticksOrGridlines, width, lineStart, lineEnd) => {
                     const offset = width % 2 === 0 ? 0 : 0.5;
@@ -604,19 +611,19 @@ var Pulsar = (function (exports) {
                     context.lineWidth = width;
                     if (this.properties[`${majorOrMinor}${ticksOrGridlines}`][xy]) {
                         context.beginPath();
-                        let currentValue = -Math.floor(this.properties.origin[xy] / (intervalSize * this.properties.gridScale[xy])) * intervalSize * this.properties.gridScale[xy];
+                        let currentValue = -Math.floor(this.properties.origin[xy] / (intervalSize * this.gridScale[xy])) * intervalSize * this.gridScale[xy];
                         if (xy === "x") {
                             while (currentValue < this._displayData.width - this.properties.origin.x) {
                                 context.moveTo(currentValue + offset, lineStart);
                                 context.lineTo(currentValue + offset, lineEnd);
-                                currentValue += this.properties.gridScale.x * intervalSize;
+                                currentValue += this.gridScale.x * intervalSize;
                             }
                         }
                         else if (xy === "y") {
                             while (currentValue < this._displayData.height - this.properties.origin.y) {
                                 context.moveTo(lineStart, currentValue + offset);
                                 context.lineTo(lineEnd, currentValue + offset);
-                                currentValue += this.properties.gridScale.y * intervalSize;
+                                currentValue += this.gridScale.y * intervalSize;
                             }
                         }
                         context.stroke();
@@ -640,10 +647,6 @@ var Pulsar = (function (exports) {
                 context.lineTo(this._displayData.width - this.properties.origin.x, 0.5);
                 context.stroke();
             });
-        }
-        _updateLimits() {
-            this.properties.xLims = [-this.properties.origin.x / this.properties.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.properties.gridScale.x];
-            this.properties.yLims = [-this.properties.origin.y / this.properties.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.properties.gridScale.y];
         }
         /**
           * Updates the foreground function.
@@ -677,7 +680,7 @@ var Pulsar = (function (exports) {
                                 if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
                                     currentPoint[1] = currentPoint[1] > 0 ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
                                 }
-                                context.lineTo(currentPoint[0] * this.properties.gridScale.x, -currentPoint[1] * this.properties.gridScale.y);
+                                context.lineTo(currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
                             }
                             context.stroke();
                         }
@@ -729,7 +732,7 @@ var Pulsar = (function (exports) {
                             let lastPoint = [NaN, NaN];
                             for (const currentPoint of dataGenerator) {
                                 context.beginPath();
-                                const point = [currentPoint[0] * this.properties.gridScale.x, -currentPoint[1] * this.properties.gridScale.y];
+                                const point = [currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y];
                                 const angle = Math.atan2(point[1] - lastPoint[1], -point[0] + lastPoint[0]);
                                 drawMarker(context, ...point, angle);
                                 lastPoint = point;
@@ -767,8 +770,9 @@ var Pulsar = (function (exports) {
         }
         setOrigin(...point) {
             super.setOrigin(...point);
-            if (this.properties.xLims !== undefined && this.properties.yLims !== undefined) {
-                this._updateLimits();
+            if (this.gridScale !== undefined) {
+                this.properties.xLims = [-this.properties.origin.x / this.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.gridScale.x];
+                this.properties.yLims = [-this.properties.origin.y / this.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.gridScale.y];
                 this.updatePlottingData();
             }
         }
@@ -837,15 +841,6 @@ var Pulsar = (function (exports) {
             this.updateBackground();
         }
         /**
-         * Sets the size of 1 grid unit in pixels. Two values may be passed for `x` then `y`, or just a single value for both axes.
-         * @param sizes Either one or two numbers.
-         */
-        setGridScale(...sizes) {
-            propertySetters.setAxesProperty(this, "gridScale", "number", ...sizes);
-            this._updateLimits();
-            this.updateBackground();
-        }
-        /**
          * Changes the range of `x` values to be shown on the plot by moving the origin and altering the grid scale.
          * @param min The minimum value of `x`.
          * @param max The maximum value of `x`.
@@ -853,8 +848,9 @@ var Pulsar = (function (exports) {
         setXLims(min, max) {
             if (max >= min) {
                 propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
-                this.properties.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
-                super.setOrigin(-this.properties.xLims[0] * this.properties.gridScale.x, this.properties.origin.y);
+                console.log("gwdwa");
+                this.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
+                super.setOrigin(-this.properties.xLims[0] * this.gridScale.x, this.properties.origin.y);
                 this.updateBackground();
                 this.updatePlottingData();
             }
@@ -870,8 +866,8 @@ var Pulsar = (function (exports) {
         setYLims(min, max) {
             if (max >= min) {
                 propertySetters.setArrayProperty(this, "yLims", "number", [min, max], 2);
-                this.properties.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
-                super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.properties.gridScale.y);
+                this.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
+                super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.gridScale.y);
                 this.updateBackground();
                 this.updatePlottingData();
             }

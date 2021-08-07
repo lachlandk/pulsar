@@ -12,7 +12,8 @@ export const propertyDefaults = {
         minorGridlines: { value: [false, false], type: "boolean", setter: "setAxesProperty", multi: true },
         majorGridSize: { value: [5, 5], type: "number", setter: "setAxesProperty", multi: true },
         minorGridSize: { value: [1, 1], type: "number", setter: "setAxesProperty", multi: true },
-        gridScale: { value: [50, 50], type: "number", setter: "setAxesProperty", multi: true }
+        xLims: { value: [-0, 0], type: "number", setter: "setArrayProperty", extra: 2 },
+        yLims: { value: [-0, 0], type: "number", setter: "setArrayProperty", extra: 2 }
     },
     ResponsivePlot2DTrace: {
         traceColour: { value: "blue", type: "string", setter: "setSingleProperty" },
