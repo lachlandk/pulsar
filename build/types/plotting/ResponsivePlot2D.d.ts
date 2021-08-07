@@ -1,4 +1,5 @@
 import { ResponsiveCanvasOptions, ResponsiveCanvas } from "../core/ResponsiveCanvas.js";
+import { ResponsivePlot2DTrace, ResponsivePlot2DTraceDataType, ResponsivePlot2DTraceOptions } from "./ResponsivePlot2DTrace.js";
 export interface ResponsivePlot2DOptions extends ResponsiveCanvasOptions {
     majorTicks?: [boolean, boolean] | boolean;
     minorTicks?: [boolean, boolean] | boolean;
@@ -10,39 +11,6 @@ export interface ResponsivePlot2DOptions extends ResponsiveCanvasOptions {
     minorGridSize?: [number, number] | number;
     gridScale?: [number, number] | number;
 }
-export interface ResponsivePlot2DTraceOptions {
-    traceColour?: string;
-    traceStyle?: "solid" | "dotted" | "dashed" | "dashdot" | "none";
-    traceWidth?: number;
-    markerColour?: string;
-    markerStyle?: "circle" | "plus" | "cross" | "arrow" | "none";
-    markerSize?: number;
-    visibility?: boolean;
-    parameterRange?: [number, number];
-}
-interface ResponsivePlot2DTraceObject {
-    data: (t: number, xLims: [number, number], yLims: [number, number], step: number, paramLims: [number, number]) => Generator<[number, number]>;
-    properties: {
-        traceColour: string;
-        traceStyle: "solid" | "dotted" | "dashed" | "dashdot" | "none";
-        traceWidth: number;
-        markerColour: string;
-        markerStyle: "circle" | "plus" | "cross" | "arrow" | "none";
-        markerSize: number;
-        visibility: boolean;
-        parameterRange: [number, number];
-    };
-}
-export declare type ResponsivePlot2DTraceDataType = (x: number, t: number) => number | [
-    (p: number, t: number) => number,
-    (p: number, t: number) => number
-] | [
-    number[],
-    (x: number, t: number) => number
-] | [
-    (number | ((t: number) => number))[],
-    (number | ((x: number, t: number) => number))[]
-];
 /**
  * This class is the base class for all Pulsar plot objects. It extends {@link ResponsiveCanvas `ResponsiveCanvas`}.
  * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
@@ -105,8 +73,8 @@ export declare class ResponsivePlot2D extends ResponsiveCanvas {
      * Contains the data trace objects for the plot instance.
      * The objects can be accessed using the trace ID as the key.
      */
-    plotData: {
-        [trace: string]: ResponsivePlot2DTraceObject;
+    data: {
+        [trace: string]: ResponsivePlot2DTrace;
     };
     /**
      * @param id The unique ID of the plot object.
@@ -120,14 +88,14 @@ export declare class ResponsivePlot2D extends ResponsiveCanvas {
     updatePlottingData(): void;
     /**
      * Adds a data trace to the plot. The trace must be given a unique ID, so that it can be added to the
-     * {@link ResponsivePlot2D.plotData `plotData`} property of the plot object.
+     * {@link ResponsivePlot2D.data `data`} property of the plot object.
      * There are several ways that data can be added, which can be divided into **continuous** and **discrete** data.
      * These different methods are described by what to pass for the `data` argument.
      * @param id Unique ID for the trace.
      * @param data Data to be plotted.
      * @param options Optional parameters.
      */
-    plot(id: string, data: ResponsivePlot2DTraceDataType, options?: Partial<ResponsivePlot2DTraceOptions>): void;
+    addData(id: string, data: ResponsivePlot2DTraceDataType, options?: ResponsivePlot2DTraceOptions): void;
     /**
      * Removes a trace from the plot.
      * @param trace ID of the trace to be removed.
@@ -191,55 +159,4 @@ export declare class ResponsivePlot2D extends ResponsiveCanvas {
      * @param max The maximum value of `y`.
      */
     setYLims(min: number, max: number): void;
-    /**
-     * Sets the colour of the specified trace. The specified colour must be one of the browser-recognised colours.
-     * @param trace The ID of the trace to be updated.
-     * @param colour The name of the colour.
-     */
-    setTraceColour(trace: string, colour: string): void;
-    /**
-     * Sets the style of the specified trace. Possible styles are: `solid`, `dotted`, `dashed`, `dashdot`, or `none`.
-     * @param trace The ID of the trace to be updated.
-     * @param style The name of the style.
-     */
-    setTraceStyle(trace: string, style: string): void;
-    /**
-     * Sets the width of the specified trace (in pixels).
-     * @param trace The ID of the trace to be updated.
-     * @param width The width of the trace in pixels.
-     */
-    setTraceWidth(trace: string, width: number): void;
-    /**
-     * Sets the colour of the markers on the specified trace. The specified colour must be one of the browser-recognised colours.
-     * @param trace The ID of the trace to be updated.
-     * @param colour The name of the colour.
-     */
-    setMarkerColour(trace: string, colour: string): void;
-    /**
-     * Sets the style of the markers the specified trace. Possible styles are: `circle`, `plus`, `cross`, `arrow`, or `none`.
-     * @param trace The ID of the trace to be updated.
-     * @param style The name of the style.
-     */
-    setMarkerStyle(trace: string, style: string): void;
-    /**
-     * Sets the width of the markers on the specified trace (in pixels).
-     * @param trace The ID of the trace to be updated.
-     * @param size The size of the markers in pixels.
-     */
-    setMarkerSize(trace: string, size: number): void;
-    /**
-     * Toggles the visibility of the specified trace.
-     * @param trace The ID of the trace to be updated.
-     * @param value Set to `true` for the trace to be visible, `false` for it to be hidden.
-     */
-    setVisibility(trace: string, value: boolean): void;
-    /**
-     * Sets the range of values over which a parameter should be plotted.
-     * This property has no effect at all if the function plotted does not have a free parameter.
-     * @param trace The ID of the trace to be updated.
-     * @param min The minimum value of the free parameter.
-     * @param max The maximum value of the free parameter.
-     */
-    setParameterRange(trace: string, min: number, max: number): void;
 }
-export {};

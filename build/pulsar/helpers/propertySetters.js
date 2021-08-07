@@ -75,19 +75,5 @@ export const propertySetters = {
         else {
             throw `Error setting choice property ${property}: Unexpected type "${value}".`;
         }
-    },
-    setPlotDataProperty(instance, trace, property, value) {
-        const propertySet = propertyDefaults["ResponsivePlot2DTrace"];
-        const propertyDefault = propertySet[property];
-        if (typeof instance.plotData[trace] !== "undefined") {
-            const args = [instance.plotData[trace], property, propertyDefault.type, value];
-            if (propertyDefault.extra) {
-                args.push(propertyDefault.extra);
-            }
-            propertySetters[propertyDefault.setter](...args);
-        }
-        else {
-            throw `Error setting plotData property ${property}: Invalid trace ID "${trace}"`;
-        }
     }
 };

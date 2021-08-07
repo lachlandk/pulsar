@@ -105,22 +105,69 @@ var Pulsar = (function (exports) {
             else {
                 throw `Error setting choice property ${property}: Unexpected type "${value}".`;
             }
-        },
-        setPlotDataProperty(instance, trace, property, value) {
-            const propertySet = propertyDefaults["ResponsivePlot2DTrace"];
-            const propertyDefault = propertySet[property];
-            if (typeof instance.plotData[trace] !== "undefined") {
-                const args = [instance.plotData[trace], property, propertyDefault.type, value];
-                if (propertyDefault.extra) {
-                    args.push(propertyDefault.extra);
-                }
-                propertySetters[propertyDefault.setter](...args);
-            }
-            else {
-                throw `Error setting plotData property ${property}: Invalid trace ID "${trace}"`;
-            }
         }
     };
+
+    function continuousFunctionGenerator(func) {
+        return function* (t, xLims, yLims, step) {
+            // TODO: discontinuities
+            let x = xLims[0];
+            let y = (x) => func(x, t);
+            while (x <= xLims[1]) {
+                while (true) { // while y is out of range or undefined
+                    if (x > xLims[1]) { // if x is out of range, break without yielding previous point2D
+                        break;
+                    }
+                    else if (y(x) <= yLims[1] && y(x) >= yLims[0] && !Number.isNaN(y(x))) { // if y is in range, yield the previous point2D and break
+                        yield [x - step, y(x - step)];
+                        break;
+                    }
+                    else { // else increment x
+                        x += step;
+                    }
+                }
+                while (true) { // while y in in range and defined
+                    yield [x, y(x)];
+                    if (x > xLims[1] || y(x) > yLims[1] || y(x) < yLims[0] || Number.isNaN(y(x))) { // if x or y is out of range, yield current point2D and break
+                        break;
+                    }
+                    else { // else increment x
+                        x += step;
+                    }
+                }
+            }
+        };
+    }
+    function parametricFunctionGenerator(data) {
+        return function* (t, xLims, yLims, step, paramLims) {
+            let x = (p) => data[0](p, t);
+            let y = (p) => data[1](p, t);
+            let p = paramLims[0];
+            while (p <= paramLims[1]) {
+                yield [x(p), y(p)];
+                p += step;
+            }
+            yield [x(p), y(p)];
+        };
+    }
+    function discreteMapGenerator(data) {
+        return function* (t) {
+            // TODO: add support for NaN
+            for (const x of data[0]) {
+                yield [x, data[1](x, t)];
+            }
+        };
+    }
+    function discreteFunctionGenerator(data) {
+        return function* (t) {
+            // TODO: add support for NaN
+            for (let i = 0; i < data[0].length; i++) {
+                const xValue = typeof data[0][i] === "function" ? data[0][i](t) : data[0][i];
+                const yValue = typeof data[1][i] === "function" ? data[1][i](xValue, t) : data[1][i];
+                yield [xValue, yValue];
+            }
+        };
+    }
 
     /**
      * Object containing the active canvas objects with their ID as the keys. It is used
@@ -163,12 +210,6 @@ var Pulsar = (function (exports) {
                 timeEvolutionActive: false
             };
             // TODO: add child objects to options to allow more options
-            this.setID(id);
-            if (options.origin === "centre") {
-                this.setOrigin("centre");
-                delete options.origin;
-            }
-            setupProperties(this, "ResponsiveCanvas", options);
             const canvasContainer = document.createElement("div");
             canvasContainer.style.display = "grid";
             canvasContainer.style.width = "100%";
@@ -185,12 +226,13 @@ var Pulsar = (function (exports) {
                     this._displayData.height = entry.target.clientHeight;
                     this._displayData.backgroundCanvas.width = this._displayData.width;
                     this._displayData.backgroundCanvas.height = this._displayData.height;
-                    this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
-                    this.updateBackground();
                     this._displayData.foregroundCanvas.width = this._displayData.width;
                     this._displayData.foregroundCanvas.height = this._displayData.height;
-                    this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
-                    this.updateForeground();
+                    this.setOrigin(...this._displayData.originArgCache);
+                    // this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
+                    // this.updateBackground();
+                    // this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
+                    // this.updateForeground();
                 }
             });
             resizeObserver.observe(canvasContainer);
@@ -208,6 +250,12 @@ var Pulsar = (function (exports) {
                 backgroundFunction: () => { },
                 foregroundFunction: () => { }
             };
+            this.setID(id);
+            if (options.origin === "centre") {
+                this.setOrigin("centre");
+                delete options.origin;
+            }
+            setupProperties(this, "ResponsiveCanvas", options);
         }
         /**
           * Updates the background.
@@ -342,6 +390,8 @@ var Pulsar = (function (exports) {
             }
             if (this._displayData.parentElement !== null) {
                 this._displayData.parentElement.appendChild(this._displayData.canvasContainer);
+                this._displayData.width = this._displayData.canvasContainer.clientWidth;
+                this._displayData.height = this._displayData.canvasContainer.clientHeight;
                 this.setOrigin(...this._displayData.originArgCache);
                 this.setBackgroundCSS(this.properties.backgroundCSS); // TODO: shouldn't have to call this again
             }
@@ -357,6 +407,153 @@ var Pulsar = (function (exports) {
         activeCanvases: activeCanvases,
         propertyDefaults: propertyDefaults
     });
+
+    /**
+     *  This plot represents a trace on a {@link ResponsivePlot2D `ResponsivePlot2D`}.
+     */
+    class ResponsivePlot2DTrace {
+        /**
+         * @param plot The parent plot.
+         * @param data Data to be plotted.
+         * @param options Optional parameters.
+         */
+        constructor(plot, data, options) {
+            this.properties = {
+                traceColour: "blue",
+                traceStyle: "solid",
+                traceWidth: 3,
+                markerColour: "blue",
+                markerStyle: "none",
+                markerSize: 1,
+                visibility: true,
+                parameterRange: [0, 1]
+            };
+            this.plot = plot; // TODO: remove necessity for this with events?
+            setupProperties(this, "ResponsivePlot2DTrace", options);
+            if (Array.isArray(data) && data.length === 2) {
+                if (Array.isArray(data[0])) {
+                    if (Array.isArray(data[1])) { // discrete points
+                        if (data[0].length !== data[1].length) {
+                            throw "Error setting plot data: Lengths of data arrays are not equal.";
+                        }
+                        for (let i = 0; i < data[0].length; i++) {
+                            const xValue = typeof data[0][i] === "function" ? data[0][i](0) : data[0][i];
+                            const yValue = typeof data[1][i] === "function" ? data[1][i](0, 0) : data[1][i];
+                            if (typeof xValue !== "number" || typeof yValue !== "number") {
+                                throw "Error setting plot data: Data arrays contain types which are not numbers.";
+                            }
+                        }
+                        this.data = discreteFunctionGenerator(data);
+                    }
+                    else if (typeof data[1] === "function") { // discrete map
+                        if (typeof data[1](0, 0) !== "number") {
+                            throw "Error setting plot data: Plot function does not return numbers.";
+                        }
+                        for (let i = 0; i < data[0].length; i++) {
+                            if (typeof data[0][i] !== "number") {
+                                throw "Error setting plot data: Data array contains types which are not numbers.";
+                            }
+                        }
+                        this.data = discreteMapGenerator(data);
+                    }
+                }
+                else if (typeof data[0] === "function" && typeof data[1] === "function") { // parametric function
+                    if (typeof data[0](0, 0) !== "number" || typeof data[1](0, 0) !== "number") {
+                        throw "Error setting plot data: Plot function does not return numbers.";
+                    }
+                    this.data = parametricFunctionGenerator(data);
+                }
+            }
+            else if (typeof data === "function") { // continuous function
+                if (typeof data(0, 0) !== "number") {
+                    throw "Error setting plot data: Plot function does not return numbers.";
+                }
+                this.data = continuousFunctionGenerator(data);
+            }
+            else {
+                throw `Error setting plot data: Unrecognised data signature ${data}.`;
+            }
+        }
+        /**
+         * Sets the colour of the specified trace. The specified colour must be one of the browser-recognised colours.
+         * @param trace The ID of the trace to be updated.
+         * @param colour The name of the colour.
+         */
+        setTraceColour(colour) {
+            propertySetters.setSingleProperty(this, "traceColour", "string", colour);
+            this.plot.updatePlottingData();
+        }
+        /**
+         * Sets the style of the specified trace. Possible styles are: `solid`, `dotted`, `dashed`, `dashdot`, or `none`.
+         * @param trace The ID of the trace to be updated.
+         * @param style The name of the style.
+         */
+        setTraceStyle(style) {
+            propertySetters.setChoiceProperty(this, "traceStyle", "string", style, ["solid", "dotted", "dashed", "dashdot", "none"]);
+            this.plot.updatePlottingData();
+        }
+        /**
+         * Sets the width of the specified trace (in pixels).
+         * @param trace The ID of the trace to be updated.
+         * @param width The width of the trace in pixels.
+         */
+        setTraceWidth(width) {
+            propertySetters.setSingleProperty(this, "traceWidth", "number", width);
+            this.plot.updatePlottingData();
+        }
+        /**
+         * Sets the colour of the markers on the specified trace. The specified colour must be one of the browser-recognised colours.
+         * @param trace The ID of the trace to be updated.
+         * @param colour The name of the colour.
+         */
+        setMarkerColour(colour) {
+            propertySetters.setSingleProperty(this, "markerColour", "string", colour);
+            this.plot.updatePlottingData();
+        }
+        /**
+         * Sets the style of the markers the specified trace. Possible styles are: `circle`, `plus`, `cross`, `arrow`, or `none`.
+         * @param trace The ID of the trace to be updated.
+         * @param style The name of the style.
+         */
+        setMarkerStyle(style) {
+            propertySetters.setChoiceProperty(this, "markerStyle", "string", style, ["circle", "plus", "cross", "arrow", "none"]);
+            this.plot.updatePlottingData();
+        }
+        /**
+         * Sets the width of the markers on the specified trace (in pixels).
+         * @param trace The ID of the trace to be updated.
+         * @param size The size of the markers in pixels.
+         */
+        setMarkerSize(size) {
+            propertySetters.setSingleProperty(this, "markerSize", "number", size);
+            this.plot.updatePlottingData();
+        }
+        /**
+         * Toggles the visibility of the specified trace.
+         * @param trace The ID of the trace to be updated.
+         * @param value Set to `true` for the trace to be visible, `false` for it to be hidden.
+         */
+        setVisibility(value) {
+            propertySetters.setSingleProperty(this, "visibility", "boolean", value);
+            this.plot.updatePlottingData();
+        }
+        /**
+         * Sets the range of values over which a parameter should be plotted.
+         * This property has no effect at all if the function plotted does not have a free parameter.
+         * @param trace The ID of the trace to be updated.
+         * @param min The minimum value of the free parameter.
+         * @param max The maximum value of the free parameter.
+         */
+        setParameterRange(min, max) {
+            if (max >= min) {
+                propertySetters.setArrayProperty(this, "parameterRange", "number", [min, max], 2);
+                this.plot.updatePlottingData();
+            }
+            else {
+                throw `Error setting parameterRange: Lower limit cannot be higher than or equal to higher limit.`;
+            }
+        }
+    }
 
     /**
      * This class is the base class for all Pulsar plot objects. It extends {@link ResponsiveCanvas `ResponsiveCanvas`}.
@@ -396,7 +593,7 @@ var Pulsar = (function (exports) {
              * Contains the data trace objects for the plot instance.
              * The objects can be accessed using the trace ID as the key.
              */
-            this.plotData = {};
+            this.data = {};
             setupProperties(this, "ResponsiveCanvas", options);
             setupProperties(this, "ResponsivePlot2D", options); // TODO: remove gridScale from possible options
             this._updateLimits();
@@ -453,9 +650,9 @@ var Pulsar = (function (exports) {
           */
         updatePlottingData() {
             this.setForeground((context, timeValue) => {
-                for (const datasetID of Object.keys(this.plotData)) {
-                    if (this.plotData[datasetID].properties.visibility) {
-                        const dataset = this.plotData[datasetID];
+                for (const datasetID of Object.keys(this.data)) {
+                    if (this.data[datasetID].properties.visibility) {
+                        const dataset = this.data[datasetID];
                         if (dataset.properties.traceStyle !== "none") {
                             context.strokeStyle = dataset.properties.traceColour;
                             context.lineWidth = dataset.properties.traceWidth;
@@ -544,174 +741,35 @@ var Pulsar = (function (exports) {
         }
         /**
          * Adds a data trace to the plot. The trace must be given a unique ID, so that it can be added to the
-         * {@link ResponsivePlot2D.plotData `plotData`} property of the plot object.
+         * {@link ResponsivePlot2D.data `data`} property of the plot object.
          * There are several ways that data can be added, which can be divided into **continuous** and **discrete** data.
          * These different methods are described by what to pass for the `data` argument.
          * @param id Unique ID for the trace.
          * @param data Data to be plotted.
          * @param options Optional parameters.
          */
-        plot(id, data, options = {}) {
-            if (this.plotData[id] === undefined) {
-                if (Array.isArray(data) && data.length === 2) {
-                    if (Array.isArray(data[0])) {
-                        if (Array.isArray(data[1])) { // discrete points
-                            if (data[0].length !== data[1].length) {
-                                throw "Error setting plot data: Lengths of data arrays are not equal.";
-                            }
-                            for (let i = 0; i < data[0].length; i++) {
-                                const xValue = typeof data[0][i] === "function" ? data[0][i](0) : data[0][i];
-                                const yValue = typeof data[1][i] === "function" ? data[1][i](0, 0) : data[1][i];
-                                if (typeof xValue !== "number" || typeof yValue !== "number") {
-                                    throw "Error setting plot data: Data arrays contain types which are not numbers.";
-                                }
-                            }
-                            this.plotData[id] = {
-                                properties: {
-                                    traceColour: "blue",
-                                    traceStyle: "solid",
-                                    traceWidth: 3,
-                                    markerColour: "blue",
-                                    markerStyle: "none",
-                                    markerSize: 1,
-                                    visibility: true,
-                                    parameterRange: [0, 1]
-                                },
-                                data: function* (t) {
-                                    // TODO: add support for NaN
-                                    for (let i = 0; i < data[0].length; i++) {
-                                        const xValue = typeof data[0][i] === "function" ? data[0][i](t) : data[0][i];
-                                        const yValue = typeof data[1][i] === "function" ? data[1][i](xValue, t) : data[1][i];
-                                        yield [xValue, yValue];
-                                    }
-                                }
-                            };
-                        }
-                        else if (typeof data[1] === "function") { // discrete map
-                            if (typeof data[1](0, 0) !== "number") {
-                                throw "Error setting plot data: Plot function does not return numbers.";
-                            }
-                            for (let i = 0; i < data[0].length; i++) {
-                                if (typeof data[0][i] !== "number") {
-                                    throw "Error setting plot data: Data array contains types which are not numbers.";
-                                }
-                            }
-                            this.plotData[id] = {
-                                properties: {
-                                    traceColour: "blue",
-                                    traceStyle: "solid",
-                                    traceWidth: 3,
-                                    markerColour: "blue",
-                                    markerStyle: "none",
-                                    markerSize: 1,
-                                    visibility: true,
-                                    parameterRange: [0, 1]
-                                },
-                                data: function* (t) {
-                                    // TODO: add support for NaN
-                                    for (const x of data[0]) {
-                                        yield [x, data[1](x, t)];
-                                    }
-                                }
-                            };
-                        }
-                    }
-                    else if (typeof data[0] === "function" && typeof data[1] === "function") { // parametric function
-                        if (typeof data[0](0, 0) !== "number" || typeof data[1](0, 0) !== "number") {
-                            throw "Error setting plot data: Plot function does not return numbers.";
-                        }
-                        this.plotData[id] = {
-                            // TODO: add support for NaN
-                            properties: {
-                                traceColour: "blue",
-                                traceStyle: "solid",
-                                traceWidth: 3,
-                                markerColour: "blue",
-                                markerStyle: "none",
-                                markerSize: 1,
-                                visibility: true,
-                                parameterRange: [0, 1]
-                            },
-                            data: function* (t, xLims, yLims, step, paramLims) {
-                                let x = (p) => data[0](p, t);
-                                let y = (p) => data[1](p, t);
-                                let p = paramLims[0];
-                                while (p <= paramLims[1]) {
-                                    yield [x(p), y(p)];
-                                    p += step;
-                                }
-                                yield [x(p), y(p)];
-                            }
-                        };
-                    }
-                }
-                else if (typeof data === "function") { // continuous function
-                    if (typeof data(0, 0) !== "number") {
-                        throw "Error setting plot data: Plot function does not return numbers.";
-                    }
-                    this.plotData[id] = {
-                        properties: {
-                            traceColour: "blue",
-                            traceStyle: "solid",
-                            traceWidth: 3,
-                            markerColour: "blue",
-                            markerStyle: "none",
-                            markerSize: 1,
-                            visibility: true,
-                            parameterRange: [0, 1]
-                        },
-                        data: function* (t, xLims, yLims, step) {
-                            // TODO: discontinuities
-                            let x = xLims[0];
-                            let y = (x) => data(x, t);
-                            while (x <= xLims[1]) {
-                                while (true) { // while y is out of range or undefined
-                                    if (x > xLims[1]) { // if x is out of range, break without yielding previous point2D
-                                        break;
-                                    }
-                                    else if (y(x) <= yLims[1] && y(x) >= yLims[0] && !Number.isNaN(y(x))) { // if y is in range, yield the previous point2D and break
-                                        yield [x - step, y(x - step)];
-                                        break;
-                                    }
-                                    else { // else increment x
-                                        x += step;
-                                    }
-                                }
-                                while (true) { // while y in in range and defined
-                                    yield [x, y(x)];
-                                    if (x > xLims[1] || y(x) > yLims[1] || y(x) < yLims[0] || Number.isNaN(y(x))) { // if x or y is out of range, yield current point2D and break
-                                        break;
-                                    }
-                                    else { // else increment x
-                                        x += step;
-                                    }
-                                }
-                            }
-                        }
-                    };
-                }
-                else {
-                    throw `Error setting plot data: Unrecognised data signature ${data}.`;
-                }
+        addData(id, data, options = {}) {
+            if (this.data[id] === undefined) {
+                this.data[id] = new ResponsivePlot2DTrace(this, data, options);
+                this.updatePlottingData();
             }
             else {
                 throw `Error setting plot data: trace with ID ${id} already exists on current plot, call removeData() to remove.`;
             }
-            setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
-            this.updatePlottingData();
         }
         /**
          * Removes a trace from the plot.
          * @param trace ID of the trace to be removed.
          */
         removeData(trace) {
-            delete this.plotData[trace];
+            delete this.data[trace];
             this.updatePlottingData();
         }
         setOrigin(...point) {
             super.setOrigin(...point);
             if (this.properties.xLims !== undefined && this.properties.yLims !== undefined) {
                 this._updateLimits();
+                this.updatePlottingData();
             }
         }
         /**
@@ -821,90 +879,12 @@ var Pulsar = (function (exports) {
                 throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
             }
         }
-        /**
-         * Sets the colour of the specified trace. The specified colour must be one of the browser-recognised colours.
-         * @param trace The ID of the trace to be updated.
-         * @param colour The name of the colour.
-         */
-        setTraceColour(trace, colour) {
-            propertySetters.setPlotDataProperty(this, trace, "traceColour", colour);
-            this.updatePlottingData();
-        }
-        /**
-         * Sets the style of the specified trace. Possible styles are: `solid`, `dotted`, `dashed`, `dashdot`, or `none`.
-         * @param trace The ID of the trace to be updated.
-         * @param style The name of the style.
-         */
-        setTraceStyle(trace, style) {
-            propertySetters.setPlotDataProperty(this, trace, "traceStyle", style);
-            this.updatePlottingData();
-        }
-        /**
-         * Sets the width of the specified trace (in pixels).
-         * @param trace The ID of the trace to be updated.
-         * @param width The width of the trace in pixels.
-         */
-        setTraceWidth(trace, width) {
-            propertySetters.setPlotDataProperty(this, trace, "traceWidth", width);
-            this.updatePlottingData();
-        }
-        /**
-         * Sets the colour of the markers on the specified trace. The specified colour must be one of the browser-recognised colours.
-         * @param trace The ID of the trace to be updated.
-         * @param colour The name of the colour.
-         */
-        setMarkerColour(trace, colour) {
-            propertySetters.setPlotDataProperty(this, trace, "markerColour", colour);
-            this.updatePlottingData();
-        }
-        /**
-         * Sets the style of the markers the specified trace. Possible styles are: `circle`, `plus`, `cross`, `arrow`, or `none`.
-         * @param trace The ID of the trace to be updated.
-         * @param style The name of the style.
-         */
-        setMarkerStyle(trace, style) {
-            propertySetters.setPlotDataProperty(this, trace, "markerStyle", style);
-            this.updatePlottingData();
-        }
-        /**
-         * Sets the width of the markers on the specified trace (in pixels).
-         * @param trace The ID of the trace to be updated.
-         * @param size The size of the markers in pixels.
-         */
-        setMarkerSize(trace, size) {
-            propertySetters.setPlotDataProperty(this, trace, "markerSize", size);
-            this.updatePlottingData();
-        }
-        /**
-         * Toggles the visibility of the specified trace.
-         * @param trace The ID of the trace to be updated.
-         * @param value Set to `true` for the trace to be visible, `false` for it to be hidden.
-         */
-        setVisibility(trace, value) {
-            propertySetters.setPlotDataProperty(this, trace, "visibility", value);
-            this.updatePlottingData();
-        }
-        /**
-         * Sets the range of values over which a parameter should be plotted.
-         * This property has no effect at all if the function plotted does not have a free parameter.
-         * @param trace The ID of the trace to be updated.
-         * @param min The minimum value of the free parameter.
-         * @param max The maximum value of the free parameter.
-         */
-        setParameterRange(trace, min, max) {
-            if (max >= min) {
-                propertySetters.setPlotDataProperty(this, trace, "parameterRange", [min, max]);
-                this.updatePlottingData();
-            }
-            else {
-                throw `Error setting parameterRange: Lower limit cannot be higher than or equal to higher limit.`;
-            }
-        }
     }
 
     var index = /*#__PURE__*/Object.freeze({
         __proto__: null,
-        ResponsivePlot2D: ResponsivePlot2D
+        ResponsivePlot2D: ResponsivePlot2D,
+        ResponsivePlot2DTrace: ResponsivePlot2DTrace
     });
 
     class Plot extends ResponsivePlot2D {
@@ -919,7 +899,7 @@ var Pulsar = (function (exports) {
         constructor(id, data, options = {}) {
             super(id, options);
             if (data !== undefined) {
-                this.plot(data.id, data.data, data.options);
+                this.addData(data.id, data.data, data.options);
             }
         }
     }

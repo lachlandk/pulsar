@@ -56,12 +56,6 @@ export class ResponsiveCanvas {
      */
     constructor(id: string, options: ResponsiveCanvasOptions = {}) {
         // TODO: add child objects to options to allow more options
-        this.setID(id);
-        if (options.origin === "centre") {
-            this.setOrigin("centre");
-            delete options.origin;
-        }
-        setupProperties(this, "ResponsiveCanvas", options);
         const canvasContainer = document.createElement("div");
         canvasContainer.style.display = "grid";
         canvasContainer.style.width = "100%";
@@ -78,12 +72,13 @@ export class ResponsiveCanvas {
                 this._displayData.height = entry.target.clientHeight;
                 this._displayData.backgroundCanvas.width = this._displayData.width;
                 this._displayData.backgroundCanvas.height = this._displayData.height;
-                this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
-                this.updateBackground();
                 this._displayData.foregroundCanvas.width = this._displayData.width;
                 this._displayData.foregroundCanvas.height = this._displayData.height;
-                this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
-                this.updateForeground();
+                this.setOrigin(...this._displayData.originArgCache);
+                // this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
+                // this.updateBackground();
+                // this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
+                // this.updateForeground();
             }
         });
         resizeObserver.observe(canvasContainer);
@@ -101,6 +96,12 @@ export class ResponsiveCanvas {
             backgroundFunction: () => {},
             foregroundFunction: () => {}
         };
+        this.setID(id);
+        if (options.origin === "centre") {
+            this.setOrigin("centre");
+            delete options.origin;
+        }
+        setupProperties(this, "ResponsiveCanvas", options);
     }
 
     /**
@@ -244,6 +245,8 @@ export class ResponsiveCanvas {
         }
         if (this._displayData.parentElement !== null) {
             this._displayData.parentElement.appendChild(this._displayData.canvasContainer);
+            this._displayData.width = this._displayData.canvasContainer.clientWidth;
+            this._displayData.height = this._displayData.canvasContainer.clientHeight;
             this.setOrigin(...this._displayData.originArgCache);
             this.setBackgroundCSS(this.properties.backgroundCSS); // TODO: shouldn't have to call this again
         } else {
