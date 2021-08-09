@@ -1,24 +1,4 @@
-import { propertyDefaults } from "../core/defaults.js";
-
 type indexableObject = {[name: string]: any};
-
-export function setupProperties(instance: indexableObject, prototype: keyof typeof propertyDefaults, options: indexableObject) {
-    const propertySet = propertyDefaults[prototype];
-    for (const key of Object.keys(propertySet) as string[]) {
-        const propertyDefault = propertySet[key];
-        const optionProvided = Object.keys(options).includes(key);
-        const args: unknown[] = [instance, key, propertyDefault.type];
-        if (propertyDefault.multi) {
-            args.push(...(optionProvided ? (Array.isArray(options[key]) ? options[key] : [options[key]]) : propertyDefault.value));
-        } else {
-            args.push(optionProvided ? options[key] : propertyDefault.value);
-        }
-        if (propertyDefault.extra) {
-            args.push(propertyDefault.extra);
-        }
-        propertySetters[propertyDefault.setter](...(args as [indexableObject, string, string, unknown[]]));
-    }
-}
 
 export const propertySetters = {
     setAxesProperty(instance: indexableObject, property: string, expectedType: string, ...values: unknown[]) {

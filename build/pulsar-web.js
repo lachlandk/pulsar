@@ -1,53 +1,6 @@
 var Pulsar = (function (exports) {
     'use strict';
 
-    const propertyDefaults = {
-        ResponsiveCanvas: {
-            origin: { value: [0, 0], type: "number", setter: "setAxesProperty", multi: true },
-            backgroundCSS: { value: "", type: "string", setter: "setSingleProperty" }
-        },
-        ResponsivePlot2D: {
-            majorTicks: { value: [true, true], type: "boolean", setter: "setAxesProperty", multi: true },
-            minorTicks: { value: [false, false], type: "boolean", setter: "setAxesProperty", multi: true },
-            majorTickSize: { value: [5, 5], type: "number", setter: "setAxesProperty", multi: true },
-            minorTickSize: { value: [1, 1], type: "number", setter: "setAxesProperty", multi: true },
-            majorGridlines: { value: [true, true], type: "boolean", setter: "setAxesProperty", multi: true },
-            minorGridlines: { value: [false, false], type: "boolean", setter: "setAxesProperty", multi: true },
-            majorGridSize: { value: [5, 5], type: "number", setter: "setAxesProperty", multi: true },
-            minorGridSize: { value: [1, 1], type: "number", setter: "setAxesProperty", multi: true },
-            xLims: { value: [-0, 0], type: "number", setter: "setArrayProperty", extra: 2 },
-            yLims: { value: [-0, 0], type: "number", setter: "setArrayProperty", extra: 2 }
-        },
-        ResponsivePlot2DTrace: {
-            traceColour: { value: "blue", type: "string", setter: "setSingleProperty" },
-            traceStyle: { value: "solid", type: "string", setter: "setChoiceProperty", extra: ["solid", "dotted", "dashed", "dashdot", "none"] },
-            traceWidth: { value: 3, type: "number", setter: "setSingleProperty" },
-            markerColour: { value: "blue", type: "string", setter: "setSingleProperty" },
-            markerStyle: { value: "none", type: "string", setter: "setChoiceProperty", extra: ["circle", "plus", "cross", "arrow", "none"] },
-            markerSize: { value: 1, type: "number", setter: "setSingleProperty" },
-            visibility: { value: true, type: "boolean", setter: "setSingleProperty" },
-            parameterRange: { value: [0, 1], type: "number", setter: "setArrayProperty", extra: 2 }
-        }
-    };
-
-    function setupProperties(instance, prototype, options) {
-        const propertySet = propertyDefaults[prototype];
-        for (const key of Object.keys(propertySet)) {
-            const propertyDefault = propertySet[key];
-            const optionProvided = Object.keys(options).includes(key);
-            const args = [instance, key, propertyDefault.type];
-            if (propertyDefault.multi) {
-                args.push(...(optionProvided ? (Array.isArray(options[key]) ? options[key] : [options[key]]) : propertyDefault.value));
-            }
-            else {
-                args.push(optionProvided ? options[key] : propertyDefault.value);
-            }
-            if (propertyDefault.extra) {
-                args.push(propertyDefault.extra);
-            }
-            propertySetters[propertyDefault.setter](...args);
-        }
-    }
     const propertySetters = {
         setAxesProperty(instance, property, expectedType, ...values) {
             if (values.length === 1 && typeof values[0] === expectedType) {
@@ -176,6 +129,59 @@ var Pulsar = (function (exports) {
      */
     const activeCanvases = {};
 
+    // TODO: this module needs tests
+    class defaults {
+        constructor() {
+            this.values = {
+                ResponsiveCanvas: {
+                    origin: { x: 0, y: 0 },
+                    backgroundCSS: ""
+                },
+                ResponsivePlot2D: {
+                    origin: { x: 0, y: 0 },
+                    backgroundCSS: "",
+                    majorTicks: { x: true, y: true },
+                    minorTicks: { x: false, y: false },
+                    majorTickSize: { x: 5, y: 5 },
+                    minorTickSize: { x: 1, y: 1 },
+                    majorGridlines: { x: true, y: true },
+                    minorGridlines: { x: false, y: false },
+                    majorGridSize: { x: 5, y: 5 },
+                    minorGridSize: { x: 1, y: 1 },
+                    xLims: [0, 10],
+                    yLims: [-10, 0]
+                },
+                ResponsivePlot2DTrace: {
+                    traceColour: "blue",
+                    traceStyle: "solid",
+                    traceWidth: 3,
+                    markerColour: "blue",
+                    markerStyle: "none",
+                    markerSize: 1,
+                    visibility: true,
+                    parameterRange: [0, 1]
+                }
+            };
+            // static setDefault(proto: {[property: string]: unknown}, property: string, value: unknown) {
+            //     proto[property] = value;
+            // }
+        }
+        create(...protos) {
+            return Object.assign({}, ...Array.from(protos, (proto) => this.values[proto]));
+        }
+        mergeOptions(instance, type, options) {
+            for (const option of Object.keys(options)) {
+                if (option in this.values[type]) {
+                    const setterFunc = instance[`set${option.charAt(0).toUpperCase()}${option.slice(1)}`];
+                    if (setterFunc !== undefined) {
+                        setterFunc.call(instance, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
+                    }
+                }
+            }
+        }
+    }
+    const Defaults = new defaults();
+
     /**
      * Class representing the base canvas object which all other Pulsar canvas objects inherit from.
      * This class is not meant to be instantiated directly by a user, mainly because it is not very useful by itself.
@@ -200,10 +206,7 @@ var Pulsar = (function (exports) {
             /**
              *
              */
-            this.properties = {
-                origin: { x: 0, y: 0 },
-                backgroundCSS: ""
-            };
+            this.properties = Defaults.create("ResponsiveCanvas");
             this._timeEvolutionData = {
                 currentTimeValue: 0,
                 startTimestampMS: 0,
@@ -223,24 +226,16 @@ var Pulsar = (function (exports) {
             canvasContainer.appendChild(foregroundCanvas);
             const resizeObserver = new ResizeObserver(entries => {
                 for (const entry of entries) {
-                    this._displayData.width = entry.target.clientWidth;
-                    this._displayData.height = entry.target.clientHeight;
-                    this._displayData.backgroundCanvas.width = this._displayData.width;
-                    this._displayData.backgroundCanvas.height = this._displayData.height;
-                    this._displayData.foregroundCanvas.width = this._displayData.width;
-                    this._displayData.foregroundCanvas.height = this._displayData.height;
-                    this.setOrigin(...this._displayData.originArgCache);
-                    // this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
-                    // this.updateBackground();
-                    // this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
-                    // this.updateForeground();
+                    this.resizeEventListener(entry);
+                    this.updateBackground();
+                    this.updateForeground();
                 }
             });
             resizeObserver.observe(canvasContainer);
             this._displayData = {
                 width: 0,
                 height: 0,
-                originArgCache: [0],
+                originArgCache: null,
                 parentElement: null,
                 resizeObserver: resizeObserver,
                 canvasContainer: canvasContainer,
@@ -252,11 +247,20 @@ var Pulsar = (function (exports) {
                 foregroundFunction: () => { }
             };
             this.setID(id);
-            if (options.origin === "centre") {
-                this.setOrigin("centre");
-                delete options.origin;
+            Defaults.mergeOptions(this, "ResponsiveCanvas", options);
+        }
+        resizeEventListener(entry) {
+            this._displayData.width = entry.target.clientWidth;
+            this._displayData.height = entry.target.clientHeight;
+            this._displayData.backgroundCanvas.width = this._displayData.width;
+            this._displayData.backgroundCanvas.height = this._displayData.height;
+            this._displayData.foregroundCanvas.width = this._displayData.width;
+            this._displayData.foregroundCanvas.height = this._displayData.height;
+            if (this._displayData.originArgCache !== null) {
+                this.setOrigin(this._displayData.originArgCache);
             }
-            setupProperties(this, "ResponsiveCanvas", options);
+            this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y); // because changing the size of a canvas resets it
+            this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
         }
         /**
           * Updates the background.
@@ -307,17 +311,18 @@ var Pulsar = (function (exports) {
         setOrigin(...point) {
             if (point.length === 1 && point[0] === "centre") {
                 propertySetters.setAxesProperty(this, "origin", "number", Math.round(this._displayData.width / 2), Math.round(this._displayData.height / 2));
+                this._displayData.originArgCache = point[0];
             }
             else {
                 propertySetters.setAxesProperty(this, "origin", "number", ...point);
+                this._displayData.originArgCache = null;
             }
-            this._displayData.originArgCache = point;
-            if (this._displayData.background !== null && this._displayData.foreground !== null) {
-                this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y); // TODO: this introduces a bug with changing the origin multiple times
-                this.updateBackground();
-                this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
-                this.updateForeground();
-            }
+            this._displayData.background.resetTransform();
+            this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
+            this.updateBackground();
+            this._displayData.foreground.resetTransform();
+            this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
+            this.updateForeground();
         }
         /**
          * Sets the ID of the canvas object to the value specified,
@@ -393,7 +398,9 @@ var Pulsar = (function (exports) {
                 this._displayData.parentElement.appendChild(this._displayData.canvasContainer);
                 this._displayData.width = this._displayData.canvasContainer.clientWidth;
                 this._displayData.height = this._displayData.canvasContainer.clientHeight;
-                this.setOrigin(...this._displayData.originArgCache);
+                if (this._displayData.originArgCache !== null) {
+                    this.setOrigin(this._displayData.originArgCache);
+                }
                 this.setBackgroundCSS(this.properties.backgroundCSS); // TODO: shouldn't have to call this again
             }
             else {
@@ -405,8 +412,7 @@ var Pulsar = (function (exports) {
     var index$1 = /*#__PURE__*/Object.freeze({
         __proto__: null,
         ResponsiveCanvas: ResponsiveCanvas,
-        activeCanvases: activeCanvases,
-        propertyDefaults: propertyDefaults
+        activeCanvases: activeCanvases
     });
 
     // TODO: this module needs tests
@@ -419,19 +425,10 @@ var Pulsar = (function (exports) {
          * @param data Data to be plotted.
          * @param options Optional parameters.
          */
-        constructor(plot, data, options) {
-            this.properties = {
-                traceColour: "blue",
-                traceStyle: "solid",
-                traceWidth: 3,
-                markerColour: "blue",
-                markerStyle: "none",
-                markerSize: 1,
-                visibility: true,
-                parameterRange: [0, 1]
-            };
+        constructor(plot, data, options = {}) {
+            this.properties = Defaults.create("ResponsivePlot2DTrace");
             this.plot = plot; // TODO: remove necessity for this with events?
-            setupProperties(this, "ResponsivePlot2DTrace", options);
+            Defaults.mergeOptions(this, "ResponsivePlot2DTrace", options);
             if (Array.isArray(data) && data.length === 2) {
                 if (Array.isArray(data[0])) {
                     if (Array.isArray(data[1])) { // discrete points
@@ -576,34 +573,14 @@ var Pulsar = (function (exports) {
          */
         constructor(id, options = {}) {
             super(id, options);
-            this.properties = {
-                origin: { x: 0, y: 0 },
-                backgroundCSS: "",
-                majorTicks: { x: true, y: true },
-                minorTicks: { x: false, y: false },
-                majorTickSize: { x: 5, y: 5 },
-                minorTickSize: { x: 1, y: 1 },
-                majorGridlines: { x: true, y: true },
-                minorGridlines: { x: false, y: false },
-                majorGridSize: { x: 5, y: 5 },
-                minorGridSize: { x: 1, y: 1 },
-                xLims: [-0, 0],
-                yLims: [-0, 0]
-            };
-            this.gridScale = { x: 50, y: 50 };
+            this.properties = Defaults.create("ResponsiveCanvas", "ResponsivePlot2D");
+            this.gridScale = { x: 0, y: 0 };
             /**
              * Contains the data trace objects for the plot instance.
              * The objects can be accessed using the trace ID as the key.
              */
             this.data = {};
-            setupProperties(this, "ResponsiveCanvas", options);
-            setupProperties(this, "ResponsivePlot2D", options);
-            if (options.xLims === undefined) {
-                this.properties.xLims = [-this.properties.origin.x / this.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.gridScale.x];
-            }
-            if (options.yLims === undefined) {
-                this.properties.yLims = [-this.properties.origin.y / this.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.gridScale.y];
-            }
+            Defaults.mergeOptions(this, "ResponsivePlot2D", options);
             this.setBackground(context => {
                 const drawGridSet = (majorOrMinor, xy, ticksOrGridlines, width, lineStart, lineEnd) => {
                     const offset = width % 2 === 0 ? 0 : 0.5;
@@ -647,6 +624,11 @@ var Pulsar = (function (exports) {
                 context.lineTo(this._displayData.width - this.properties.origin.x, 0.5);
                 context.stroke();
             });
+        }
+        resizeEventListener(entry) {
+            super.resizeEventListener(entry);
+            this.setXLims(...this.properties.xLims);
+            this.setYLims(...this.properties.yLims);
         }
         /**
           * Updates the foreground function.
@@ -734,7 +716,7 @@ var Pulsar = (function (exports) {
                                 context.beginPath();
                                 const point = [currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y];
                                 const angle = Math.atan2(point[1] - lastPoint[1], -point[0] + lastPoint[0]);
-                                drawMarker(context, ...point, angle);
+                                drawMarker(context, ...point, angle); // TODO: fix this (typescript thinks drawMarker can be null (because the defaults aren't typed))
                                 lastPoint = point;
                             }
                         }
@@ -770,9 +752,9 @@ var Pulsar = (function (exports) {
         }
         setOrigin(...point) {
             super.setOrigin(...point);
-            if (this.gridScale !== undefined) {
+            if (this._displayData.parentElement !== null && this.gridScale.x > 0 && this.gridScale.y > 0) {
                 this.properties.xLims = [-this.properties.origin.x / this.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.gridScale.x];
-                this.properties.yLims = [-this.properties.origin.y / this.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.gridScale.y];
+                this.properties.yLims = [-(this._displayData.height - this.properties.origin.y) / this.gridScale.y, this.properties.origin.y / this.gridScale.y];
                 this.updatePlottingData();
             }
         }
@@ -848,10 +830,8 @@ var Pulsar = (function (exports) {
         setXLims(min, max) {
             if (max >= min) {
                 propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
-                console.log("gwdwa");
                 this.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
-                super.setOrigin(-this.properties.xLims[0] * this.gridScale.x, this.properties.origin.y);
-                this.updateBackground();
+                this.setOrigin(-this.properties.xLims[0] * this.gridScale.x, this.properties.origin.y);
                 this.updatePlottingData();
             }
             else {
@@ -867,13 +847,17 @@ var Pulsar = (function (exports) {
             if (max >= min) {
                 propertySetters.setArrayProperty(this, "yLims", "number", [min, max], 2);
                 this.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
-                super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.gridScale.y);
-                this.updateBackground();
+                this.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.gridScale.y);
                 this.updatePlottingData();
             }
             else {
                 throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
             }
+        }
+        show(element) {
+            super.show(element);
+            this.setXLims(...this.properties.xLims);
+            this.setYLims(...this.properties.yLims);
         }
     }
 
@@ -913,6 +897,7 @@ var Pulsar = (function (exports) {
         return activePlots;
     }
 
+    exports.Defaults = Defaults;
     exports.Plot = Plot;
     exports.core = index$1;
     exports.getActivePlots = getActivePlots;

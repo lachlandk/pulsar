@@ -1,4 +1,5 @@
-import { ResponsivePlot2D, ResponsivePlot2DOptions, ResponsivePlot2DTraceOptions, ResponsivePlot2DTraceDataType } from "./plotting/index.js";
+import { ResponsivePlot2D, ResponsivePlot2DTraceDataType } from "./plotting/index.js";
+import { OptionTypes } from "./Defaults.js";
 export declare class Plot extends ResponsivePlot2D {
     /**
      * @param id - The ID of the plot object. Must be unique.
@@ -11,6 +12,6 @@ export declare class Plot extends ResponsivePlot2D {
     constructor(id: string, data: {
         id: string;
         data: ResponsivePlot2DTraceDataType;
-        options?: ResponsivePlot2DTraceOptions;
-    }, options?: ResponsivePlot2DOptions);
+        options?: OptionTypes["ResponsivePlot2DTrace"];
+    }, options?: OptionTypes["ResponsiveCanvas"] & OptionTypes["ResponsivePlot2D"]);
 }

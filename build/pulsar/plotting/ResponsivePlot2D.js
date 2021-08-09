@@ -1,6 +1,7 @@
 import { ResponsiveCanvas } from "../core/ResponsiveCanvas.js";
-import { propertySetters, setupProperties } from "../helpers/index.js";
+import { propertySetters } from "../helpers/index.js";
 import { ResponsivePlot2DTrace } from "./ResponsivePlot2DTrace.js";
+import { Defaults } from "../Defaults.js";
 /**
  * This class is the base class for all Pulsar plot objects. It extends {@link ResponsiveCanvas `ResponsiveCanvas`}.
  * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
@@ -20,34 +21,14 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
      */
     constructor(id, options = {}) {
         super(id, options);
-        this.properties = {
-            origin: { x: 0, y: 0 },
-            backgroundCSS: "",
-            majorTicks: { x: true, y: true },
-            minorTicks: { x: false, y: false },
-            majorTickSize: { x: 5, y: 5 },
-            minorTickSize: { x: 1, y: 1 },
-            majorGridlines: { x: true, y: true },
-            minorGridlines: { x: false, y: false },
-            majorGridSize: { x: 5, y: 5 },
-            minorGridSize: { x: 1, y: 1 },
-            xLims: [-0, 0],
-            yLims: [-0, 0]
-        };
-        this.gridScale = { x: 50, y: 50 };
+        this.properties = Defaults.create("ResponsiveCanvas", "ResponsivePlot2D");
+        this.gridScale = { x: 0, y: 0 };
         /**
          * Contains the data trace objects for the plot instance.
          * The objects can be accessed using the trace ID as the key.
          */
         this.data = {};
-        setupProperties(this, "ResponsiveCanvas", options);
-        setupProperties(this, "ResponsivePlot2D", options);
-        if (options.xLims === undefined) {
-            this.properties.xLims = [-this.properties.origin.x / this.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.gridScale.x];
-        }
-        if (options.yLims === undefined) {
-            this.properties.yLims = [-this.properties.origin.y / this.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.gridScale.y];
-        }
+        Defaults.mergeOptions(this, "ResponsivePlot2D", options);
         this.setBackground(context => {
             const drawGridSet = (majorOrMinor, xy, ticksOrGridlines, width, lineStart, lineEnd) => {
                 const offset = width % 2 === 0 ? 0 : 0.5;
@@ -91,6 +72,11 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
             context.lineTo(this._displayData.width - this.properties.origin.x, 0.5);
             context.stroke();
         });
+    }
+    resizeEventListener(entry) {
+        super.resizeEventListener(entry);
+        this.setXLims(...this.properties.xLims);
+        this.setYLims(...this.properties.yLims);
     }
     /**
       * Updates the foreground function.
@@ -178,7 +164,7 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
                             context.beginPath();
                             const point = [currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y];
                             const angle = Math.atan2(point[1] - lastPoint[1], -point[0] + lastPoint[0]);
-                            drawMarker(context, ...point, angle);
+                            drawMarker(context, ...point, angle); // TODO: fix this (typescript thinks drawMarker can be null (because the defaults aren't typed))
                             lastPoint = point;
                         }
                     }
@@ -214,9 +200,9 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
     }
     setOrigin(...point) {
         super.setOrigin(...point);
-        if (this.gridScale !== undefined) {
+        if (this._displayData.parentElement !== null && this.gridScale.x > 0 && this.gridScale.y > 0) {
             this.properties.xLims = [-this.properties.origin.x / this.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.gridScale.x];
-            this.properties.yLims = [-this.properties.origin.y / this.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.gridScale.y];
+            this.properties.yLims = [-(this._displayData.height - this.properties.origin.y) / this.gridScale.y, this.properties.origin.y / this.gridScale.y];
             this.updatePlottingData();
         }
     }
@@ -292,10 +278,8 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
     setXLims(min, max) {
         if (max >= min) {
             propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
-            console.log("gwdwa");
             this.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
-            super.setOrigin(-this.properties.xLims[0] * this.gridScale.x, this.properties.origin.y);
-            this.updateBackground();
+            this.setOrigin(-this.properties.xLims[0] * this.gridScale.x, this.properties.origin.y);
             this.updatePlottingData();
         }
         else {
@@ -311,12 +295,16 @@ export class ResponsivePlot2D extends ResponsiveCanvas {
         if (max >= min) {
             propertySetters.setArrayProperty(this, "yLims", "number", [min, max], 2);
             this.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
-            super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.gridScale.y);
-            this.updateBackground();
+            this.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.gridScale.y);
             this.updatePlottingData();
         }
         else {
             throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
         }
+    }
+    show(element) {
+        super.show(element);
+        this.setXLims(...this.properties.xLims);
+        this.setYLims(...this.properties.yLims);
     }
 }

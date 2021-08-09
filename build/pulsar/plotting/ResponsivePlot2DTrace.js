@@ -1,5 +1,6 @@
 // TODO: this module needs tests
-import { propertySetters, setupProperties, discreteFunctionGenerator, discreteMapGenerator, parametricFunctionGenerator, continuousFunctionGenerator } from "../helpers/index.js";
+import { propertySetters, discreteFunctionGenerator, discreteMapGenerator, parametricFunctionGenerator, continuousFunctionGenerator } from "../helpers/index.js";
+import { Defaults } from "../Defaults.js";
 /**
  *  This plot represents a trace on a {@link ResponsivePlot2D `ResponsivePlot2D`}.
  */
@@ -9,19 +10,10 @@ export class ResponsivePlot2DTrace {
      * @param data Data to be plotted.
      * @param options Optional parameters.
      */
-    constructor(plot, data, options) {
-        this.properties = {
-            traceColour: "blue",
-            traceStyle: "solid",
-            traceWidth: 3,
-            markerColour: "blue",
-            markerStyle: "none",
-            markerSize: 1,
-            visibility: true,
-            parameterRange: [0, 1]
-        };
+    constructor(plot, data, options = {}) {
+        this.properties = Defaults.create("ResponsivePlot2DTrace");
         this.plot = plot; // TODO: remove necessity for this with events?
-        setupProperties(this, "ResponsivePlot2DTrace", options);
+        Defaults.mergeOptions(this, "ResponsivePlot2DTrace", options);
         if (Array.isArray(data) && data.length === 2) {
             if (Array.isArray(data[0])) {
                 if (Array.isArray(data[1])) { // discrete points

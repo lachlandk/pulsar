@@ -1,18 +1,8 @@
 // TODO: this module needs tests
 
-import { propertySetters, setupProperties, discreteFunctionGenerator, discreteMapGenerator, parametricFunctionGenerator, continuousFunctionGenerator } from "../helpers/index.js";
+import { propertySetters, discreteFunctionGenerator, discreteMapGenerator, parametricFunctionGenerator, continuousFunctionGenerator } from "../helpers/index.js";
 import { ResponsivePlot2D } from "./ResponsivePlot2D.js";
-
-export interface ResponsivePlot2DTraceOptions {
-    traceColour?: string
-    traceStyle?: "solid" | "dotted" | "dashed" | "dashdot" | "none"
-    traceWidth?: number
-    markerColour?: string
-    markerStyle?: "circle" | "plus" | "cross" | "arrow" | "none"
-    markerSize?: number
-    visibility?: boolean
-    parameterRange?: [number, number]
-}
+import { Defaults, OptionTypes } from "../Defaults.js";
 
 export type ResponsivePlot2DTraceDataType =
     (x: number, t: number) => number |
@@ -25,26 +15,17 @@ export type ResponsivePlot2DTraceDataType =
  */
 export class ResponsivePlot2DTrace {
     plot: ResponsivePlot2D
-    data: (t: number, xLims: [number, number], yLims: [number, number], step: number, paramLims: [number, number]) => Generator<[number, number]>;
-    properties = {
-        traceColour: "blue",
-        traceStyle: "solid" as "solid" | "dotted" | "dashed" | "dashdot" | "none",
-        traceWidth: 3,
-        markerColour: "blue",
-        markerStyle: "none" as "circle" | "plus" | "cross" | "arrow" | "none",
-        markerSize: 1,
-        visibility: true,
-        parameterRange: [0, 1] as [number, number]
-    }
+    data: (t: number, xLims: [number, number], yLims: [number, number], step: number, paramLims: [number, number]) => Generator<[number, number]>
+    properties = Defaults.create("ResponsivePlot2DTrace")
 
     /**
      * @param plot The parent plot.
      * @param data Data to be plotted.
      * @param options Optional parameters.
      */
-    constructor(plot: ResponsivePlot2D, data: ResponsivePlot2DTraceDataType, options: ResponsivePlot2DTraceOptions) {
+    constructor(plot: ResponsivePlot2D, data: ResponsivePlot2DTraceDataType, options: OptionTypes["ResponsivePlot2DTrace"] = {}) {
         this.plot = plot; // TODO: remove necessity for this with events?
-        setupProperties(this, "ResponsivePlot2DTrace", options);
+        Defaults.mergeOptions(this, "ResponsivePlot2DTrace", options);
         if (Array.isArray(data) && data.length === 2) {
             if (Array.isArray(data[0])) {
                 if (Array.isArray(data[1])) { // discrete points

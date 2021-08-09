@@ -18,5 +18,6 @@
 */
 export * as core from "./core/index.js";
 export * as plotting from "./plotting/index.js";
+export * from "./Defaults.js";
 export * from "./Plot.js";
 export * from "./getActivePlots.js";

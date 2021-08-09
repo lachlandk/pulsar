@@ -1,5 +1,6 @@
-import { setupProperties, propertySetters } from "../helpers/index.js";
+import { propertySetters } from "../helpers/index.js";
 import { activeCanvases } from "./activeCanvases.js";
+import { Defaults } from "../Defaults.js";
 /**
  * Class representing the base canvas object which all other Pulsar canvas objects inherit from.
  * This class is not meant to be instantiated directly by a user, mainly because it is not very useful by itself.
@@ -24,10 +25,7 @@ export class ResponsiveCanvas {
         /**
          *
          */
-        this.properties = {
-            origin: { x: 0, y: 0 },
-            backgroundCSS: ""
-        };
+        this.properties = Defaults.create("ResponsiveCanvas");
         this._timeEvolutionData = {
             currentTimeValue: 0,
             startTimestampMS: 0,
@@ -47,24 +45,16 @@ export class ResponsiveCanvas {
         canvasContainer.appendChild(foregroundCanvas);
         const resizeObserver = new ResizeObserver(entries => {
             for (const entry of entries) {
-                this._displayData.width = entry.target.clientWidth;
-                this._displayData.height = entry.target.clientHeight;
-                this._displayData.backgroundCanvas.width = this._displayData.width;
-                this._displayData.backgroundCanvas.height = this._displayData.height;
-                this._displayData.foregroundCanvas.width = this._displayData.width;
-                this._displayData.foregroundCanvas.height = this._displayData.height;
-                this.setOrigin(...this._displayData.originArgCache);
-                // this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
-                // this.updateBackground();
-                // this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
-                // this.updateForeground();
+                this.resizeEventListener(entry);
+                this.updateBackground();
+                this.updateForeground();
             }
         });
         resizeObserver.observe(canvasContainer);
         this._displayData = {
             width: 0,
             height: 0,
-            originArgCache: [0],
+            originArgCache: null,
             parentElement: null,
             resizeObserver: resizeObserver,
             canvasContainer: canvasContainer,
@@ -76,11 +66,20 @@ export class ResponsiveCanvas {
             foregroundFunction: () => { }
         };
         this.setID(id);
-        if (options.origin === "centre") {
-            this.setOrigin("centre");
-            delete options.origin;
+        Defaults.mergeOptions(this, "ResponsiveCanvas", options);
+    }
+    resizeEventListener(entry) {
+        this._displayData.width = entry.target.clientWidth;
+        this._displayData.height = entry.target.clientHeight;
+        this._displayData.backgroundCanvas.width = this._displayData.width;
+        this._displayData.backgroundCanvas.height = this._displayData.height;
+        this._displayData.foregroundCanvas.width = this._displayData.width;
+        this._displayData.foregroundCanvas.height = this._displayData.height;
+        if (this._displayData.originArgCache !== null) {
+            this.setOrigin(this._displayData.originArgCache);
         }
-        setupProperties(this, "ResponsiveCanvas", options);
+        this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y); // because changing the size of a canvas resets it
+        this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
     }
     /**
       * Updates the background.
@@ -131,17 +130,18 @@ export class ResponsiveCanvas {
     setOrigin(...point) {
         if (point.length === 1 && point[0] === "centre") {
             propertySetters.setAxesProperty(this, "origin", "number", Math.round(this._displayData.width / 2), Math.round(this._displayData.height / 2));
+            this._displayData.originArgCache = point[0];
         }
         else {
             propertySetters.setAxesProperty(this, "origin", "number", ...point);
+            this._displayData.originArgCache = null;
         }
-        this._displayData.originArgCache = point;
-        if (this._displayData.background !== null && this._displayData.foreground !== null) {
-            this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y); // TODO: this introduces a bug with changing the origin multiple times
-            this.updateBackground();
-            this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
-            this.updateForeground();
-        }
+        this._displayData.background.resetTransform();
+        this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
+        this.updateBackground();
+        this._displayData.foreground.resetTransform();
+        this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
+        this.updateForeground();
     }
     /**
      * Sets the ID of the canvas object to the value specified,
@@ -217,7 +217,9 @@ export class ResponsiveCanvas {
             this._displayData.parentElement.appendChild(this._displayData.canvasContainer);
             this._displayData.width = this._displayData.canvasContainer.clientWidth;
             this._displayData.height = this._displayData.canvasContainer.clientHeight;
-            this.setOrigin(...this._displayData.originArgCache);
+            if (this._displayData.originArgCache !== null) {
+                this.setOrigin(this._displayData.originArgCache);
+            }
             this.setBackgroundCSS(this.properties.backgroundCSS); // TODO: shouldn't have to call this again
         }
         else {

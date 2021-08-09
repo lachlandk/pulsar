@@ -1,17 +1,6 @@
-import { ResponsiveCanvasOptions, ResponsiveCanvas } from "../core/ResponsiveCanvas.js";
-import { ResponsivePlot2DTrace, ResponsivePlot2DTraceDataType, ResponsivePlot2DTraceOptions } from "./ResponsivePlot2DTrace.js";
-export interface ResponsivePlot2DOptions extends ResponsiveCanvasOptions {
-    majorTicks?: [boolean, boolean] | boolean;
-    minorTicks?: [boolean, boolean] | boolean;
-    majorTickSize?: [number, number] | number;
-    minorTickSize?: [number, number] | number;
-    majorGridlines?: [boolean, boolean] | boolean;
-    minorGridlines?: [boolean, boolean] | boolean;
-    majorGridSize?: [number, number] | number;
-    minorGridSize?: [number, number] | number;
-    xLims?: [number, number];
-    yLims?: [number, number];
-}
+import { ResponsiveCanvas } from "../core/ResponsiveCanvas.js";
+import { ResponsivePlot2DTrace, ResponsivePlot2DTraceDataType } from "./ResponsivePlot2DTrace.js";
+import { OptionTypes } from "../Defaults.js";
 /**
  * This class is the base class for all Pulsar plot objects. It extends {@link ResponsiveCanvas `ResponsiveCanvas`}.
  * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
@@ -25,47 +14,7 @@ export interface ResponsivePlot2DOptions extends ResponsiveCanvasOptions {
  * may cause unpredictable behaviour.
  */
 export declare class ResponsivePlot2D extends ResponsiveCanvas {
-    properties: {
-        origin: {
-            x: number;
-            y: number;
-        };
-        backgroundCSS: string;
-        majorTicks: {
-            x: boolean;
-            y: boolean;
-        };
-        minorTicks: {
-            x: boolean;
-            y: boolean;
-        };
-        majorTickSize: {
-            x: number;
-            y: number;
-        };
-        minorTickSize: {
-            x: number;
-            y: number;
-        };
-        majorGridlines: {
-            x: boolean;
-            y: boolean;
-        };
-        minorGridlines: {
-            x: boolean;
-            y: boolean;
-        };
-        majorGridSize: {
-            x: number;
-            y: number;
-        };
-        minorGridSize: {
-            x: number;
-            y: number;
-        };
-        xLims: [number, number];
-        yLims: [number, number];
-    };
+    properties: any;
     gridScale: {
         x: number;
         y: number;
@@ -81,7 +30,8 @@ export declare class ResponsivePlot2D extends ResponsiveCanvas {
      * @param id The unique ID of the plot object.
      * @param options Optional parameters.
      */
-    constructor(id: string, options?: ResponsivePlot2DOptions);
+    constructor(id: string, options?: OptionTypes["ResponsiveCanvas"] & OptionTypes["ResponsivePlot2D"]);
+    resizeEventListener(entry: ResizeObserverEntry): void;
     /**
       * Updates the foreground function.
       */
@@ -95,7 +45,7 @@ export declare class ResponsivePlot2D extends ResponsiveCanvas {
      * @param data Data to be plotted.
      * @param options Optional parameters.
      */
-    addData(id: string, data: ResponsivePlot2DTraceDataType, options?: ResponsivePlot2DTraceOptions): void;
+    addData(id: string, data: ResponsivePlot2DTraceDataType, options?: OptionTypes["ResponsivePlot2DTrace"]): void;
     /**
      * Removes a trace from the plot.
      * @param trace ID of the trace to be removed.
@@ -154,4 +104,5 @@ export declare class ResponsivePlot2D extends ResponsiveCanvas {
      * @param max The maximum value of `y`.
      */
     setYLims(min: number, max: number): void;
+    show(element: string | Element): void;
 }

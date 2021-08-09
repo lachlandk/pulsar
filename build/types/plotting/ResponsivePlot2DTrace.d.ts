@@ -1,14 +1,5 @@
 import { ResponsivePlot2D } from "./ResponsivePlot2D.js";
-export interface ResponsivePlot2DTraceOptions {
-    traceColour?: string;
-    traceStyle?: "solid" | "dotted" | "dashed" | "dashdot" | "none";
-    traceWidth?: number;
-    markerColour?: string;
-    markerStyle?: "circle" | "plus" | "cross" | "arrow" | "none";
-    markerSize?: number;
-    visibility?: boolean;
-    parameterRange?: [number, number];
-}
+import { OptionTypes } from "../Defaults.js";
 export declare type ResponsivePlot2DTraceDataType = (x: number, t: number) => number | ((p: number, t: number) => number)[] | (number[] | ((x: number, t: number) => number))[] | ((number | ((t: number) => number))[] | (number | ((x: number, t: number) => number))[])[];
 /**
  *  This plot represents a trace on a {@link ResponsivePlot2D `ResponsivePlot2D`}.
@@ -16,22 +7,13 @@ export declare type ResponsivePlot2DTraceDataType = (x: number, t: number) => nu
 export declare class ResponsivePlot2DTrace {
     plot: ResponsivePlot2D;
     data: (t: number, xLims: [number, number], yLims: [number, number], step: number, paramLims: [number, number]) => Generator<[number, number]>;
-    properties: {
-        traceColour: string;
-        traceStyle: "solid" | "dotted" | "dashed" | "dashdot" | "none";
-        traceWidth: number;
-        markerColour: string;
-        markerStyle: "none" | "circle" | "plus" | "cross" | "arrow";
-        markerSize: number;
-        visibility: boolean;
-        parameterRange: [number, number];
-    };
+    properties: any;
     /**
      * @param plot The parent plot.
      * @param data Data to be plotted.
      * @param options Optional parameters.
      */
-    constructor(plot: ResponsivePlot2D, data: ResponsivePlot2DTraceDataType, options: ResponsivePlot2DTraceOptions);
+    constructor(plot: ResponsivePlot2D, data: ResponsivePlot2DTraceDataType, options?: OptionTypes["ResponsivePlot2DTrace"]);
     /**
      * Sets the colour of the specified trace. The specified colour must be one of the browser-recognised colours.
      * @param trace The ID of the trace to be updated.

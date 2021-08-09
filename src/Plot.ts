@@ -1,4 +1,5 @@
-import { ResponsivePlot2D, ResponsivePlot2DOptions, ResponsivePlot2DTraceOptions, ResponsivePlot2DTraceDataType } from "./plotting/index.js";
+import { ResponsivePlot2D, ResponsivePlot2DTraceDataType } from "./plotting/index.js";
+import { OptionTypes } from "./Defaults.js";
 
 export class Plot extends ResponsivePlot2D {
     /**
@@ -9,7 +10,7 @@ export class Plot extends ResponsivePlot2D {
      * @param data.object - The options for the data. See the {@link ResponsivePlot2D.plot `plot()`} method documentation for more details.
      * @param options - Options for the plot.
      */
-    constructor(id: string, data: {id: string, data: ResponsivePlot2DTraceDataType, options?: ResponsivePlot2DTraceOptions}, options: ResponsivePlot2DOptions = {}) {
+    constructor(id: string, data: {id: string, data: ResponsivePlot2DTraceDataType, options?: OptionTypes["ResponsivePlot2DTrace"]}, options: OptionTypes["ResponsiveCanvas"] & OptionTypes["ResponsivePlot2D"] = {}) {
         super(id, options);
         if (data !== undefined) {
             this.addData(data.id, data.data, data.options);

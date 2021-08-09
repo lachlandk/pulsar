@@ -1,7 +1,4 @@
-export interface ResponsiveCanvasOptions {
-    origin?: [number, number] | number | "centre";
-    backgroundCSS?: string;
-}
+import { OptionTypes } from "../Defaults.js";
 /**
  * Class representing the base canvas object which all other Pulsar canvas objects inherit from.
  * This class is not meant to be instantiated directly by a user, mainly because it is not very useful by itself.
@@ -21,13 +18,7 @@ export declare class ResponsiveCanvas {
     /**
      *
      */
-    properties: {
-        origin: {
-            x: number;
-            y: number;
-        };
-        backgroundCSS: string;
-    };
+    properties: any;
     protected _timeEvolutionData: {
         currentTimeValue: number;
         startTimestampMS: number;
@@ -37,7 +28,7 @@ export declare class ResponsiveCanvas {
     protected _displayData: {
         width: number;
         height: number;
-        originArgCache: (number | "centre")[];
+        originArgCache: "centre" | null;
         parentElement: Element | null;
         resizeObserver: ResizeObserver;
         canvasContainer: HTMLDivElement;
@@ -52,7 +43,8 @@ export declare class ResponsiveCanvas {
      * @param id The ID of the canvas object.
      * @param options  Optional parameters.
      */
-    constructor(id: string, options?: ResponsiveCanvasOptions);
+    constructor(id: string, options?: OptionTypes["ResponsiveCanvas"]);
+    resizeEventListener(entry: ResizeObserverEntry): void;
     /**
       * Updates the background.
       */
