@@ -16,50 +16,42 @@ export declare class ResponsivePlot2DTrace {
     constructor(plot: ResponsivePlot2D, data: ResponsivePlot2DTraceDataType, options?: OptionTypes["ResponsivePlot2DTrace"]);
     /**
      * Sets the colour of the specified trace. The specified colour must be one of the browser-recognised colours.
-     * @param trace The ID of the trace to be updated.
      * @param colour The name of the colour.
      */
     setTraceColour(colour: string): void;
     /**
      * Sets the style of the specified trace. Possible styles are: `solid`, `dotted`, `dashed`, `dashdot`, or `none`.
-     * @param trace The ID of the trace to be updated.
      * @param style The name of the style.
      */
     setTraceStyle(style: string): void;
     /**
      * Sets the width of the specified trace (in pixels).
-     * @param trace The ID of the trace to be updated.
      * @param width The width of the trace in pixels.
      */
     setTraceWidth(width: number): void;
     /**
      * Sets the colour of the markers on the specified trace. The specified colour must be one of the browser-recognised colours.
-     * @param trace The ID of the trace to be updated.
      * @param colour The name of the colour.
      */
     setMarkerColour(colour: string): void;
     /**
      * Sets the style of the markers the specified trace. Possible styles are: `circle`, `plus`, `cross`, `arrow`, or `none`.
-     * @param trace The ID of the trace to be updated.
      * @param style The name of the style.
      */
     setMarkerStyle(style: string): void;
     /**
      * Sets the width of the markers on the specified trace (in pixels).
-     * @param trace The ID of the trace to be updated.
      * @param size The size of the markers in pixels.
      */
     setMarkerSize(size: number): void;
     /**
      * Toggles the visibility of the specified trace.
-     * @param trace The ID of the trace to be updated.
      * @param value Set to `true` for the trace to be visible, `false` for it to be hidden.
      */
     setVisibility(value: boolean): void;
     /**
      * Sets the range of values over which a parameter should be plotted.
      * This property has no effect at all if the function plotted does not have a free parameter.
-     * @param trace The ID of the trace to be updated.
      * @param min The minimum value of the free parameter.
      * @param max The maximum value of the free parameter.
      */

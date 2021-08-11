@@ -125,7 +125,7 @@ var Pulsar = (function (exports) {
 
     /**
      * Object containing the active canvas objects with their ID as the keys. It is used
-     * internally by other functions such as {@link getActivePlots `getActivePlots()`}.
+     * internally by other objects.
      */
     const activeCanvases = {};
 
@@ -515,7 +515,6 @@ var Pulsar = (function (exports) {
         }
         /**
          * Sets the colour of the specified trace. The specified colour must be one of the browser-recognised colours.
-         * @param trace The ID of the trace to be updated.
          * @param colour The name of the colour.
          */
         setTraceColour(colour) {
@@ -524,7 +523,6 @@ var Pulsar = (function (exports) {
         }
         /**
          * Sets the style of the specified trace. Possible styles are: `solid`, `dotted`, `dashed`, `dashdot`, or `none`.
-         * @param trace The ID of the trace to be updated.
          * @param style The name of the style.
          */
         setTraceStyle(style) {
@@ -533,7 +531,6 @@ var Pulsar = (function (exports) {
         }
         /**
          * Sets the width of the specified trace (in pixels).
-         * @param trace The ID of the trace to be updated.
          * @param width The width of the trace in pixels.
          */
         setTraceWidth(width) {
@@ -542,7 +539,6 @@ var Pulsar = (function (exports) {
         }
         /**
          * Sets the colour of the markers on the specified trace. The specified colour must be one of the browser-recognised colours.
-         * @param trace The ID of the trace to be updated.
          * @param colour The name of the colour.
          */
         setMarkerColour(colour) {
@@ -551,7 +547,6 @@ var Pulsar = (function (exports) {
         }
         /**
          * Sets the style of the markers the specified trace. Possible styles are: `circle`, `plus`, `cross`, `arrow`, or `none`.
-         * @param trace The ID of the trace to be updated.
          * @param style The name of the style.
          */
         setMarkerStyle(style) {
@@ -560,7 +555,6 @@ var Pulsar = (function (exports) {
         }
         /**
          * Sets the width of the markers on the specified trace (in pixels).
-         * @param trace The ID of the trace to be updated.
          * @param size The size of the markers in pixels.
          */
         setMarkerSize(size) {
@@ -569,7 +563,6 @@ var Pulsar = (function (exports) {
         }
         /**
          * Toggles the visibility of the specified trace.
-         * @param trace The ID of the trace to be updated.
          * @param value Set to `true` for the trace to be visible, `false` for it to be hidden.
          */
         setVisibility(value) {
@@ -579,7 +572,6 @@ var Pulsar = (function (exports) {
         /**
          * Sets the range of values over which a parameter should be plotted.
          * This property has no effect at all if the function plotted does not have a free parameter.
-         * @param trace The ID of the trace to be updated.
          * @param min The minimum value of the free parameter.
          * @param max The maximum value of the free parameter.
          */
@@ -599,9 +591,7 @@ var Pulsar = (function (exports) {
      * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
      * {@link Plot `Plot`} class. `ResponsivePlot2D` objects behave similarly to a `ResponsiveCanvas`.
      * They have a background, which contains the axes and gridlines, and a foreground, which contains the plot data.
-     * The ticks and gridlines can be toggled and the intervals between them can be changed. The size of a unit on the grid
-     * is determined by the grid scale which, by default, is 50 pixels for both `x` and `y`, meaning that a step of one unit in both directions on
-     * the grid would be 50 pixels on the screen. This can be changed with the {@link ResponsivePlot2D.setGridScale `setGridScale()`} method.
+     * The ticks and gridlines can be toggled and the intervals between them can be changed.
      * Data is added to the plot using the {@link ResponsivePlot2D.addData `addData()`} method.
      * Read-only properties and methods beginning with an underscore should not be changed/called, otherwise they
      * may cause unpredictable behaviour.
@@ -917,7 +907,7 @@ var Pulsar = (function (exports) {
         /**
          * @param id - The ID of the plot object. Must be unique.
          * @param data - The data to be plotted. The structure of the object follows the exact same pattern as the signature of {@link ResponsivePlot2D.plot `plot()`}.
-         * @param data.id - The ID for the trace. This ID will be the key for the relevant entry in the {@link ResponsivePlot2D.plotData `plotData`} property of the plot object.
+         * @param data.id - The ID for the trace. This ID will be the key for the relevant entry in the {@link ResponsivePlot2D.data `data`} property of the plot object.
          * @param data.data - The data to be plotted. See the {@link ResponsivePlot2D.plot `plot()`} method documentation for more details.
          * @param data.object - The options for the data. See the {@link ResponsivePlot2D.plot `plot()`} method documentation for more details.
          * @param options - Options for the plot.

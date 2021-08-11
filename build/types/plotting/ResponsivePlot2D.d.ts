@@ -6,9 +6,7 @@ import { OptionTypes } from "../Defaults.js";
  * A `ResponsivePlot2D` object can be created by calling the constructor, but the preferred method is to use the
  * {@link Plot `Plot`} class. `ResponsivePlot2D` objects behave similarly to a `ResponsiveCanvas`.
  * They have a background, which contains the axes and gridlines, and a foreground, which contains the plot data.
- * The ticks and gridlines can be toggled and the intervals between them can be changed. The size of a unit on the grid
- * is determined by the grid scale which, by default, is 50 pixels for both `x` and `y`, meaning that a step of one unit in both directions on
- * the grid would be 50 pixels on the screen. This can be changed with the {@link ResponsivePlot2D.setGridScale `setGridScale()`} method.
+ * The ticks and gridlines can be toggled and the intervals between them can be changed.
  * Data is added to the plot using the {@link ResponsivePlot2D.addData `addData()`} method.
  * Read-only properties and methods beginning with an underscore should not be changed/called, otherwise they
  * may cause unpredictable behaviour.
