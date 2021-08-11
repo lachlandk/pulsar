@@ -203,4 +203,10 @@ export class ResponsiveCanvas {
             throw `HTMLElement with querySelector "${element}" could not be found.`;
         }
     }
+    hide() {
+        if (this._displayData.parentElement !== null) {
+            this._displayData.parentElement.removeChild(this._displayData.canvasContainer);
+            this._displayData.parentElement = null;
+        }
+    }
 }

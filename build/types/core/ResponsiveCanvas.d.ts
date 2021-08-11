@@ -94,4 +94,5 @@ export declare class ResponsiveCanvas {
      * @param element
      */
     show(element: string | Element): void;
+    hide(): void;
 }
