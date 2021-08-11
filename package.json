@@ -1,6 +1,6 @@
 {
 	"name": "@lachlandk/pulsar",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "A javascript data visualisation framework",
 	"main": "dist/pulsar/pulsar.js",
 	"module": "dist/pulsar/pulsar.js",
