@@ -1,7 +1,4 @@
-export interface ResponsiveCanvasOptions {
-    origin?: [number, number] | number | "centre";
-    backgroundCSS?: string;
-}
+import { OptionTypes } from "../Defaults.js";
 /**
  * Class representing the base canvas object which all other Pulsar canvas objects inherit from.
  * This class is not meant to be instantiated directly by a user, mainly because it is not very useful by itself.
@@ -21,50 +18,36 @@ export declare class ResponsiveCanvas {
     /**
      *
      */
-    properties: {
-        origin: {
-            x: number;
-            y: number;
-        };
-        backgroundCSS: string;
-    };
-    /**
-     * Object containing key-value pairs of (normally - but not necessarily - numerical) constants for the drawing environment.
-     * Constants can be set with the {@link ResponsiveCanvas.setConstant `setConstant()`} method, and they can be connected up
-     * to an input element on the HTML page with the {@link ResponsiveCanvas.connectElementAttribute `connectElementAttribute()`} method.
-     * They do not provide much functionality by themselves, but other classes which extend `ResponsiveCanvas`
-     * make use of them for display and interactivity purposes.
-     */
-    constants: {
-        [name: string]: any;
-    };
-    protected _timeEvolutionData: {
-        currentTimeValue: number;
-        startTimestampMS: number;
-        offsetTimestampMS: number;
-        timeEvolutionActive: boolean;
-    };
+    properties: any;
     protected _displayData: {
         width: number;
         height: number;
-        originArgCache: (number | "centre")[];
-        containerElement: HTMLElement | null;
+        originArgCache: "centre" | null;
+        parentElement: Element | null;
         resizeObserver: ResizeObserver;
+        canvasContainer: HTMLDivElement;
         backgroundCanvas: HTMLCanvasElement;
         foregroundCanvas: HTMLCanvasElement;
-        background: CanvasRenderingContext2D | null;
-        foreground: CanvasRenderingContext2D | null;
+        background: CanvasRenderingContext2D;
+        foreground: CanvasRenderingContext2D;
         backgroundFunction: (context: CanvasRenderingContext2D) => void;
         foregroundFunction: (context: CanvasRenderingContext2D, timeValue: number) => void;
     };
+    currentTimeValue: number;
     /**
      * @param id The ID of the canvas object.
      * @param options  Optional parameters.
      */
-    constructor(id: string, options?: ResponsiveCanvasOptions);
-    protected _updateCanvasDimensions(): void;
-    protected _updateBackground(): void;
-    protected _updateForeground(): void;
+    constructor(id: string, options?: OptionTypes["ResponsiveCanvas"]);
+    resizeEventListener(entry: ResizeObserverEntry): void;
+    /**
+      * Updates the background.
+      */
+    updateBackground(): void;
+    /**
+      * Updates the foreground.
+      */
+    updateForeground(): void;
     /**
      * Sets the drawing function for the background canvas to `drawingFunction` and updates the canvas.
      * The argument `drawingFunction` should be a function which takes one or two arguments of its own, the first being the
@@ -107,36 +90,9 @@ export declare class ResponsiveCanvas {
      */
     setBackgroundCSS(cssString: string): void;
     /**
-     * Starts or resumes the time evolution of the foreground.
-     */
-    startTime(): void;
-    /**
-     * Pauses the time evolution of the foreground.
-     */
-    pauseTime(): void;
-    /**
-     * Stops the time evolution of the foreground and resets the current timestamp to 0.
-     */
-    stopTime(): void;
-    protected _updateTime(currentTimestamp: number): void;
-    /**
-     * Sets the value of a constant.
-     * @param name The name of the constant. This will be the key in the {@link ResponsiveCanvas.constants `constants`} object.
-     * @param value The value of the constant.
-     */
-    setConstant(name: string, value: any): void;
-    /**
-     * Connects an event listener on an element with the value of a constant.
-     * @param element
-     * @param event
-     * @param attribute
-     * @param constant
-     * @param transform
-     */
-    connectElementAttribute(element: string | Element, event: string, attribute: string, constant: string, transform?: (x: any) => any): void;
-    /**
      * Display the canvas object in an HTML element.
      * @param element
      */
-    show(element: string | HTMLElement): void;
+    show(element: string | Element): void;
+    hide(): void;
 }

@@ -1,22 +1,3 @@
-import { propertyDefaults } from "../core/defaults.js";
-export function setupProperties(instance, prototype, options) {
-    const propertySet = propertyDefaults[prototype];
-    for (const key of Object.keys(propertySet)) {
-        const propertyDefault = propertySet[key];
-        const optionProvided = Object.keys(options).includes(key);
-        const args = [instance, key, propertyDefault.type];
-        if (propertyDefault.multi) {
-            args.push(...(optionProvided ? (Array.isArray(options[key]) ? options[key] : [options[key]]) : propertyDefault.value));
-        }
-        else {
-            args.push(optionProvided ? options[key] : propertyDefault.value);
-        }
-        if (propertyDefault.extra) {
-            args.push(propertyDefault.extra);
-        }
-        propertySetters[propertyDefault.setter](...args);
-    }
-}
 export const propertySetters = {
     setAxesProperty(instance, property, expectedType, ...values) {
         if (values.length === 1 && typeof values[0] === expectedType) {
@@ -74,20 +55,6 @@ export const propertySetters = {
         }
         else {
             throw `Error setting choice property ${property}: Unexpected type "${value}".`;
-        }
-    },
-    setPlotDataProperty(instance, trace, property, value) {
-        const propertySet = propertyDefaults["ResponsivePlot2DTrace"];
-        const propertyDefault = propertySet[property];
-        if (typeof instance.plotData[trace] !== "undefined") {
-            const args = [instance.plotData[trace], property, propertyDefault.type, value];
-            if (propertyDefault.extra) {
-                args.push(propertyDefault.extra);
-            }
-            propertySetters[propertyDefault.setter](...args);
-        }
-        else {
-            throw `Error setting plotData property ${property}: Invalid trace ID "${trace}"`;
         }
     }
 };

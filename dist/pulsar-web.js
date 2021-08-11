@@ -1,52 +1,6 @@
 var Pulsar = (function (exports) {
     'use strict';
 
-    const propertyDefaults = {
-        ResponsiveCanvas: {
-            origin: { value: [0, 0], type: "number", setter: "setAxesProperty", multi: true },
-            backgroundCSS: { value: "", type: "string", setter: "setSingleProperty" }
-        },
-        ResponsivePlot2D: {
-            majorTicks: { value: [true, true], type: "boolean", setter: "setAxesProperty", multi: true },
-            minorTicks: { value: [false, false], type: "boolean", setter: "setAxesProperty", multi: true },
-            majorTickSize: { value: [5, 5], type: "number", setter: "setAxesProperty", multi: true },
-            minorTickSize: { value: [1, 1], type: "number", setter: "setAxesProperty", multi: true },
-            majorGridlines: { value: [true, true], type: "boolean", setter: "setAxesProperty", multi: true },
-            minorGridlines: { value: [false, false], type: "boolean", setter: "setAxesProperty", multi: true },
-            majorGridSize: { value: [5, 5], type: "number", setter: "setAxesProperty", multi: true },
-            minorGridSize: { value: [1, 1], type: "number", setter: "setAxesProperty", multi: true },
-            gridScale: { value: [50, 50], type: "number", setter: "setAxesProperty", multi: true }
-        },
-        ResponsivePlot2DTrace: {
-            traceColour: { value: "blue", type: "string", setter: "setSingleProperty" },
-            traceStyle: { value: "solid", type: "string", setter: "setChoiceProperty", extra: ["solid", "dotted", "dashed", "dashdot", "none"] },
-            traceWidth: { value: 3, type: "number", setter: "setSingleProperty" },
-            markerColour: { value: "blue", type: "string", setter: "setSingleProperty" },
-            markerStyle: { value: "none", type: "string", setter: "setChoiceProperty", extra: ["circle", "plus", "cross", "arrow", "none"] },
-            markerSize: { value: 1, type: "number", setter: "setSingleProperty" },
-            visibility: { value: true, type: "boolean", setter: "setSingleProperty" },
-            parameterRange: { value: [0, 1], type: "number", setter: "setArrayProperty", extra: 2 }
-        }
-    };
-
-    function setupProperties(instance, prototype, options) {
-        const propertySet = propertyDefaults[prototype];
-        for (const key of Object.keys(propertySet)) {
-            const propertyDefault = propertySet[key];
-            const optionProvided = Object.keys(options).includes(key);
-            const args = [instance, key, propertyDefault.type];
-            if (propertyDefault.multi) {
-                args.push(...(optionProvided ? (Array.isArray(options[key]) ? options[key] : [options[key]]) : propertyDefault.value));
-            }
-            else {
-                args.push(optionProvided ? options[key] : propertyDefault.value);
-            }
-            if (propertyDefault.extra) {
-                args.push(propertyDefault.extra);
-            }
-            propertySetters[propertyDefault.setter](...args);
-        }
-    }
     const propertySetters = {
         setAxesProperty(instance, property, expectedType, ...values) {
             if (values.length === 1 && typeof values[0] === expectedType) {
@@ -105,124 +59,275 @@ var Pulsar = (function (exports) {
             else {
                 throw `Error setting choice property ${property}: Unexpected type "${value}".`;
             }
-        },
-        setPlotDataProperty(instance, trace, property, value) {
-            const propertySet = propertyDefaults["ResponsivePlot2DTrace"];
-            const propertyDefault = propertySet[property];
-            if (typeof instance.plotData[trace] !== "undefined") {
-                const args = [instance.plotData[trace], property, propertyDefault.type, value];
-                if (propertyDefault.extra) {
-                    args.push(propertyDefault.extra);
-                }
-                propertySetters[propertyDefault.setter](...args);
-            }
-            else {
-                throw `Error setting plotData property ${property}: Invalid trace ID "${trace}"`;
-            }
         }
     };
+
+    function continuousFunctionGenerator(func) {
+        return function* (t, xLims, yLims, step) {
+            let x = xLims[0];
+            let y = (x) => func(x, t);
+            while (x <= xLims[1]) {
+                while (true) { 
+                    if (x > xLims[1]) { 
+                        break;
+                    }
+                    else if (y(x) <= yLims[1] && y(x) >= yLims[0] && !Number.isNaN(y(x))) { 
+                        yield [x - step, y(x - step)];
+                        break;
+                    }
+                    else { 
+                        x += step;
+                    }
+                }
+                while (true) { 
+                    yield [x, y(x)];
+                    if (x > xLims[1] || y(x) > yLims[1] || y(x) < yLims[0] || Number.isNaN(y(x))) { 
+                        break;
+                    }
+                    else { 
+                        x += step;
+                    }
+                }
+            }
+        };
+    }
+    function parametricFunctionGenerator(data) {
+        return function* (t, xLims, yLims, step, paramLims) {
+            let x = (p) => data[0](p, t);
+            let y = (p) => data[1](p, t);
+            let p = paramLims[0];
+            while (p <= paramLims[1]) {
+                yield [x(p), y(p)];
+                p += step;
+            }
+            yield [x(p), y(p)];
+        };
+    }
+    function discreteMapGenerator(data) {
+        return function* (t) {
+            for (const x of data[0]) {
+                yield [x, data[1](x, t)];
+            }
+        };
+    }
+    function discreteFunctionGenerator(data) {
+        return function* (t) {
+            for (let i = 0; i < data[0].length; i++) {
+                const xValue = typeof data[0][i] === "function" ? data[0][i](t) : data[0][i];
+                const yValue = typeof data[1][i] === "function" ? data[1][i](xValue, t) : data[1][i];
+                yield [xValue, yValue];
+            }
+        };
+    }
 
     
     const activeCanvases = {};
 
     
+    class defaults {
+        constructor() {
+            this.values = {
+                ResponsiveCanvas: {
+                    origin: { x: 0, y: 0 },
+                    backgroundCSS: ""
+                },
+                ResponsivePlot2D: {
+                    origin: { x: 0, y: 0 },
+                    backgroundCSS: "",
+                    majorTicks: { x: true, y: true },
+                    minorTicks: { x: false, y: false },
+                    majorTickSize: { x: 5, y: 5 },
+                    minorTickSize: { x: 1, y: 1 },
+                    majorGridlines: { x: true, y: true },
+                    minorGridlines: { x: false, y: false },
+                    majorGridSize: { x: 5, y: 5 },
+                    minorGridSize: { x: 1, y: 1 },
+                    xLims: [0, 10],
+                    yLims: [-10, 0]
+                },
+                ResponsivePlot2DTrace: {
+                    traceColour: "blue",
+                    traceStyle: "solid",
+                    traceWidth: 3,
+                    markerColour: "blue",
+                    markerStyle: "none",
+                    markerSize: 1,
+                    visibility: true,
+                    parameterRange: [0, 1]
+                }
+            };
+        }
+        create(...protos) {
+            return Object.assign({}, ...Array.from(protos, (proto) => this.values[proto]));
+        }
+        mergeOptions(instance, type, options) {
+            for (const option of Object.keys(options)) {
+                if (option in this.values[type]) {
+                    const setterFunc = instance[`set${option.charAt(0).toUpperCase()}${option.slice(1)}`];
+                    if (setterFunc !== undefined) {
+                        setterFunc.call(instance, ...(Array.isArray(options[option]) ? options[option] : [options[option]]));
+                    }
+                }
+            }
+        }
+    }
+    const Defaults = new defaults();
+
+    
+    class TimeEvolutionController {
+        constructor() {
+            this.canvasTimeData = [];
+            this.globalLoopActive = false;
+            this.startTimestamp = 0;
+            this.offsetTimestamp = 0;
+        }
+        startAll() {
+            for (const object of this.canvasTimeData) {
+                object.timeEvolutionActive = true;
+            }
+            this.startTimestamp = performance.now();
+            this.globalLoopActive = true;
+            window.requestAnimationFrame(timestamp => this.updateObjects(timestamp));
+        }
+        pauseAll() {
+            for (const object of this.canvasTimeData) {
+                object.timeEvolutionActive = false;
+            }
+            this.offsetTimestamp = this.offsetTimestamp + performance.now() - this.startTimestamp;
+        }
+        stopAll() {
+            for (const object of this.canvasTimeData) {
+                object.timeEvolutionActive = false;
+                activeCanvases[object.id].currentTimeValue = 0;
+                activeCanvases[object.id].updateForeground();
+            }
+            this.startTimestamp = 0;
+            this.offsetTimestamp = 0;
+            this.globalLoopActive = false;
+        }
+        updateObjects(currentTimestamp) {
+            if (this.globalLoopActive) {
+                let atLeastOneActiveCanvas = false;
+                for (const object of this.canvasTimeData) {
+                    if (object.timeEvolutionActive) {
+                        atLeastOneActiveCanvas = true;
+                        activeCanvases[object.id].currentTimeValue = (this.offsetTimestamp + currentTimestamp - this.startTimestamp) / 1000;
+                        activeCanvases[object.id].updateForeground();
+                    }
+                }
+                if (atLeastOneActiveCanvas) {
+                    window.requestAnimationFrame(timestamp => this.updateObjects(timestamp));
+                }
+                else {
+                    this.globalLoopActive = false;
+                }
+            }
+        }
+        addObject(id, sync = true) {
+            if (this.canvasTimeData.find(object => object.id === id) === undefined) {
+                this.canvasTimeData.push({
+                    id: id,
+                    timeEvolutionActive: sync,
+                });
+            }
+            else {
+                throw `Error: Time data for canvas object with ID "${id}" already exists.`;
+            }
+        }
+    }
+    const Time = new TimeEvolutionController();
+
+    
     class ResponsiveCanvas {
         constructor(id, options = {}) {
             this.id = "";
-            this.properties = {
-                origin: { x: 0, y: 0 },
-                backgroundCSS: ""
-            };
-            this.constants = {};
-            this._timeEvolutionData = {
-                currentTimeValue: 0,
-                startTimestampMS: 0,
-                offsetTimestampMS: 0,
-                timeEvolutionActive: false
-            };
+            this.properties = Defaults.create("ResponsiveCanvas");
+            this.currentTimeValue = 0;
+            const canvasContainer = document.createElement("div");
+            canvasContainer.style.display = "grid";
+            canvasContainer.style.width = "100%";
+            canvasContainer.style.height = "100%";
+            const backgroundCanvas = document.createElement("canvas");
+            backgroundCanvas.style.gridArea = "1 / 1";
+            const foregroundCanvas = document.createElement("canvas");
+            foregroundCanvas.style.gridArea = "1 / 1";
+            canvasContainer.appendChild(backgroundCanvas);
+            canvasContainer.appendChild(foregroundCanvas);
+            const resizeObserver = new ResizeObserver(entries => {
+                for (const entry of entries) {
+                    this.resizeEventListener(entry);
+                    this.updateBackground();
+                    this.updateForeground();
+                }
+            });
+            resizeObserver.observe(canvasContainer);
             this._displayData = {
                 width: 0,
                 height: 0,
-                originArgCache: [0],
-                containerElement: null,
-                resizeObserver: new ResizeObserver(entries => {
-                    for (const entry of entries) {
-                        this._displayData.width = entry.target.clientWidth;
-                        this._displayData.height = entry.target.clientHeight;
-                        this._updateCanvasDimensions();
-                    }
-                }),
-                backgroundCanvas: document.createElement("canvas"),
-                foregroundCanvas: document.createElement("canvas"),
-                background: null,
-                foreground: null,
-                backgroundFunction: (() => { }),
-                foregroundFunction: (() => { })
+                originArgCache: null,
+                parentElement: null,
+                resizeObserver: resizeObserver,
+                canvasContainer: canvasContainer,
+                backgroundCanvas: backgroundCanvas,
+                foregroundCanvas: foregroundCanvas,
+                background: backgroundCanvas.getContext("2d"),
+                foreground: foregroundCanvas.getContext("2d"),
+                backgroundFunction: () => { },
+                foregroundFunction: () => { }
             };
+            Time.addObject(id);
             this.setID(id);
-            if (options.origin === "centre") {
-                this.setOrigin("centre");
-                delete options.origin;
-            }
-            setupProperties(this, "ResponsiveCanvas", options);
-            this._displayData.backgroundCanvas.style.position = "absolute";
-            this._displayData.backgroundCanvas.style.left = "0";
-            this._displayData.backgroundCanvas.style.top = "0";
-            this._displayData.backgroundCanvas.id = `${this.id}-background-canvas`;
-            this._displayData.background = this._displayData.backgroundCanvas.getContext("2d");
-            this._displayData.foregroundCanvas.style.position = "absolute";
-            this._displayData.foregroundCanvas.style.left = "0";
-            this._displayData.foregroundCanvas.style.top = "0";
-            this._displayData.foregroundCanvas.id = `${this.id}-foreground-canvas`;
-            this._displayData.foreground = this._displayData.foregroundCanvas.getContext("2d");
+            Defaults.mergeOptions(this, "ResponsiveCanvas", options);
         }
-        _updateCanvasDimensions() {
-            if (this._displayData.containerElement !== null) {
-                this._displayData.containerElement.style.width = `${this._displayData.width}px`;
-                this._displayData.containerElement.style.height = `${this._displayData.height}px`;
-                this._displayData.backgroundCanvas.width = this._displayData.width;
-                this._displayData.backgroundCanvas.height = this._displayData.height;
-                this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
-                this._updateBackground();
-                this._displayData.foregroundCanvas.width = this._displayData.width;
-                this._displayData.foregroundCanvas.height = this._displayData.height;
-                this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
-                this._updateForeground();
+        resizeEventListener(entry) {
+            this._displayData.width = entry.target.clientWidth;
+            this._displayData.height = entry.target.clientHeight;
+            this._displayData.backgroundCanvas.width = this._displayData.width;
+            this._displayData.backgroundCanvas.height = this._displayData.height;
+            this._displayData.foregroundCanvas.width = this._displayData.width;
+            this._displayData.foregroundCanvas.height = this._displayData.height;
+            if (this._displayData.originArgCache !== null) {
+                this.setOrigin(this._displayData.originArgCache);
             }
+            this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y); 
+            this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
         }
-        _updateBackground() {
-            if (this._displayData.background !== null) {
-                this._displayData.background.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
-                this._displayData.backgroundFunction(this._displayData.background);
-            }
+        updateBackground() {
+            this._displayData.background.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
+            this._displayData.backgroundFunction(this._displayData.background);
         }
-        _updateForeground() {
-            if (this._displayData.foreground !== null) {
-                this._displayData.foreground.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
-                this._displayData.foregroundFunction(this._displayData.foreground, this._timeEvolutionData.currentTimeValue);
-            }
+        updateForeground() {
+            this._displayData.foreground.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
+            this._displayData.foregroundFunction(this._displayData.foreground, this.currentTimeValue);
         }
         setBackground(drawingFunction) {
             this._displayData.backgroundFunction = drawingFunction;
-            this._updateBackground();
+            this.updateBackground();
         }
         setForeground(drawingFunction) {
             this._displayData.foregroundFunction = drawingFunction;
-            this._updateForeground();
+            this.updateForeground();
         }
         setOrigin(...point) {
             if (point.length === 1 && point[0] === "centre") {
                 propertySetters.setAxesProperty(this, "origin", "number", Math.round(this._displayData.width / 2), Math.round(this._displayData.height / 2));
+                this._displayData.originArgCache = point[0];
             }
             else {
                 propertySetters.setAxesProperty(this, "origin", "number", ...point);
+                this._displayData.originArgCache = null;
             }
-            this._displayData.originArgCache = point;
-            this._updateCanvasDimensions();
+            this._displayData.background.resetTransform();
+            this._displayData.background.translate(this.properties.origin.x, this.properties.origin.y);
+            this.updateBackground();
+            this._displayData.foreground.resetTransform();
+            this._displayData.foreground.translate(this.properties.origin.x, this.properties.origin.y);
+            this.updateForeground();
         }
         setID(id) {
             if (activeCanvases[id] === undefined) {
                 delete activeCanvases[this.id];
+                Time.canvasTimeData.find(object => object.id === id).id = id;
                 this.id = id;
                 activeCanvases[this.id] = this;
             }
@@ -234,74 +339,119 @@ var Pulsar = (function (exports) {
             propertySetters.setSingleProperty(this, "backgroundCSS", "string", cssString);
             this._displayData.backgroundCanvas.style.background = cssString;
         }
-        startTime() {
-            this._timeEvolutionData.timeEvolutionActive = true;
-            this._timeEvolutionData.startTimestampMS = performance.now();
-            window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
-        }
-        pauseTime() {
-            this._timeEvolutionData.timeEvolutionActive = false;
-            this._timeEvolutionData.offsetTimestampMS = performance.now() - this._timeEvolutionData.startTimestampMS;
-        }
-        stopTime() {
-            this._timeEvolutionData.timeEvolutionActive = false;
-            this._timeEvolutionData.startTimestampMS = 0;
-            this._timeEvolutionData.offsetTimestampMS = 0;
-            this._timeEvolutionData.currentTimeValue = 0;
-            this._updateForeground();
-        }
-        _updateTime(currentTimestamp) {
-            if (this._timeEvolutionData.timeEvolutionActive) {
-                const currentTime = this._timeEvolutionData.offsetTimestampMS + currentTimestamp - this._timeEvolutionData.startTimestampMS;
-                this._timeEvolutionData.currentTimeValue = currentTime < 0 ? 0 : currentTime / 1000;
-                this._updateForeground();
-                window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
-            }
-        }
-        setConstant(name, value) {
-            this.constants[name] = value;
-        }
-        connectElementAttribute(element, event, attribute, constant, transform = (x) => x) {
-            if (element instanceof Element) {
-                element.addEventListener(event, () => {
-                    this.setConstant(constant, transform(element[attribute]));
-                    this._updateForeground();
-                });
-                this.setConstant(constant, transform(element[attribute]));
-            }
-            else {
-                const target = document.querySelector(element);
-                if (target instanceof Element) {
-                    target.addEventListener(event, () => {
-                        this.setConstant(constant, transform(target[attribute]));
-                        this._updateForeground();
-                    });
-                    this.setConstant(constant, transform(target[attribute]));
-                }
-                else {
-                    throw `Element with ID "${element}" could not be found.`;
-                }
-            }
-        }
         show(element) {
-            if (element instanceof HTMLElement) {
-                this._displayData.containerElement = element;
+            if (element instanceof Element) {
+                this._displayData.parentElement = element;
             }
             else {
-                this._displayData.containerElement = document.querySelector(element);
+                this._displayData.parentElement = document.querySelector(element);
             }
-            if (this._displayData.containerElement !== null) {
-                this._displayData.containerElement.style.position = "relative";
-                this._displayData.containerElement.appendChild(this._displayData.backgroundCanvas);
-                this._displayData.containerElement.appendChild(this._displayData.foregroundCanvas);
-                this._displayData.width = this._displayData.containerElement.clientWidth;
-                this._displayData.height = this._displayData.containerElement.clientHeight;
-                this._displayData.resizeObserver.observe(this._displayData.containerElement);
-                this.setOrigin(...this._displayData.originArgCache);
-                this.setBackgroundCSS(this.properties.backgroundCSS);
+            if (this._displayData.parentElement !== null) {
+                this._displayData.parentElement.appendChild(this._displayData.canvasContainer);
+                this._displayData.width = this._displayData.canvasContainer.clientWidth;
+                this._displayData.height = this._displayData.canvasContainer.clientHeight;
+                if (this._displayData.originArgCache !== null) {
+                    this.setOrigin(this._displayData.originArgCache);
+                }
+                this.setBackgroundCSS(this.properties.backgroundCSS); 
             }
             else {
                 throw `HTMLElement with querySelector "${element}" could not be found.`;
+            }
+        }
+        hide() {
+            if (this._displayData.parentElement !== null) {
+                this._displayData.parentElement.removeChild(this._displayData.canvasContainer);
+                this._displayData.parentElement = null;
+            }
+        }
+    }
+
+    
+    class ResponsivePlot2DTrace {
+        constructor(plot, data, options = {}) {
+            this.properties = Defaults.create("ResponsivePlot2DTrace");
+            this.plot = plot; 
+            Defaults.mergeOptions(this, "ResponsivePlot2DTrace", options);
+            if (Array.isArray(data) && data.length === 2) {
+                if (Array.isArray(data[0])) {
+                    if (Array.isArray(data[1])) { 
+                        if (data[0].length !== data[1].length) {
+                            throw "Error setting plot data: Lengths of data arrays are not equal.";
+                        }
+                        for (let i = 0; i < data[0].length; i++) {
+                            const xValue = typeof data[0][i] === "function" ? data[0][i](0) : data[0][i];
+                            const yValue = typeof data[1][i] === "function" ? data[1][i](0, 0) : data[1][i];
+                            if (typeof xValue !== "number" || typeof yValue !== "number") {
+                                throw "Error setting plot data: Data arrays contain types which are not numbers.";
+                            }
+                        }
+                        this.data = discreteFunctionGenerator(data);
+                    }
+                    else if (typeof data[1] === "function") { 
+                        if (typeof data[1](0, 0) !== "number") {
+                            throw "Error setting plot data: Plot function does not return numbers.";
+                        }
+                        for (let i = 0; i < data[0].length; i++) {
+                            if (typeof data[0][i] !== "number") {
+                                throw "Error setting plot data: Data array contains types which are not numbers.";
+                            }
+                        }
+                        this.data = discreteMapGenerator(data);
+                    }
+                }
+                else if (typeof data[0] === "function" && typeof data[1] === "function") { 
+                    if (typeof data[0](0, 0) !== "number" || typeof data[1](0, 0) !== "number") {
+                        throw "Error setting plot data: Plot function does not return numbers.";
+                    }
+                    this.data = parametricFunctionGenerator(data);
+                }
+            }
+            else if (typeof data === "function") { 
+                if (typeof data(0, 0) !== "number") {
+                    throw "Error setting plot data: Plot function does not return numbers.";
+                }
+                this.data = continuousFunctionGenerator(data);
+            }
+            else {
+                throw `Error setting plot data: Unrecognised data signature ${data}.`;
+            }
+        }
+        setTraceColour(colour) {
+            propertySetters.setSingleProperty(this, "traceColour", "string", colour);
+            this.plot.updatePlottingData();
+        }
+        setTraceStyle(style) {
+            propertySetters.setChoiceProperty(this, "traceStyle", "string", style, ["solid", "dotted", "dashed", "dashdot", "none"]);
+            this.plot.updatePlottingData();
+        }
+        setTraceWidth(width) {
+            propertySetters.setSingleProperty(this, "traceWidth", "number", width);
+            this.plot.updatePlottingData();
+        }
+        setMarkerColour(colour) {
+            propertySetters.setSingleProperty(this, "markerColour", "string", colour);
+            this.plot.updatePlottingData();
+        }
+        setMarkerStyle(style) {
+            propertySetters.setChoiceProperty(this, "markerStyle", "string", style, ["circle", "plus", "cross", "arrow", "none"]);
+            this.plot.updatePlottingData();
+        }
+        setMarkerSize(size) {
+            propertySetters.setSingleProperty(this, "markerSize", "number", size);
+            this.plot.updatePlottingData();
+        }
+        setVisibility(value) {
+            propertySetters.setSingleProperty(this, "visibility", "boolean", value);
+            this.plot.updatePlottingData();
+        }
+        setParameterRange(min, max) {
+            if (max >= min) {
+                propertySetters.setArrayProperty(this, "parameterRange", "number", [min, max], 2);
+                this.plot.updatePlottingData();
+            }
+            else {
+                throw `Error setting parameterRange: Lower limit cannot be higher than or equal to higher limit.`;
             }
         }
     }
@@ -310,25 +460,10 @@ var Pulsar = (function (exports) {
     class ResponsivePlot2D extends ResponsiveCanvas {
         constructor(id, options = {}) {
             super(id, options);
-            this.properties = {
-                origin: { x: 0, y: 0 },
-                backgroundCSS: "",
-                majorTicks: { x: true, y: true },
-                minorTicks: { x: false, y: false },
-                majorTickSize: { x: 5, y: 5 },
-                minorTickSize: { x: 1, y: 1 },
-                majorGridlines: { x: true, y: true },
-                minorGridlines: { x: false, y: false },
-                majorGridSize: { x: 5, y: 5 },
-                minorGridSize: { x: 1, y: 1 },
-                gridScale: { x: 50, y: 50 },
-                xLims: [-0, 0],
-                yLims: [-0, 0]
-            };
-            this.plotData = {};
-            setupProperties(this, "ResponsiveCanvas", options);
-            setupProperties(this, "ResponsivePlot2D", options); 
-            this._updateLimits();
+            this.properties = Defaults.create("ResponsiveCanvas", "ResponsivePlot2D");
+            this.gridScale = { x: 0, y: 0 };
+            this.data = {};
+            Defaults.mergeOptions(this, "ResponsivePlot2D", options);
             this.setBackground(context => {
                 const drawGridSet = (majorOrMinor, xy, ticksOrGridlines, width, lineStart, lineEnd) => {
                     const offset = width % 2 === 0 ? 0 : 0.5;
@@ -336,19 +471,19 @@ var Pulsar = (function (exports) {
                     context.lineWidth = width;
                     if (this.properties[`${majorOrMinor}${ticksOrGridlines}`][xy]) {
                         context.beginPath();
-                        let currentValue = -Math.floor(this.properties.origin[xy] / (intervalSize * this.properties.gridScale[xy])) * intervalSize * this.properties.gridScale[xy];
+                        let currentValue = -Math.floor(this.properties.origin[xy] / (intervalSize * this.gridScale[xy])) * intervalSize * this.gridScale[xy];
                         if (xy === "x") {
                             while (currentValue < this._displayData.width - this.properties.origin.x) {
                                 context.moveTo(currentValue + offset, lineStart);
                                 context.lineTo(currentValue + offset, lineEnd);
-                                currentValue += this.properties.gridScale.x * intervalSize;
+                                currentValue += this.gridScale.x * intervalSize;
                             }
                         }
                         else if (xy === "y") {
                             while (currentValue < this._displayData.height - this.properties.origin.y) {
                                 context.moveTo(lineStart, currentValue + offset);
                                 context.lineTo(lineEnd, currentValue + offset);
-                                currentValue += this.properties.gridScale.y * intervalSize;
+                                currentValue += this.gridScale.y * intervalSize;
                             }
                         }
                         context.stroke();
@@ -373,15 +508,16 @@ var Pulsar = (function (exports) {
                 context.stroke();
             });
         }
-        _updateLimits() {
-            this.properties.xLims = [-this.properties.origin.x / this.properties.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.properties.gridScale.x];
-            this.properties.yLims = [-this.properties.origin.y / this.properties.gridScale.y, (this._displayData.height - this.properties.origin.y) / this.properties.gridScale.y];
+        resizeEventListener(entry) {
+            super.resizeEventListener(entry);
+            this.setXLims(...this.properties.xLims);
+            this.setYLims(...this.properties.yLims);
         }
-        _updatePlottingData() {
+        updatePlottingData() {
             this.setForeground((context, timeValue) => {
-                for (const datasetID of Object.keys(this.plotData)) {
-                    if (this.plotData[datasetID].properties.visibility) {
-                        const dataset = this.plotData[datasetID];
+                for (const datasetID of Object.keys(this.data)) {
+                    if (this.data[datasetID].properties.visibility) {
+                        const dataset = this.data[datasetID];
                         if (dataset.properties.traceStyle !== "none") {
                             context.strokeStyle = dataset.properties.traceColour;
                             context.lineWidth = dataset.properties.traceWidth;
@@ -406,7 +542,7 @@ var Pulsar = (function (exports) {
                                 if (!Number.isSafeInteger(Math.round(currentPoint[1]))) {
                                     currentPoint[1] = currentPoint[1] > 0 ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
                                 }
-                                context.lineTo(currentPoint[0] * this.properties.gridScale.x, -currentPoint[1] * this.properties.gridScale.y);
+                                context.lineTo(currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y);
                             }
                             context.stroke();
                         }
@@ -458,9 +594,9 @@ var Pulsar = (function (exports) {
                             let lastPoint = [NaN, NaN];
                             for (const currentPoint of dataGenerator) {
                                 context.beginPath();
-                                const point = [currentPoint[0] * this.properties.gridScale.x, -currentPoint[1] * this.properties.gridScale.y];
+                                const point = [currentPoint[0] * this.gridScale.x, -currentPoint[1] * this.gridScale.y];
                                 const angle = Math.atan2(point[1] - lastPoint[1], -point[0] + lastPoint[0]);
-                                drawMarker(context, ...point, angle);
+                                drawMarker(context, ...point, angle); 
                                 lastPoint = point;
                             }
                         }
@@ -468,205 +604,65 @@ var Pulsar = (function (exports) {
                 }
             });
         }
-        plot(id, data, options = {}) {
-            if (this.plotData[id] === undefined) {
-                if (Array.isArray(data) && data.length === 2) {
-                    if (Array.isArray(data[0])) {
-                        if (Array.isArray(data[1])) { 
-                            if (data[0].length !== data[1].length) {
-                                throw "Error setting plot data: Lengths of data arrays are not equal.";
-                            }
-                            for (let i = 0; i < data[0].length; i++) {
-                                const xValue = typeof data[0][i] === "function" ? data[0][i](0) : data[0][i];
-                                const yValue = typeof data[1][i] === "function" ? data[1][i](0, 0) : data[1][i];
-                                if (typeof xValue !== "number" || typeof yValue !== "number") {
-                                    throw "Error setting plot data: Data arrays contain types which are not numbers.";
-                                }
-                            }
-                            this.plotData[id] = {
-                                properties: {
-                                    traceColour: "blue",
-                                    traceStyle: "solid",
-                                    traceWidth: 3,
-                                    markerColour: "blue",
-                                    markerStyle: "none",
-                                    markerSize: 1,
-                                    visibility: true,
-                                    parameterRange: [0, 1]
-                                },
-                                data: function* (t) {
-                                    for (let i = 0; i < data[0].length; i++) {
-                                        const xValue = typeof data[0][i] === "function" ? data[0][i](t) : data[0][i];
-                                        const yValue = typeof data[1][i] === "function" ? data[1][i](xValue, t) : data[1][i];
-                                        yield [xValue, yValue];
-                                    }
-                                }
-                            };
-                        }
-                        else if (typeof data[1] === "function") { 
-                            if (typeof data[1](0, 0) !== "number") {
-                                throw "Error setting plot data: Plot function does not return numbers.";
-                            }
-                            for (let i = 0; i < data[0].length; i++) {
-                                if (typeof data[0][i] !== "number") {
-                                    throw "Error setting plot data: Data array contains types which are not numbers.";
-                                }
-                            }
-                            this.plotData[id] = {
-                                properties: {
-                                    traceColour: "blue",
-                                    traceStyle: "solid",
-                                    traceWidth: 3,
-                                    markerColour: "blue",
-                                    markerStyle: "none",
-                                    markerSize: 1,
-                                    visibility: true,
-                                    parameterRange: [0, 1]
-                                },
-                                data: function* (t) {
-                                    for (const x of data[0]) {
-                                        yield [x, data[1](x, t)];
-                                    }
-                                }
-                            };
-                        }
-                    }
-                    else if (typeof data[0] === "function" && typeof data[1] === "function") { 
-                        if (typeof data[0](0, 0) !== "number" || typeof data[1](0, 0) !== "number") {
-                            throw "Error setting plot data: Plot function does not return numbers.";
-                        }
-                        this.plotData[id] = {
-                            properties: {
-                                traceColour: "blue",
-                                traceStyle: "solid",
-                                traceWidth: 3,
-                                markerColour: "blue",
-                                markerStyle: "none",
-                                markerSize: 1,
-                                visibility: true,
-                                parameterRange: [0, 1]
-                            },
-                            data: function* (t, xLims, yLims, step, paramLims) {
-                                let x = (p) => data[0](p, t);
-                                let y = (p) => data[1](p, t);
-                                let p = paramLims[0];
-                                while (p <= paramLims[1]) {
-                                    yield [x(p), y(p)];
-                                    p += step;
-                                }
-                                yield [x(p), y(p)];
-                            }
-                        };
-                    }
-                }
-                else if (typeof data === "function") { 
-                    if (typeof data(0, 0) !== "number") {
-                        throw "Error setting plot data: Plot function does not return numbers.";
-                    }
-                    this.plotData[id] = {
-                        properties: {
-                            traceColour: "blue",
-                            traceStyle: "solid",
-                            traceWidth: 3,
-                            markerColour: "blue",
-                            markerStyle: "none",
-                            markerSize: 1,
-                            visibility: true,
-                            parameterRange: [0, 1]
-                        },
-                        data: function* (t, xLims, yLims, step) {
-                            let x = xLims[0];
-                            let y = (x) => data(x, t);
-                            while (x <= xLims[1]) {
-                                while (true) { 
-                                    if (x > xLims[1]) { 
-                                        break;
-                                    }
-                                    else if (y(x) <= yLims[1] && y(x) >= yLims[0] && !Number.isNaN(y(x))) { 
-                                        yield [x - step, y(x - step)];
-                                        break;
-                                    }
-                                    else { 
-                                        x += step;
-                                    }
-                                }
-                                while (true) { 
-                                    yield [x, y(x)];
-                                    if (x > xLims[1] || y(x) > yLims[1] || y(x) < yLims[0] || Number.isNaN(y(x))) { 
-                                        break;
-                                    }
-                                    else { 
-                                        x += step;
-                                    }
-                                }
-                            }
-                        }
-                    };
-                }
-                else {
-                    throw `Error setting plot data: Unrecognised data signature ${data}.`;
-                }
+        addData(id, data, options = {}) {
+            if (this.data[id] === undefined) {
+                this.data[id] = new ResponsivePlot2DTrace(this, data, options);
+                this.updatePlottingData();
             }
             else {
                 throw `Error setting plot data: trace with ID ${id} already exists on current plot, call removeData() to remove.`;
             }
-            setupProperties(this.plotData[id], "ResponsivePlot2DTrace", options);
-            this._updatePlottingData();
         }
         removeData(trace) {
-            delete this.plotData[trace];
-            this._updatePlottingData();
+            delete this.data[trace];
+            this.updatePlottingData();
         }
         setOrigin(...point) {
             super.setOrigin(...point);
-            if (this.properties.xLims !== undefined && this.properties.yLims !== undefined) {
-                this._updateLimits();
+            if (this._displayData.parentElement !== null && this.gridScale.x > 0 && this.gridScale.y > 0) {
+                this.properties.xLims = [-this.properties.origin.x / this.gridScale.x, (this._displayData.width - this.properties.origin.x) / this.gridScale.x];
+                this.properties.yLims = [-(this._displayData.height - this.properties.origin.y) / this.gridScale.y, this.properties.origin.y / this.gridScale.y];
+                this.updatePlottingData();
             }
         }
         setMajorTicks(...choices) {
             propertySetters.setAxesProperty(this, "majorTicks", "boolean", ...choices);
-            this._updateBackground();
+            this.updateBackground();
         }
         setMinorTicks(...choices) {
             propertySetters.setAxesProperty(this, "minorTicks", "boolean", ...choices);
-            this._updateBackground();
+            this.updateBackground();
         }
         setMajorTickSize(...sizes) {
             propertySetters.setAxesProperty(this, "majorTickSize", "number", ...sizes);
-            this._updateBackground();
+            this.updateBackground();
         }
         setMinorTickSize(...sizes) {
             propertySetters.setAxesProperty(this, "minorTickSize", "number", ...sizes);
-            this._updateBackground();
+            this.updateBackground();
         }
         setMajorGridlines(...choices) {
             propertySetters.setAxesProperty(this, "majorGridlines", "boolean", ...choices);
-            this._updateBackground();
+            this.updateBackground();
         }
         setMinorGridlines(...choices) {
             propertySetters.setAxesProperty(this, "minorGridlines", "boolean", ...choices);
-            this._updateBackground();
+            this.updateBackground();
         }
         setMajorGridSize(...sizes) {
             propertySetters.setAxesProperty(this, "majorGridSize", "number", ...sizes);
-            this._updateBackground();
+            this.updateBackground();
         }
         setMinorGridSize(...sizes) {
             propertySetters.setAxesProperty(this, "minorGridSize", "number", ...sizes);
-            this._updateBackground();
-        }
-        setGridScale(...sizes) {
-            propertySetters.setAxesProperty(this, "gridScale", "number", ...sizes);
-            this._updateLimits();
-            this._updateBackground();
+            this.updateBackground();
         }
         setXLims(min, max) {
             if (max >= min) {
                 propertySetters.setArrayProperty(this, "xLims", "number", [min, max], 2);
-                this.properties.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
-                super.setOrigin(-this.properties.xLims[0] * this.properties.gridScale.x, this.properties.origin.y);
-                this._updateBackground();
-                this._updatePlottingData();
+                this.gridScale.x = this._displayData.width / Math.abs(this.properties.xLims[0] - this.properties.xLims[1]);
+                this.setOrigin(-this.properties.xLims[0] * this.gridScale.x, this.properties.origin.y);
+                this.updatePlottingData();
             }
             else {
                 throw `Error setting xLims: Lower limit cannot be higher than or equal to higher limit.`;
@@ -675,85 +671,54 @@ var Pulsar = (function (exports) {
         setYLims(min, max) {
             if (max >= min) {
                 propertySetters.setArrayProperty(this, "yLims", "number", [min, max], 2);
-                this.properties.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
-                super.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.properties.gridScale.y);
-                this._updateBackground();
-                this._updatePlottingData();
+                this.gridScale.y = this._displayData.height / Math.abs(this.properties.yLims[0] - this.properties.yLims[1]);
+                this.setOrigin(this.properties.origin.x, this.properties.yLims[1] * this.gridScale.y);
+                this.updatePlottingData();
             }
             else {
                 throw `Error setting yLims: Lower limit cannot be higher than or equal to higher limit.`;
             }
         }
-        setTraceColour(trace, colour) {
-            propertySetters.setPlotDataProperty(this, trace, "traceColour", colour);
-            this._updatePlottingData();
-        }
-        setTraceStyle(trace, style) {
-            propertySetters.setPlotDataProperty(this, trace, "traceStyle", style);
-            this._updatePlottingData();
-        }
-        setTraceWidth(trace, width) {
-            propertySetters.setPlotDataProperty(this, trace, "traceWidth", width);
-            this._updatePlottingData();
-        }
-        setMarkerColour(trace, colour) {
-            propertySetters.setPlotDataProperty(this, trace, "markerColour", colour);
-            this._updatePlottingData();
-        }
-        setMarkerStyle(trace, style) {
-            propertySetters.setPlotDataProperty(this, trace, "markerStyle", style);
-            this._updatePlottingData();
-        }
-        setMarkerSize(trace, size) {
-            propertySetters.setPlotDataProperty(this, trace, "markerSize", size);
-            this._updatePlottingData();
-        }
-        setVisibility(trace, value) {
-            propertySetters.setPlotDataProperty(this, trace, "visibility", value);
-            this._updatePlottingData();
-        }
-        setParameterRange(trace, min, max) {
-            if (max >= min) {
-                propertySetters.setPlotDataProperty(this, trace, "parameterRange", [min, max]);
-                this._updatePlottingData();
-            }
-            else {
-                throw `Error setting parameterRange: Lower limit cannot be higher than or equal to higher limit.`;
-            }
+        show(element) {
+            super.show(element);
+            this.setXLims(...this.properties.xLims);
+            this.setYLims(...this.properties.yLims);
         }
     }
 
-    var index = Object.freeze({
-        __proto__: null,
-        ResponsiveCanvas: ResponsiveCanvas,
-        ResponsivePlot2D: ResponsivePlot2D,
-        activeCanvases: activeCanvases,
-        propertyDefaults: propertyDefaults
-    });
-
     class Plot extends ResponsivePlot2D {
+        static activePlots() {
+            const activePlots = {};
+            for (const canvasID of Object.keys(activeCanvases)) {
+                if (activeCanvases[canvasID] instanceof Plot) {
+                    activePlots[canvasID] = activeCanvases[canvasID];
+                }
+            }
+            return activePlots;
+        }
         constructor(id, data, options = {}) {
             super(id, options);
             if (data !== undefined) {
-                this.plot(data.id, data.data, data.options);
+                this.addData(data.id, data.data, data.options);
             }
         }
     }
 
     
-    function getActivePlots() {
-        const activePlots = {};
-        for (const canvasID of Object.keys(activeCanvases)) {
-            if (activeCanvases[canvasID] instanceof Plot) {
-                activePlots[canvasID] = activeCanvases[canvasID];
-            }
-        }
-        return activePlots;
-    }
+    const core = {
+        ResponsiveCanvas: ResponsiveCanvas,
+        activeCanvases: activeCanvases
+    };
+    const plotting = {
+        ResponsivePlot2D: ResponsivePlot2D,
+        ResponsivePlot2DTrace: ResponsivePlot2DTrace
+    };
 
+    exports.Defaults = Defaults;
     exports.Plot = Plot;
-    exports.core = index;
-    exports.getActivePlots = getActivePlots;
+    exports.Time = Time;
+    exports.core = core;
+    exports.plotting = plotting;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

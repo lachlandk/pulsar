@@ -16,6 +16,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-import * as core from "./core/index.js";
-export { core };
-export { Plot, getActivePlots } from "./plotting/index.js";
+import { ResponsiveCanvas, activeCanvases } from "./core/index.js";
+export const core = {
+    ResponsiveCanvas: ResponsiveCanvas,
+    activeCanvases: activeCanvases
+};
+import { ResponsivePlot2D, ResponsivePlot2DTrace } from "./plotting/index.js";
+export const plotting = {
+    ResponsivePlot2D: ResponsivePlot2D,
+    ResponsivePlot2DTrace: ResponsivePlot2DTrace
+};
+export { Time } from "./core/index.js";
+export * from "./Defaults.js";
+export * from "./Plot.js";
