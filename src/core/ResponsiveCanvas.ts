@@ -1,6 +1,7 @@
 import { propertySetters } from "../helpers/index.js";
 import { activeCanvases } from "./activeCanvases.js";
 import { Defaults, OptionTypes } from "../Defaults.js";
+import { Time } from "./TimeEvolutionController.js";
 
 /**
  * Class representing the base canvas object which all other Pulsar canvas objects inherit from.
@@ -22,12 +23,12 @@ export class ResponsiveCanvas {
      *
      */
     properties = Defaults.create("ResponsiveCanvas")
-    protected _timeEvolutionData = {
-        currentTimeValue: 0,
-        startTimestampMS: 0,
-        offsetTimestampMS: 0,
-        timeEvolutionActive: false
-    }
+    // protected _timeEvolutionData = {
+    //     currentTimeValue: 0,
+    //     startTimestampMS: 0,
+    //     offsetTimestampMS: 0,
+    //     timeEvolutionActive: false
+    // }
     protected _displayData: {
       width: number,
       height: number,
@@ -42,6 +43,7 @@ export class ResponsiveCanvas {
       backgroundFunction: (context: CanvasRenderingContext2D) => void,
       foregroundFunction: (context: CanvasRenderingContext2D, timeValue: number) => void
     }
+    currentTimeValue = 0
 
     /**
      * @param id The ID of the canvas object.
@@ -81,6 +83,7 @@ export class ResponsiveCanvas {
             backgroundFunction: () => {},
             foregroundFunction: () => {}
         };
+        Time.addObject(id);
         this.setID(id);
         Defaults.mergeOptions(this, "ResponsiveCanvas", options);
     }
@@ -113,7 +116,7 @@ export class ResponsiveCanvas {
       */
     updateForeground() {
         this._displayData.foreground.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
-        this._displayData.foregroundFunction(this._displayData.foreground, this._timeEvolutionData.currentTimeValue);
+        this._displayData.foregroundFunction(this._displayData.foreground, this.currentTimeValue);
     }
 
     /**
@@ -175,6 +178,7 @@ export class ResponsiveCanvas {
     setID(id: string) {
         if (activeCanvases[id] === undefined) {
             delete activeCanvases[this.id];
+            Time.canvasTimeData.find(object => object.id === id)!.id = id;
             this.id = id;
             activeCanvases[this.id] = this;
         } else {
@@ -193,42 +197,20 @@ export class ResponsiveCanvas {
         this._displayData.backgroundCanvas.style.background = cssString;
     }
 
-    /**
-     * Starts or resumes the time evolution of the foreground.
-     */
-    startTime() {
-        this._timeEvolutionData.timeEvolutionActive = true;
-        this._timeEvolutionData.startTimestampMS = performance.now();
-        window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
-    }
+    // /**
+    //  * Starts or resumes the time evolution of the foreground.
+    //  */
+    // startTime() {}
 
-    /**
-     * Pauses the time evolution of the foreground.
-     */
-    pauseTime() {
-        this._timeEvolutionData.timeEvolutionActive = false;
-        this._timeEvolutionData.offsetTimestampMS = performance.now() - this._timeEvolutionData.startTimestampMS;
-    }
+    // /**
+    //  * Pauses the time evolution of the foreground.
+    //  */
+    // pauseTime() {}
 
-    /**
-     * Stops the time evolution of the foreground and resets the current timestamp to 0.
-     */
-    stopTime() {
-        this._timeEvolutionData.timeEvolutionActive = false;
-        this._timeEvolutionData.startTimestampMS = 0;
-        this._timeEvolutionData.offsetTimestampMS = 0;
-        this._timeEvolutionData.currentTimeValue = 0;
-        this.updateForeground();
-    }
-
-    protected _updateTime(currentTimestamp: number) {
-        if (this._timeEvolutionData.timeEvolutionActive) {
-            const currentTime = this._timeEvolutionData.offsetTimestampMS + currentTimestamp - this._timeEvolutionData.startTimestampMS;
-            this._timeEvolutionData.currentTimeValue = currentTime < 0 ? 0 : currentTime / 1000;
-            this.updateForeground();
-            window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
-        }
-    }
+    // /**
+    //  * Stops the time evolution of the foreground and resets the current timestamp to 0.
+    //  */
+    // stopTime() {}
 
     /**
      * Display the canvas object in an HTML element.

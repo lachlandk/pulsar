@@ -19,12 +19,6 @@ export declare class ResponsiveCanvas {
      *
      */
     properties: any;
-    protected _timeEvolutionData: {
-        currentTimeValue: number;
-        startTimestampMS: number;
-        offsetTimestampMS: number;
-        timeEvolutionActive: boolean;
-    };
     protected _displayData: {
         width: number;
         height: number;
@@ -39,6 +33,7 @@ export declare class ResponsiveCanvas {
         backgroundFunction: (context: CanvasRenderingContext2D) => void;
         foregroundFunction: (context: CanvasRenderingContext2D, timeValue: number) => void;
     };
+    currentTimeValue: number;
     /**
      * @param id The ID of the canvas object.
      * @param options  Optional parameters.
@@ -94,19 +89,6 @@ export declare class ResponsiveCanvas {
      * @param cssString A valid string for the CSS {@link https://developer.mozilla.org/en-US/docs/Web/CSS/background `background`} property.
      */
     setBackgroundCSS(cssString: string): void;
-    /**
-     * Starts or resumes the time evolution of the foreground.
-     */
-    startTime(): void;
-    /**
-     * Pauses the time evolution of the foreground.
-     */
-    pauseTime(): void;
-    /**
-     * Stops the time evolution of the foreground and resets the current timestamp to 0.
-     */
-    stopTime(): void;
-    protected _updateTime(currentTimestamp: number): void;
     /**
      * Display the canvas object in an HTML element.
      * @param element

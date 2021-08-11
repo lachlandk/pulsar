@@ -182,6 +182,70 @@ var Pulsar = (function (exports) {
     }
     const Defaults = new defaults();
 
+    // TODO: this module needs tests
+    class TimeEvolutionController {
+        constructor() {
+            this.canvasTimeData = [];
+            this.globalLoopActive = false;
+            this.startTimestamp = 0;
+            this.offsetTimestamp = 0;
+        }
+        startAll() {
+            for (const object of this.canvasTimeData) {
+                object.timeEvolutionActive = true;
+            }
+            this.startTimestamp = performance.now();
+            this.globalLoopActive = true;
+            window.requestAnimationFrame(timestamp => this.updateObjects(timestamp));
+        }
+        pauseAll() {
+            for (const object of this.canvasTimeData) {
+                object.timeEvolutionActive = false;
+            }
+            this.offsetTimestamp = this.offsetTimestamp + performance.now() - this.startTimestamp;
+        }
+        stopAll() {
+            for (const object of this.canvasTimeData) {
+                object.timeEvolutionActive = false;
+                activeCanvases[object.id].currentTimeValue = 0;
+                activeCanvases[object.id].updateForeground();
+            }
+            this.startTimestamp = 0;
+            this.offsetTimestamp = 0;
+            this.globalLoopActive = false;
+        }
+        updateObjects(currentTimestamp) {
+            if (this.globalLoopActive) {
+                let atLeastOneActiveCanvas = false;
+                for (const object of this.canvasTimeData) {
+                    if (object.timeEvolutionActive) {
+                        atLeastOneActiveCanvas = true;
+                        activeCanvases[object.id].currentTimeValue = (this.offsetTimestamp + currentTimestamp - this.startTimestamp) / 1000;
+                        activeCanvases[object.id].updateForeground();
+                    }
+                }
+                if (atLeastOneActiveCanvas) {
+                    window.requestAnimationFrame(timestamp => this.updateObjects(timestamp));
+                }
+                else {
+                    this.globalLoopActive = false;
+                }
+            }
+        }
+        addObject(id, sync = true) {
+            if (this.canvasTimeData.find(object => object.id === id) === undefined) {
+                this.canvasTimeData.push({
+                    id: id,
+                    timeEvolutionActive: sync,
+                });
+            }
+            else {
+                throw `Error: Time data for canvas object with ID "${id}" already exists.`;
+            }
+        }
+    }
+    const Time = new TimeEvolutionController();
+
     /**
      * Class representing the base canvas object which all other Pulsar canvas objects inherit from.
      * This class is not meant to be instantiated directly by a user, mainly because it is not very useful by itself.
@@ -207,12 +271,7 @@ var Pulsar = (function (exports) {
              *
              */
             this.properties = Defaults.create("ResponsiveCanvas");
-            this._timeEvolutionData = {
-                currentTimeValue: 0,
-                startTimestampMS: 0,
-                offsetTimestampMS: 0,
-                timeEvolutionActive: false
-            };
+            this.currentTimeValue = 0;
             // TODO: add child objects to options to allow more options
             const canvasContainer = document.createElement("div");
             canvasContainer.style.display = "grid";
@@ -246,6 +305,7 @@ var Pulsar = (function (exports) {
                 backgroundFunction: () => { },
                 foregroundFunction: () => { }
             };
+            Time.addObject(id);
             this.setID(id);
             Defaults.mergeOptions(this, "ResponsiveCanvas", options);
         }
@@ -274,7 +334,7 @@ var Pulsar = (function (exports) {
           */
         updateForeground() {
             this._displayData.foreground.clearRect(-this.properties.origin.x, -this.properties.origin.y, this._displayData.width, this._displayData.height);
-            this._displayData.foregroundFunction(this._displayData.foreground, this._timeEvolutionData.currentTimeValue);
+            this._displayData.foregroundFunction(this._displayData.foreground, this.currentTimeValue);
         }
         /**
          * Sets the drawing function for the background canvas to `drawingFunction` and updates the canvas.
@@ -333,6 +393,7 @@ var Pulsar = (function (exports) {
         setID(id) {
             if (activeCanvases[id] === undefined) {
                 delete activeCanvases[this.id];
+                Time.canvasTimeData.find(object => object.id === id).id = id;
                 this.id = id;
                 activeCanvases[this.id] = this;
             }
@@ -350,39 +411,18 @@ var Pulsar = (function (exports) {
             propertySetters.setSingleProperty(this, "backgroundCSS", "string", cssString);
             this._displayData.backgroundCanvas.style.background = cssString;
         }
-        /**
-         * Starts or resumes the time evolution of the foreground.
-         */
-        startTime() {
-            this._timeEvolutionData.timeEvolutionActive = true;
-            this._timeEvolutionData.startTimestampMS = performance.now();
-            window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
-        }
-        /**
-         * Pauses the time evolution of the foreground.
-         */
-        pauseTime() {
-            this._timeEvolutionData.timeEvolutionActive = false;
-            this._timeEvolutionData.offsetTimestampMS = performance.now() - this._timeEvolutionData.startTimestampMS;
-        }
-        /**
-         * Stops the time evolution of the foreground and resets the current timestamp to 0.
-         */
-        stopTime() {
-            this._timeEvolutionData.timeEvolutionActive = false;
-            this._timeEvolutionData.startTimestampMS = 0;
-            this._timeEvolutionData.offsetTimestampMS = 0;
-            this._timeEvolutionData.currentTimeValue = 0;
-            this.updateForeground();
-        }
-        _updateTime(currentTimestamp) {
-            if (this._timeEvolutionData.timeEvolutionActive) {
-                const currentTime = this._timeEvolutionData.offsetTimestampMS + currentTimestamp - this._timeEvolutionData.startTimestampMS;
-                this._timeEvolutionData.currentTimeValue = currentTime < 0 ? 0 : currentTime / 1000;
-                this.updateForeground();
-                window.requestAnimationFrame(timestamp => this._updateTime(timestamp));
-            }
-        }
+        // /**
+        //  * Starts or resumes the time evolution of the foreground.
+        //  */
+        // startTime() {}
+        // /**
+        //  * Pauses the time evolution of the foreground.
+        //  */
+        // pauseTime() {}
+        // /**
+        //  * Stops the time evolution of the foreground and resets the current timestamp to 0.
+        //  */
+        // stopTime() {}
         /**
          * Display the canvas object in an HTML element.
          * @param element
@@ -899,6 +939,7 @@ var Pulsar = (function (exports) {
 
     exports.Defaults = Defaults;
     exports.Plot = Plot;
+    exports.Time = Time;
     exports.core = index$1;
     exports.getActivePlots = getActivePlots;
     exports.plotting = index;
