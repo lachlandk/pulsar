@@ -449,12 +449,6 @@ var Pulsar = (function (exports) {
         }
     }
 
-    var index$1 = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        ResponsiveCanvas: ResponsiveCanvas,
-        activeCanvases: activeCanvases
-    });
-
     // TODO: this module needs tests
     /**
      *  This plot represents a trace on a {@link ResponsivePlot2D `ResponsivePlot2D`}.
@@ -901,13 +895,19 @@ var Pulsar = (function (exports) {
         }
     }
 
-    var index = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        ResponsivePlot2D: ResponsivePlot2D,
-        ResponsivePlot2DTrace: ResponsivePlot2DTrace
-    });
-
     class Plot extends ResponsivePlot2D {
+        /**
+         * Returns an object containing the active instances of {@link Plot `Plot`}.
+         */
+        static activePlots() {
+            const activePlots = {};
+            for (const canvasID of Object.keys(activeCanvases)) {
+                if (activeCanvases[canvasID] instanceof Plot) {
+                    activePlots[canvasID] = activeCanvases[canvasID];
+                }
+            }
+            return activePlots;
+        }
         /**
          * @param id - The ID of the plot object. Must be unique.
          * @param data - The data to be plotted. The structure of the object follows the exact same pattern as the signature of {@link ResponsivePlot2D.plot `plot()`}.
@@ -925,24 +925,37 @@ var Pulsar = (function (exports) {
     }
 
     /**
-     * Returns an object containing the active instances of {@link Plot `Plot`}.
-     */
-    function getActivePlots() {
-        const activePlots = {};
-        for (const canvasID of Object.keys(activeCanvases)) {
-            if (activeCanvases[canvasID] instanceof Plot) {
-                activePlots[canvasID] = activeCanvases[canvasID];
-            }
-        }
-        return activePlots;
-    }
+     * @licence
+     * Pulsar.js - A javascript data visualisation framework
+     * Copyright (C) 2021  Lachlan Dufort-Kennett
+     *
+     * This program is free software: you can redistribute it and/or modify
+     * it under the terms of the GNU General Public License as published by
+     * the Free Software Foundation, either version 3 of the License, or
+     * (at your option) any later version.
+     *
+     * This program is distributed in the hope that it will be useful,
+     * but WITHOUT ANY WARRANTY; without even the implied warranty of
+     * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     * GNU General Public License for more details.
+     *
+     * You should have received a copy of the GNU General Public License
+     * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    */
+    const core = {
+        ResponsiveCanvas: ResponsiveCanvas,
+        activeCanvases: activeCanvases
+    };
+    const plotting = {
+        ResponsivePlot2D: ResponsivePlot2D,
+        ResponsivePlot2DTrace: ResponsivePlot2DTrace
+    };
 
     exports.Defaults = Defaults;
     exports.Plot = Plot;
     exports.Time = Time;
-    exports.core = index$1;
-    exports.getActivePlots = getActivePlots;
-    exports.plotting = index;
+    exports.core = core;
+    exports.plotting = plotting;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

@@ -16,9 +16,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-export * as core from "./core/index.js";
-export * as plotting from "./plotting/index.js";
-export * from "./core/TimeEvolutionController.js";
+import { ResponsiveCanvas } from "./core/index.js";
+export declare const core: {
+    ResponsiveCanvas: typeof ResponsiveCanvas;
+    activeCanvases: {
+        [id: string]: ResponsiveCanvas;
+    };
+};
+import { ResponsivePlot2D, ResponsivePlot2DTrace } from "./plotting/index.js";
+export declare const plotting: {
+    ResponsivePlot2D: typeof ResponsivePlot2D;
+    ResponsivePlot2DTrace: typeof ResponsivePlot2DTrace;
+};
+export { Time } from "./core/index.js";
 export * from "./Defaults.js";
 export * from "./Plot.js";
-export * from "./getActivePlots.js";

@@ -1,5 +1,18 @@
 import { ResponsivePlot2D } from "./plotting/index.js";
+import { activeCanvases } from "./core/index.js";
 export class Plot extends ResponsivePlot2D {
+    /**
+     * Returns an object containing the active instances of {@link Plot `Plot`}.
+     */
+    static activePlots() {
+        const activePlots = {};
+        for (const canvasID of Object.keys(activeCanvases)) {
+            if (activeCanvases[canvasID] instanceof Plot) {
+                activePlots[canvasID] = activeCanvases[canvasID];
+            }
+        }
+        return activePlots;
+    }
     /**
      * @param id - The ID of the plot object. Must be unique.
      * @param data - The data to be plotted. The structure of the object follows the exact same pattern as the signature of {@link ResponsivePlot2D.plot `plot()`}.
