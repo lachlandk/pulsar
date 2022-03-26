@@ -2,9 +2,9 @@
 	"name": "@lachlandk/pulsar",
 	"version": "0.0.3",
 	"description": "A javascript data visualisation framework",
-	"main": "dist/pulsar/pulsar.js",
-	"module": "dist/pulsar/pulsar.js",
-	"types": "dist/types/pulsar.d.ts",
+	"main": "dist/pulsar/index.js",
+	"module": "dist/pulsar/index.js",
+	"types": "dist/types/index.d.ts",
 	"type": "module",
 	"sideEffects": false,
 	"devDependencies": {
