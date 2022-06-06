@@ -17,17 +17,5 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { ResponsiveCanvas, activeCanvases } from "./core/index.js";
-export const core = {
-    ResponsiveCanvas: ResponsiveCanvas,
-    activeCanvases: activeCanvases
-};
-import { ResponsivePlot2D, ResponsivePlot2DTrace } from "./plotting/index.js";
-export const plotting = {
-    ResponsivePlot2D: ResponsivePlot2D,
-    ResponsivePlot2DTrace: ResponsivePlot2DTrace
-};
-
-export { Time } from "./core/index.js";
-export * from "./Defaults.js";
-export * from "./Plot.js";
+export * from "./core/index.js";
+export * from "./plotting/index.js";

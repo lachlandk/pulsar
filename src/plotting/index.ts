@@ -1,2 +1,4 @@
-export * from "./ResponsivePlot2D.js";
-export * from "./ResponsivePlot2DTrace.js";
+export * from "./Plot.js";
+export * from "./Axis.js";
+export * from "./Trace.js";
+export * from "./Figure.js";
