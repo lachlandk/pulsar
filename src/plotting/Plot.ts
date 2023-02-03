@@ -1,8 +1,8 @@
 import { Figure } from "./Figure.js";
 import { Axis, AxisOptions } from "./Axis.js";
 import { Trace, TraceOptions } from "./Trace.js";
-import {CanvasContainer, ContainerOptions} from "../core/CanvasContainer.js";
-import {ResponsiveCanvas, ResponsiveCanvasOptions} from "../core/ResponsiveCanvas.js";
+import { CanvasContainer, ContainerOptions } from "../core/CanvasContainer.js";
+import { ResponsiveCanvas, ResponsiveCanvasOptions } from "../core/ResponsiveCanvas.js";
 import { arange, array, NDArray } from "@lachlandk/quasar";
 
 export type PlotOptions = ContainerOptions & Partial<{
@@ -51,8 +51,10 @@ export class Plot extends CanvasContainer {
         if (x.size !== y.size) {
             throw `Error: Plot data arrays must be the same length. x has length ${x.shape[0]}, y has length ${y.shape[0]}.`
         }
-        this.data.push(new Trace(this.foreground, x, y, options));
+        const trace = new Trace(this.foreground, x, y, options);
+        this.data.push(trace);
+        return trace;
     }
 }
 
-window.customElements.define("pulsar-plot", Plot); // put this in a static method
+window.customElements.define("pulsar-plot", Plot); // TODO: put this in a static method
