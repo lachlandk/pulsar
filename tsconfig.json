@@ -4,12 +4,17 @@
         "module": "ES6",
         "moduleResolution": "Node",
         "declaration": true,
+        "declarationDir": "build/types",
+        "outDir": "build/pulsar",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true
     },
+    "include": [
+        "src/**/*.ts"
+    ],
     "exclude": [
-		"node_modules"
-	]
+        "src/simulations"
+    ]
 }
