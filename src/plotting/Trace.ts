@@ -1,7 +1,7 @@
 import { Component } from "../core/Component.js";
 import { ResponsiveCanvas } from "../core/ResponsiveCanvas.js";
 import { validateChoicePropertyArg, validatePropertyArg } from "../core/validators.js";
-import { NDArray } from "@lachlandk/quasar";
+import { arange, array, NDArray } from "@lachlandk/quasar";
 
 export type TraceOptions = Partial<{
     traceColour: string
@@ -14,6 +14,8 @@ export type TraceOptions = Partial<{
 }>
 
 export class Trace extends Component {
+    xData: NDArray = array([]);
+    yData: NDArray = array([]);
     traceColour: string = Trace.Defaults.traceColour
     traceStyle: "solid" | "dotted" | "dashed" | "dashdot" | "none" = Trace.Defaults.traceStyle
     traceWidth: number = Trace.Defaults.traceWidth
@@ -32,9 +34,42 @@ export class Trace extends Component {
         visibility: true
     }
 
-    constructor(canvas: ResponsiveCanvas, x: NDArray, y: NDArray, options: TraceOptions = {}) {
-        super(canvas, context => {
+    constructor(canvas: ResponsiveCanvas, y: NDArray | number[], options: TraceOptions)
+    constructor(canvas: ResponsiveCanvas, x: NDArray | number[], y: NDArray | number[], options: TraceOptions)
+    constructor(canvas: ResponsiveCanvas, xOrY: NDArray | number[], yOrOptions: NDArray | number[] | TraceOptions, options: TraceOptions = {}) {
+        super(canvas);
+        const y = yOrOptions instanceof NDArray || Array.isArray(yOrOptions) ? yOrOptions : xOrY;
+        const x = yOrOptions instanceof NDArray || Array.isArray(yOrOptions) ? xOrY : arange(y instanceof NDArray ? y.size : y.length);
+        options = yOrOptions instanceof NDArray || Array.isArray(yOrOptions) ? options : yOrOptions;
+        this.setData(x, y);
+
+        for (const option in options) {
+            const setter = `set${option.charAt(0).toUpperCase()}${option.slice(1)}`
+            if (typeof (this as any)[setter] === "function") {
+                (this as any)[setter](...(Array.isArray((options as any)[option]) ? (options as any)[option] : [(options as any)[option]]));
+            }
+        }
+    }
+
+    setData(y: NDArray | number[]): void
+    setData(x: NDArray | number[], y: NDArray | number[]): void
+    setData(xOrY: NDArray | number[], y?: NDArray | number[]) {
+        if (Array.isArray(xOrY)) xOrY = array(xOrY);
+        if (Array.isArray(y)) y = array(y);
+        this.yData = y instanceof NDArray ? y : xOrY;
+        this.xData = y instanceof NDArray ? xOrY : this.xData;
+
+        if (this.xData.shape.length !== 1 || this.yData.shape.length !== 1) {
+            throw `Error: Plot data arrays must be 1-dimensional.`;
+        }
+        if (this.xData.size !== this.yData.size) {
+            throw `Error: Plot data arrays must be the same length. x has length ${this.xData.shape[0]}, y has length ${this.yData.shape[0]}.`
+        }
+
+        this.draw = context => {
             if (this.visibility) {
+                const x = this.xData;
+                const y = this.yData;
                 function* points() {
                     for (let i = 0; i < x.size; i++) {
                         yield [x.get(i) as number, y.get(i) as number];
@@ -121,14 +156,8 @@ export class Trace extends Component {
                     }
                 }
             }
-        });
-
-        for (const option in options) {
-            const setter = `set${option.charAt(0).toUpperCase()}${option.slice(1)}`
-            if (typeof (this as any)[setter] === "function") {
-                (this as any)[setter](...(Array.isArray((options as any)[option]) ? (options as any)[option] : [(options as any)[option]]));
-            }
         }
+        this.canvas.updateFlag = true;
     }
 
     setTraceColour(colour: string) {
