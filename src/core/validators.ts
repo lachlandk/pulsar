@@ -47,3 +47,5 @@ export function validateChoicePropertyArg<T>(value: T, choices: T[], propName: s
     }
     throw `Error setting choice property ${propName}: Invalid choice "${value}".`;
 }
+
+// TODO: change these so that they are simply a type check, no return (else property will be set to undefined?)
