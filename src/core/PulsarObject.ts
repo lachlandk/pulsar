@@ -19,3 +19,5 @@ export class PulsarObject extends HTMLElement {
         this.style.display = "none";
     }
 }
+
+window.customElements.define("pulsar-object", PulsarObject); // put this in a static method
