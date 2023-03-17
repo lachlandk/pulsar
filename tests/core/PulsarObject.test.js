@@ -5,7 +5,10 @@ import { closeTestServer, startTestServer } from "../server.js";
 
 suite("PulsarObject class", function() {
 
-	before(startTestServer("./tests/core.test.html"));
+	before(startTestServer(() => {
+		window.testObject = new window.Pulsar.PulsarObject();
+		document.body.appendChild(testObject);
+	}));
 
 	after(closeTestServer);
 

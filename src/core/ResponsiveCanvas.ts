@@ -11,7 +11,7 @@ export class ResponsiveCanvas {
     container: CanvasContainer
     context: CanvasRenderingContext2D
     components: Component[] = []
-    background: string = ResponsiveCanvas.Defaults.background;
+    background: string = ResponsiveCanvas.Defaults.background
     updateFlag: boolean = true
 
     static Defaults = {
@@ -47,8 +47,7 @@ export class ResponsiveCanvas {
     }
 
     setBackground(css: string) {
-       this.background = validatePropertyArg(css, "string", "background");
+        this.background = validatePropertyArg(css, "string", "background");
         this.canvas.style.background = css;
-        this.updateFlag = true;
     }
 }
