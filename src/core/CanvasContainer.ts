@@ -15,8 +15,8 @@ export class CanvasContainer extends HTMLElement {
         x: number
         y: number
     } = {
-        x: 0,
-        y: 0
+        x: 50,
+        y: 50
     }
     resizeObserver: ResizeObserver
     xLims: [number, number] = CanvasContainer.Defaults.xLims
@@ -52,46 +52,22 @@ export class CanvasContainer extends HTMLElement {
 
         this.resizeObserver = new ResizeObserver(entries => {
             for (const entry of entries) {
-                // if element is being added to DOM, set the scale
-                // TODO: this is still buggy, e.g. removing the container from the DOM and then adding it to a different-sized element breaks things
-                // maybe have another method for setting scale / updating origin and limits
-                // setOrigin and setLims need to depend on each other less
-                if (this.scale.x === 0 || this.scale.y === 0) {
-                    if (this.origin.x === 0 || this.origin.y === 0) {
-                        this.setXLims(...this.xLims);
-                        this.setYLims(...this.yLims);
-                    } else {
-                        this.scale = {
-                            x: entry.target.clientWidth / Math.abs(this.xLims[0] - this.xLims[1]),
-                            y: entry.target.clientHeight / Math.abs(this.yLims[0] - this.yLims[1])
-                        };
-                        this.setOrigin(this.origin.x, this.origin.y);
-                    }
-                } else {
-
-                    // update limits to account for change in size
-                    this.xLims = [-this.origin.x / this.scale.x, (this.clientWidth - this.origin.x) / this.scale.x];
-                    this.yLims = [-(this.clientHeight - this.origin.y) / this.scale.y, this.origin.y / this.scale.y];
-                }
-                this.allCanvases(canvas => {
+                // update limits to account for change in size
+                this.xLims = [-this.origin.x / this.scale.x, (this.clientWidth - this.origin.x) / this.scale.x];
+                this.yLims = [-(this.clientHeight - this.origin.y) / this.scale.y, this.origin.y / this.scale.y];
+                for (const canvas of this.canvases) {
                     canvas.canvas.width = entry.target.clientWidth;
                     canvas.canvas.height = entry.target.clientHeight;
                     canvas.context.translate(this.origin.x, this.origin.y); // because changing the size of a canvas resets it
                     canvas.updateFlag = true;
-                });
+                }
             }
         });
         this.resizeObserver.observe(this.parent);
     }
 
-    allCanvases(callback: (canvas: ResponsiveCanvas) => void) {
-        for (const canvas of this.canvases) {
-            callback(canvas);
-        }
-    }
-
     setXLims(min: number, max: number) {
-        if (max >= min) {
+        if (max > min) {
             this.xLims = validateArrayPropertyArgs([min, max], "number", 2, "xLims") as [number, number];
             this.scale.x = this.clientWidth / Math.abs(min - max);
             this.setOrigin(-min * this.scale.x, this.origin.y);
@@ -101,7 +77,7 @@ export class CanvasContainer extends HTMLElement {
     }
 
     setYLims(min: number, max: number) {
-        if (max >= min) {
+        if (max > min) {
             this.yLims = validateArrayPropertyArgs([min, max], "number", 2, "yLims") as [number, number];
             this.scale.y = this.clientHeight / Math.abs(min - max);
             this.setOrigin(this.origin.x, max * this.scale.y);
@@ -116,14 +92,14 @@ export class CanvasContainer extends HTMLElement {
         } else {
             this.origin = validateAxesPropertyArgs(point, "number", "origin");
         }
-        if (this.scale.x !== 0 && this.scale.y !== 0) {
-            this.xLims = [-this.origin.x / this.scale.x, (this.clientWidth - this.origin.x) / this.scale.x];
-            this.yLims = [-(this.clientHeight - this.origin.y) / this.scale.y, this.origin.y / this.scale.y];
-        }
-        this.allCanvases(canvas => {
+        this.xLims = [-this.origin.x / this.scale.x, (this.clientWidth - this.origin.x) / this.scale.x];
+        this.yLims = [-(this.clientHeight - this.origin.y) / this.scale.y, this.origin.y / this.scale.y];
+        for (const canvas of this.canvases) {
             canvas.context.resetTransform();
             canvas.context.translate(this.origin.x, this.origin.y);
             canvas.updateFlag = true;
-        });
+        }
     }
 }
+
+window.customElements.define("pulsar-container", CanvasContainer); // put this in a static method

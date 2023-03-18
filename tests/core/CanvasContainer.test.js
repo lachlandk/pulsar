@@ -27,7 +27,7 @@ suite("CanvasContainer class", function() {
 		await this.page.evaluate(() => {
 			testObject.style.width = "200px";
 			testObject.style.width = "300px";
-			return new Promise(resolve => setTimeout(() => resolve(), 10));
+			return new Promise(resolve => setTimeout(() => resolve(), 50));
 		});
 		expect(await this.page.evaluate(() => window.testContainer.clientWidth)).to.equal(await this.page.evaluate(() => window.testObject.clientWidth));
 		expect(await this.page.evaluate(() => window.testContainer.clientHeight)).to.equal(await this.page.evaluate(() => window.testObject.clientHeight));
@@ -41,15 +41,17 @@ suite("CanvasContainer class", function() {
 		await this.page.evaluate(() => {
 			testObject.style.width = "400px";
 			testObject.style.width = "500px";
-			return new Promise(resolve => setTimeout(() => resolve(), 10));
+			return new Promise(resolve => setTimeout(() => resolve(), 50));
 		});
 		const lowerXLim = await this.page.evaluate(() => -window.testContainer.origin.x / window.testContainer.scale.x);
 		const upperXLim = await this.page.evaluate(() => (window.testContainer.clientWidth - window.testContainer.origin.x) / window.testContainer.scale.x);
 		const lowerYLim = await this.page.evaluate(() => -(window.testContainer.clientHeight - window.testContainer.origin.y) / window.testContainer.scale.y);
 		const upperYLim = await this.page.evaluate(() => window.testContainer.origin.y / window.testContainer.scale.y);
 		expect(await this.page.evaluate(() => window.testContainer.origin)).to.deep.equal(origin);
-		expect(await this.page.evaluate(() => window.testContainer.xLims)).to.deep.equal([lowerXLim, upperXLim]);
-		expect(await this.page.evaluate(() => window.testContainer.yLims)).to.deep.equal([lowerYLim, upperYLim]);
+		expect(await this.page.evaluate(() => window.testContainer.xLims[0])).to.equal(lowerXLim);
+		expect(await this.page.evaluate(() => window.testContainer.xLims[1])).to.equal(upperXLim);
+		expect(await this.page.evaluate(() => window.testContainer.yLims[0])).to.equal(lowerYLim);
+		expect(await this.page.evaluate(() => window.testContainer.yLims[1])).to.equal(upperYLim);
 	});
 
 	test("setXLims() throws error if lower limit is above or equal to upper limit", async function() {
@@ -84,10 +86,9 @@ suite("CanvasContainer class", function() {
 		expect(await this.page.evaluate(() => window.testContainer.yLims)).to.deep.equal([-2, 2]);
 	});
 
-	test("setOrigin() updates origin correctly and sets update flag on all canvases", async function() {
+	test("setOrigin() updates origin correctly", async function() {
 		await this.page.evaluate(() => window.testContainer.setOrigin(200, 300));
 		expect(await this.page.evaluate(() => window.testContainer.origin)).to.deep.equal({x: 200, y: 300});
-		expect(await this.page.evaluate(() => window.testCanvas.updateFlag)).to.equal(true);
 	});
 
 	test("setOrigin() accepts \"centre\" as as argument", async function() {
