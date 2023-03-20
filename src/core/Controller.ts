@@ -1,25 +1,35 @@
 import { PulsarObject } from "./PulsarObject.js";
+import { Animation } from "./Animation.js";
 
 class Controller {
+    static instance: Controller
     activeObjects: PulsarObject[] = []
+    activeAnimations: Animation[] = []
     animationsActive: boolean = false
     startTimestamp: number = 0
     offsetTimestamp: number = 0
 
     constructor() {
-        window.requestAnimationFrame(_ => this.update());
+        // check if an instance exists
+        if (Controller.instance !== undefined) {
+            return Controller.instance;
+        }
+        Controller.instance = this;
+        window.requestAnimationFrame(timestamp => this.update(timestamp));
     }
 
     start() {
         this.animationsActive = true;
         this.startTimestamp = performance.now();
-        window.requestAnimationFrame(_ => this.update());
     }
 
     stop() {
         this.animationsActive = false;
         this.startTimestamp = 0;
         this.offsetTimestamp = 0;
+        for (const animation of this.activeAnimations) {
+            animation.animate(0);
+        }
     }
 
     pause() {
@@ -27,9 +37,17 @@ class Controller {
         this.offsetTimestamp = this.offsetTimestamp + performance.now() - this.startTimestamp;
     }
 
-    update() {
+    update(currentTimestamp: number) {
+        // update animations
+        if (this.animationsActive) {
+            for (const animation of this.activeAnimations) {
+                if (animation.parent.parentElement !== null && animation.parent.style.display !== "none") {
+                    animation.animate(this.offsetTimestamp + currentTimestamp - this.startTimestamp);
+                }
+            }
+        }
         for (const object of this.activeObjects) {
-            if (object.parentElement !== null || object.style.display === "none") {
+            if (object.parentElement !== null && object.style.display !== "none") {
                 for (const container of object.containers) {
                     for (const canvas of container.canvases) {
                         // check update flag and redraw all components
@@ -40,13 +58,7 @@ class Controller {
                 }
             }
         }
-
-        // update animations
-        if (this.animationsActive) {
-
-        }
-
-        window.requestAnimationFrame(_ => this.update());
+        window.requestAnimationFrame(timestamp => this.update(timestamp));
     }
 }
 
