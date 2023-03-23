@@ -3,3 +3,4 @@ export * from "./Component.js";
 export * from "./ResponsiveCanvas.js";
 export * from "./PulsarObject.js";
 export * from "./Controller.js";
+export * from "./Animation.js";
