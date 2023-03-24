@@ -171,7 +171,7 @@ export class Trace extends Component {
     }
 
     setTraceWidth(width: number) {
-        this.traceWidth = validatePropertyArg(width, "string", "traceWidth");
+        this.traceWidth = validatePropertyArg(width, "number", "traceWidth");
         this.canvas.updateFlag = true;
     }
 
@@ -186,12 +186,12 @@ export class Trace extends Component {
     }
 
     setMarkerSize(size: number) {
-        this.markerSize = validatePropertyArg(size, "string", "markerSize");
+        this.markerSize = validatePropertyArg(size, "number", "markerSize");
         this.canvas.updateFlag = true;
     }
 
     setVisibility(value: boolean) {
-        this.visibility = validatePropertyArg(value, "string", "visibility");
+        this.visibility = validatePropertyArg(value, "boolean", "visibility");
         this.canvas.updateFlag = true;
     }
 }
