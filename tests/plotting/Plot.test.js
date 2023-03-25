@@ -1,35 +1,52 @@
-import { suite, test, before } from "mocha";
-import { JSDOM } from "jsdom";
+import {after, before, suite, test} from "mocha";
 import { expect } from "chai";
 
-import { Plot } from "../../build/pulsar/pulsar.js";
+import { closeTestServer, startTestServer } from "../server.js";
 
-suite("ResponsivePlot2D", function() {
+suite("Plot class", function() {
 
-	before(() => {
-		global.window = new JSDOM().window;
-		global.document = window.document;
-		global.ResizeObserver = class {
-			observe() {}
-		};
-	});
-
-	test("When plotting data is passed to the constructor, it is added to the plot correctly", function() {
-		const testPlot = new Plot("dataTest", {
-			id: "test",
-			data: x => Math.exp(x)
-		});
-		expect(testPlot.plotData.test).to.not.equal(undefined);
-	});
-
-	test("When plotting data with options is passed to the constructor, the options are set correctly", function() {
-		const testPlot = new Plot("dataTest2", {
-			id: "test",
-			data: x => Math.floor(x),
-			options: {
-				visibility: false
+	before(startTestServer(() => {
+		window.testFigure = new window.Pulsar.Figure({
+			plot: {
+				background: {
+					background: "green"
+				},
+				foreground: {
+					background: "red"
+				},
+				axis: {
+					majorTicks: true
+				}
 			}
 		});
-		expect(testPlot.plotData.test.properties.visibility).to.equal(false);
+		document.body.appendChild(testFigure);
+		window.testPlot = window.testFigure.containers[0];
+	}));
+
+	after(closeTestServer);
+
+	test("Constructor creates a foreground and background ResponsiveCanvas and an Axis component on the background", async function () {
+		expect(await this.page.evaluate(() => window.testPlot.background.constructor.name)).to.equal("ResponsiveCanvas");
+		expect(await this.page.evaluate(() => window.testPlot.foreground.constructor.name)).to.equal("ResponsiveCanvas");
+		expect(await this.page.evaluate(() => window.testPlot.axis.constructor.name)).to.equal("Axis");
+		expect(await this.page.evaluate(() => window.testPlot.axis.canvas === window.testPlot.background)).to.equal(true);
+	});
+
+	test("Constructor passes options under the \"background\" property to the background ResponsiveCanvas constructor", async function () {
+		expect(await this.page.evaluate(() => window.testPlot.background.background)).to.equal("green");
+	});
+
+	test("Constructor passes options under the \"foreground\" property to the foreground ResponsiveCanvas constructor", async function () {
+		expect(await this.page.evaluate(() => window.testPlot.foreground.background)).to.equal("red");
+	});
+
+	test("Constructor passes options under the \"axis\" property to the Axis constructor", async function () {
+		expect(await this.page.evaluate(() => window.testPlot.axis.majorTicks)).to.deep.equal({x: true, y: true});
+	});
+
+	test("plot() creates a Trace component on the foreground and pushes it to data array", async function () {
+		await this.page.evaluate(() => window.testTrace = window.testPlot.plot([]));
+		expect(await this.page.evaluate(() => window.testTrace.canvas === window.testPlot.foreground)).to.equal(true);
+		expect(await this.page.evaluate(() => window.testPlot.data[0] === window.testTrace)).to.equal(true);
 	});
 });
