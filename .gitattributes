@@ -4,4 +4,5 @@
 tests/** linguist-vendored
 build/** linguist-vendored
 dist/** linguist-vendored
-gulpfile.js linguist-vendored
+rollup.dev.js linguist-vendored
+rollup.prod.js linguist-vendored
