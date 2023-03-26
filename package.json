@@ -11,24 +11,25 @@
 		"@lachlandk/quasar": "^0.0.3"
 	},
 	"devDependencies": {
-		"@rollup/plugin-node-resolve": "^13.3.0",
-		"c8": "^7.7.3",
-		"chai": "^4.3.4",
-		"jsdom": "^16.6.0",
+		"@rollup/plugin-node-resolve": "^15.0.1",
+		"@rollup/plugin-terser": "^0.4.0",
+		"c8": "^7.13.0",
+		"chai": "^4.3.7",
+		"express": "^4.18.2",
 		"mocha": "^10.2.0",
-		"rollup": "^2.53.2",
-		"sinon": "^11.1.1",
-		"typedoc": "^0.21.4",
-		"typescript": "^4.3.5",
-		"vuepress": "^1.9.7"
+		"puppeteer": "^19.8.0",
+		"rollup": "^3.20.2",
+		"typedoc": "^0.23.28",
+		"typescript": "^5.0.2",
+		"vuepress": "^1.9.9"
 	},
 	"scripts": {
-		"build": "rmdir build /s/q & tsc && rollup -c",
+		"build": "rmdir build /s/q & tsc && rollup --config rollup.dev.js",
 		"watch": "rmdir build /s/q & tsc --watch",
-		"dist": "rmdir dist /s/q & tsc --declarationDir dist/types --outDir dist/pulsar",
+		"dist": "rmdir dist /s/q & tsc --declarationDir dist/types --outDir dist/pulsar && rollup --config rollup.prod.js",
 		"test": "c8 mocha \"./tests/**/*.js\"",
-		"devdocs": "vuepress dev docs/src",
-		"docs": "vuepress build docs/src"
+		"devdocs": "set NODE_OPTIONS=--openssl-legacy-provider && vuepress dev docs/src",
+		"docs": "set NODE_OPTIONS=--openssl-legacy-provider && vuepress build docs/src"
 	},
 	"c8": {
 		"all": true,
