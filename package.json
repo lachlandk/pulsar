@@ -1,7 +1,7 @@
 {
 	"name": "@lachlandk/pulsar",
 	"version": "0.0.3",
-	"description": "A javascript data visualisation framework",
+	"description": "A data visualisation framework for the web.",
 	"main": "dist/pulsar/index.js",
 	"module": "dist/pulsar/index.js",
 	"types": "dist/types/index.d.ts",
@@ -20,16 +20,18 @@
 		"puppeteer": "^19.8.0",
 		"rollup": "^3.20.2",
 		"typedoc": "^0.23.28",
+		"typedoc-plugin-markdown": "^3.14.0",
 		"typescript": "^5.0.2",
-		"vuepress": "^1.9.9"
+		"vuepress": "^1.9.9",
+		"vuepress-plugin-typedoc": "^0.11.2"
 	},
 	"scripts": {
 		"build": "rmdir build /s/q & tsc && rollup --config rollup.dev.js",
 		"watch": "rmdir build /s/q & tsc --watch",
 		"dist": "rmdir dist /s/q & tsc --declarationDir dist/types --outDir dist/pulsar && rollup --config rollup.prod.js",
 		"test": "c8 mocha \"./tests/**/*.js\"",
-		"devdocs": "set NODE_OPTIONS=--openssl-legacy-provider && vuepress dev docs/src",
-		"docs": "set NODE_OPTIONS=--openssl-legacy-provider && vuepress build docs/src"
+		"devdocs": "set NODE_OPTIONS=--openssl-legacy-provider && vuepress dev vuepress",
+		"docs": "set NODE_OPTIONS=--openssl-legacy-provider && vuepress build vuepress"
 	},
 	"c8": {
 		"all": true,
