@@ -8,9 +8,24 @@ export type ContainerOptions = Partial<{
     origin: "centre" | [number, number]
 }>
 
+/**
+ * Base class for Pulsar elements which contain {@link ResponsiveCanvas | `ResponsiveCanvas`} instances.
+ * Instances will be a child element of a {@link PulsarObject | `PulsarObject`}.
+ * It has an internal coordinate system which is independent of the coordinates of the canvas drawing surface for ease of use.
+ * It will also watch the parent object and resize all canvases accordingly whenever the parent is resized.
+ */
 export class CanvasContainer extends HTMLElement {
+    /**
+     * Parent instance of {@link PulsarObject | `PulsarObject`}.
+     */
     parent: PulsarObject
+    /**
+     * List of the child {@link ResponsiveCanvas | `ResponsiveCanvas`} instances of the container.
+     */
     canvases: ResponsiveCanvas[] = []
+    /**
+     * Scale of the internal coordinate system in canvas pixels to container units.
+     */
     scale: {
         x: number
         y: number
@@ -18,14 +33,33 @@ export class CanvasContainer extends HTMLElement {
         x: 50,
         y: 50
     }
+    /**
+     * The [ResizeObserver](https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver) instance which will watch the parent object to detect a resize event.
+     */
     resizeObserver: ResizeObserver
+    /**
+     * The horizontal limits of the internal coordinate system in container units.
+     */
     xLims: [number, number] = CanvasContainer.Defaults.xLims
+    /**
+     * The vertical limits of the internal coordinate system in container units.
+     */
     yLims: [number, number] = CanvasContainer.Defaults.yLims
+    /**
+     * The origin of the internal coordinate system in canvas units.
+     */
     origin: {
         x: number
         y: number
     } = CanvasContainer.Defaults.origin
-    
+
+    /**
+     * Name | Default value
+     * --- | ---
+     * `xLims` | `[0, 10]`
+     * `yLims` | `[-10, 0]`
+     * `origin` | `{x: 0, y: 0}`
+     */
     static Defaults = {
         xLims: [0, 10] as [number, number],
         yLims: [-10, 0] as [number, number],
@@ -35,6 +69,10 @@ export class CanvasContainer extends HTMLElement {
         }
     }
 
+    /**
+     * @param parent The parent {@link PulsarObject | `PulsarObject`} element.
+     * @param options Options for the container.
+     */
     constructor(parent: PulsarObject, options: ContainerOptions = {}) {
         super();
         this.parent = parent;
@@ -66,6 +104,11 @@ export class CanvasContainer extends HTMLElement {
         this.resizeObserver.observe(this.parent);
     }
 
+    /**
+     * Sets the horizontal limits of the internal coordinate system in container units.
+     * @param min The minimum horizontal value.
+     * @param max The maximum horizontal value.
+     */
     setXLims(min: number, max: number) {
         if (max > min) {
             this.xLims = validateArrayPropertyArgs([min, max], "number", 2, "xLims") as [number, number];
@@ -76,6 +119,11 @@ export class CanvasContainer extends HTMLElement {
         }
     }
 
+    /**
+     * Sets the vertical limits of the internal coordinate system in container units.
+     * @param min The minimum vertical value.
+     * @param max The maximum vertical value.
+     */
     setYLims(min: number, max: number) {
         if (max > min) {
             this.yLims = validateArrayPropertyArgs([min, max], "number", 2, "yLims") as [number, number];
@@ -86,6 +134,12 @@ export class CanvasContainer extends HTMLElement {
         }
     }
 
+    /**
+     * Sets the origin of the internal coordinate system in canvas pixels.
+     * `x` and `y` values may be passed or the value `"centre"` may be passed to conveniently set the origin to the centre of the canvas.
+     * Note that for the HTML5 canvas the origin is in the top-left corner by default and the x-axis points rightwards, while the y-axis points downwards.
+     * @param point The new origin in canvas pixels.
+     */
     setOrigin(...point: ["centre"] | [number, number]) {
         if (point.length === 1 && point[0] === "centre") {
             this.origin = validateAxesPropertyArgs([Math.round(this.clientWidth / 2), Math.round(this.clientHeight / 2)], "number", "origin");
