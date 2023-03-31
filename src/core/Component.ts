@@ -6,7 +6,7 @@ import { ResponsiveCanvas } from "./ResponsiveCanvas.js";
  */
 export class Component {
     /**
-     * The {@link ResponsiveCanvas | `ResponsiveCanvas`} instance which the component is attached to.
+     * The canvas which the component is attached to.
      */
     canvas: ResponsiveCanvas
     /**

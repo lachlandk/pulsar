@@ -20,14 +20,14 @@ export class PulsarObject extends HTMLElement {
     }
 
     /**
-     * Sets the instance's `display` style to `"grid"`.
+     * Sets the `display` style to `"grid"`.
      */
     show() {
         this.style.display = "grid";
     }
 
     /**
-     * Sets the instance's `display` style to `"none"`.
+     * Sets the `display` style to `"none"`.
      */
     hide() {
         this.style.display = "none";

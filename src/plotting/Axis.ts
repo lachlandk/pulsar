@@ -13,16 +13,55 @@ export type AxisOptions = Partial<{
     minorGridSize: [number, number] | number
 }>
 
+/**
+ * Component representing the two axes of a cartesian plot.
+ */
 export class Axis extends Component {
+    /**
+     * Indicates whether major ticks will be displayed.
+     */
     majorTicks: {x: boolean, y: boolean} = Axis.Defaults.majorTicks
+    /**
+     * Indicates whether minor ticks will be displayed.
+     */
     minorTicks: {x: boolean, y: boolean} = Axis.Defaults.minorTicks
+    /**
+     * Spacing between major ticks in plot units.
+     */
     majorTickSize: {x: number, y: number} = Axis.Defaults.majorTickSize
+    /**
+     * Spacing between minor ticks in plot units.
+     */
     minorTickSize: {x: number, y: number} = Axis.Defaults.minorTickSize
+    /**
+     * Indicates whether major gridlines will be displayed.
+     */
     majorGridlines: {x: boolean, y: boolean} = Axis.Defaults.majorGridlines
+    /**
+     * Indicates whether minor gridlines will be displayed.
+     */
     minorGridlines: {x: boolean, y: boolean} = Axis.Defaults.minorGridlines
+    /**
+     * Spacing between major gridlines in plot units.
+     */
     majorGridSize: {x: number, y: number} = Axis.Defaults.majorGridSize
+    /**
+     * Spacing between minor gridlines in plot units.
+     */
     minorGridSize: {x: number, y: number} = Axis.Defaults.minorGridSize
 
+    /**
+     * Name | Default value
+     * --- | ---
+     * `majorTicks` | `{x: false, y: false}`
+     * `minorTicks` | `{x: true, y: true}`
+     * `majorTickSize` | `{x: 5, y: 5}`
+     * `minorTickSize` | `{x: 1, y: 1}`
+     * `majorGridlines` | `{x: true, y: true}`
+     * `minorGridlines` | `{x: false, y: false}`
+     * `majorGridSize` | `{x: 5, y: 5}`
+     * `minorGridSize` | `{x: 1, y: 1}`
+     */
     static Defaults = {
         majorTicks: {x: false, y: false},
         minorTicks: {x: true, y: true},
@@ -34,6 +73,10 @@ export class Axis extends Component {
         minorGridSize: {x: 1, y: 1}
     }
 
+    /**
+     * @param canvas The parent canvas.
+     * @param options Options for the axis.
+     */
     constructor(canvas: ResponsiveCanvas, options: AxisOptions = {}) {
         super(canvas, context => {
             const drawGridSet = (majorOrMinor: "major" | "minor", xy: "x" | "y", ticksOrGridlines: "Ticks" | "Gridlines", width: number, lineStart: number, lineEnd: number) => {
@@ -87,41 +130,73 @@ export class Axis extends Component {
         }
     }
 
+    /**
+     * Toggles the major ticks. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param choices Tick visibility.
+     */
     setMajorTicks(...choices: [boolean] | [boolean, boolean]) {
         this.majorTicks = validateAxesPropertyArgs(choices, "boolean", "majorTicks");
         this.canvas.updateFlag = true;
     }
 
+    /**
+     * Toggles the minor ticks. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param choices Tick visibility.
+     */
     setMinorTicks(...choices: [boolean] | [boolean, boolean]) {
         this.minorTicks = validateAxesPropertyArgs(choices, "boolean", "minorTicks");
         this.canvas.updateFlag = true;
     }
 
+    /**
+     * Sets the spacing of the major ticks in plot units. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param sizes Tick spacing.
+     */
     setMajorTickSize(...sizes: [number] | [number, number]) {
         this.majorTickSize = validateAxesPropertyArgs(sizes, "number", "majorTickSize");
         this.canvas.updateFlag = true;
     }
 
+    /**
+     * Sets the spacing of the minor ticks in plot units. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param sizes Tick spacing.
+     */
     setMinorTickSize(...sizes: [number] | [number, number]) {
         this.minorTickSize = validateAxesPropertyArgs(sizes, "number", "minorTickSize");
         this.canvas.updateFlag = true;
     }
 
+    /**
+     * Toggles the major gridlines. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param choices Gridline visibility.
+     */
     setMajorGridlines(...choices: [boolean] | [boolean, boolean]) {
         this.majorGridlines = validateAxesPropertyArgs(choices, "boolean", "majorGridlines");
         this.canvas.updateFlag = true;
     }
 
+    /**
+     * Toggles the minor gridlines. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param choices Gridline visibility.
+     */
     setMinorGridlines(...choices: [boolean] | [boolean, boolean]) {
         this.minorGridlines = validateAxesPropertyArgs(choices, "boolean", "minorGridlines");
         this.canvas.updateFlag = true;
     }
 
+    /**
+     * Sets the spacing of the major gridlines in plot units. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param sizes Gridline spacing.
+     */
     setMajorGridSize(...sizes: [number] | [number, number]) {
         this.majorGridSize = validateAxesPropertyArgs(sizes, "number", "majorGridSize");
         this.canvas.updateFlag = true;
     }
 
+    /**
+     * Sets the spacing of the minor gridlines in plot units. Two values may be passed for `x` then `y`, or just a single value for both axes.
+     * @param sizes Gridline spacing.
+     */
     setMinorGridSize(...sizes: [number] | [number, number]) {
         this.minorGridSize = validateAxesPropertyArgs(sizes, "number", "minorGridSize");
         this.canvas.updateFlag = true;

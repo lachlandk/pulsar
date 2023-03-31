@@ -5,12 +5,15 @@ export type FigureOptions = Partial<{
     plot: PlotOptions
 }>
 
+/**
+ * Top-level element for plotting. An instance of `Figure` typically contains one or more {@link Plot | `Plot`} instances which have data plotted on them.
+ * This is analogous to the [Figure](https://matplotlib.org/stable/api/figure_api.html) class in matplotlib.
+ * By default, a single plot is created on the new instance with the options passed through the `plot` property of the options object.
+ */
 export class Figure extends PulsarObject {
-
-    static Defaults = {
-
-    }
-
+    /**
+     * @param options Options for the figure.
+     */
     constructor(options: FigureOptions = {}) {
         super();
 
