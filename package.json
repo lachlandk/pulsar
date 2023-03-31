@@ -2,10 +2,24 @@
 	"name": "@lachlandk/pulsar",
 	"version": "0.0.3",
 	"description": "A data visualisation framework for the web.",
-	"main": "dist/pulsar/index.js",
-	"module": "dist/pulsar/index.js",
-	"types": "dist/types/index.d.ts",
 	"type": "module",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./core": {
+			"import": "./dist/core/index.js",
+			"types": "./dist/core/index.d.ts"
+		},
+		"./plotting": {
+			"import": "./dist/plotting/index.js",
+			"types": "./dist/plotting/index.d.ts"
+		}
+	},
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"sideEffects": false,
 	"dependencies": {
 		"@lachlandk/quasar": "^0.0.3"
@@ -28,7 +42,7 @@
 	"scripts": {
 		"build": "rmdir build /s/q & tsc && rollup --config rollup.dev.js",
 		"watch": "rmdir build /s/q & tsc --watch",
-		"dist": "rmdir dist /s/q & tsc --declarationDir dist/types --outDir dist/pulsar && rollup --config rollup.prod.js",
+		"dist": "rmdir dist /s/q & tsc --declarationDir dist --outDir dist && rollup --config rollup.prod.js",
 		"test": "c8 mocha \"./tests/**/*.js\"",
 		"devdocs": "set NODE_OPTIONS=--openssl-legacy-provider && vuepress dev vuepress",
 		"docs": "set NODE_OPTIONS=--openssl-legacy-provider && vuepress build vuepress"
@@ -36,7 +50,7 @@
 	"c8": {
 		"all": true,
 		"include": [
-			"build/pulsar/**"
+			"build/**"
 		]
 	},
 	"repository": {

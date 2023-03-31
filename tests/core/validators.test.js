@@ -1,7 +1,7 @@
 import { suite, test } from "mocha";
 import { expect } from "chai";
 
-import { validateAxesPropertyArgs, validatePropertyArg, validateArrayPropertyArgs, validateChoicePropertyArg } from "../../build/pulsar/core/validators.js";
+import { validateAxesPropertyArgs, validatePropertyArg, validateArrayPropertyArgs, validateChoicePropertyArg } from "../../build/core/validators.js";
 
 suite("Type checking functions", function() {
 	const testObject = {};

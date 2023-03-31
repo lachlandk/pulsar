@@ -3,7 +3,7 @@ import resolve from "@rollup/plugin-node-resolve";
 import terser from "@rollup/plugin-terser";
 
 export default defineConfig({
-	input: "dist/pulsar/index.js",
+	input: "dist/index.js",
 	output: [{
 		file: "dist/pulsar-web.js",
 		format: "iife",

@@ -1,7 +1,7 @@
 import { suite, test, before } from "mocha";
 import { expect } from "chai";
 
-import { Component } from "../../build/pulsar/core/Component.js";
+import { Component } from "../../build/core/Component.js";
 
 suite("Component class", function() {
 
